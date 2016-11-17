@@ -29,6 +29,7 @@
 
 namespace TR { class BytecodeBuilder; }
 namespace TR { class MethodBuilder; }
+namespace OMR { class VirtualMachineState; }
 
 namespace OMR
 {
@@ -39,6 +40,11 @@ public:
    TR_ALLOC(TR_Memory::IlGenerator)
 
    BytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, char *name=NULL);
+   BytecodeBuilder(TR::MethodBuilder *methodBuilder, OMR::VirtualMachineState *vmState, int32_t bcIndex, char *name=NULL)
+      : BytecodeBuilder(methodBuilder, bcIndex, name)
+      {
+      _vmState = vmState;
+      }
 
    virtual bool isBytecodeBuilder() { return true; }
 
@@ -47,20 +53,27 @@ public:
    void AddFallThroughBuilder(TR::BytecodeBuilder *ftb);
 
    void AddSuccessorBuilders(uint32_t numBuilders, ...);
-   void AddSuccessorBuilder(TR::BytecodeBuilder *b) { AddSuccessorBuilders(1, b); }
+   void AddSuccessorBuilder(TR::BytecodeBuilder **b) { AddSuccessorBuilders(1, b); }
 
+   OMR::VirtualMachineState *initialVMState()                { return _initialVMState; }
+   OMR::VirtualMachineState *vmState()                       { return _vmState; }
+   void setVMState(OMR::VirtualMachineState *vmState)        { _vmState = vmState; }
+
+   void propagateVMState(OMR::VirtualMachineState *vmState);
 
 protected:
-   virtual void appendBlock(TR::Block *block = 0, bool addEdge=true);
-
    TR::BytecodeBuilder       * _fallThroughBuilder;
    List<TR::BytecodeBuilder> * _successorBuilders;
    int32_t                     _bcIndex;
    char                      * _name;
+   OMR::VirtualMachineState  * _initialVMState;
+   OMR::VirtualMachineState  * _vmState;
 
+   virtual void appendBlock(TR::Block *block = 0, bool addEdge=true);
    void addAllSuccessorBuildersToWorklist();
    bool connectTrees();
    virtual void setHandlerInfo(uint32_t catchType);
+   void transferVMState(TR::BytecodeBuilder **b);
    };
 
 } // namespace OMR
@@ -75,6 +88,9 @@ namespace TR
       public:
          BytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, char *name=NULL)
             : OMR::BytecodeBuilder(methodBuilder, bcIndex, name)
+            { }
+         BytecodeBuilder(TR::MethodBuilder *methodBuilder, OMR::VirtualMachineState *vmState, int32_t bcIndex, char *name=NULL)
+            : OMR::BytecodeBuilder(methodBuilder, vmState, bcIndex, name)
             { }
          void initialize(TR::IlGeneratorMethodDetails * details,
                            TR::ResolvedMethodSymbol     * methodSymbol,

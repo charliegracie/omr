@@ -34,6 +34,7 @@ class TR_HashTabInt;
 class TR_HashTabString;
 namespace TR { class BytecodeBuilder; }
 namespace TR { class ResolvedMethod; }
+namespace OMR { class VirtualMachineState; }
 
 namespace OMR
 {
@@ -44,6 +45,11 @@ class MethodBuilder : public TR::IlBuilder
    TR_ALLOC(TR_Memory::IlGenerator)
 
    MethodBuilder(TR::TypeDictionary *types);
+   MethodBuilder(TR::TypeDictionary *types, OMR::VirtualMachineState *vmState)
+      : MethodBuilder(types)
+      {
+      _vmState = vmState;
+      }
    virtual void setupForBuildIL();
 
    virtual bool injectIL();
@@ -52,6 +58,9 @@ class MethodBuilder : public TR::IlBuilder
    void setUseBytecodeBuilders()                             { _useBytecodeBuilders = true; }
    void addToTreeConnectingWorklist(TR::BytecodeBuilder *builder);
    void addToBlockCountingWorklist(TR::BytecodeBuilder *builder);
+
+   OMR::VirtualMachineState *vmState()                       { return _vmState; }
+   void setVMState(OMR::VirtualMachineState *vmState)        { _vmState = vmState; }
 
    virtual bool isMethodBuilder()                            { return true; }
    virtual TR::MethodBuilder *asMethodBuilder();
@@ -83,6 +92,8 @@ class MethodBuilder : public TR::IlBuilder
    TR::ResolvedMethod *lookupFunction(const char *name);
 
    TR::BytecodeBuilder *OrphanBytecodeBuilder(int32_t bcIndex=0, char *name=NULL);
+
+   void AppendBuilder(TR::BytecodeBuilder *bb);
 
    void DefineFile(const char *file)                         { _definingFile = file; }
    void DefineLine(const char *line)                         { _definingLine = line; }
@@ -144,6 +155,7 @@ class MethodBuilder : public TR::IlBuilder
    List<TR::BytecodeBuilder> * _countBlocksWorklist;
    List<TR::BytecodeBuilder> * _connectTreesWorklist;
    List<TR::BytecodeBuilder> * _allBytecodeBuilders;
+   OMR::VirtualMachineState  * _vmState;
 
    std::fstream              * _rpCpp;
    };
@@ -160,6 +172,9 @@ namespace TR
       public:
          MethodBuilder(TR::TypeDictionary *types)
             : OMR::MethodBuilder(types)
+            { }
+         MethodBuilder(TR::TypeDictionary *types, OMR::VirtualMachineState *vmState)
+            : OMR::MethodBuilder(types, vmState)
             { }
       };
 

@@ -136,6 +136,9 @@ public:
    bool TraceEnabled_log();
    void TraceIL_log(const char *s, ...);
 
+   // create a new local value (temporary variable)
+   TR::IlValue *NewValue(TR::IlType *dt);
+
    // constants
    TR::IlValue *NullAddress();
    TR::IlValue *ConstInt8(int8_t value);
@@ -144,8 +147,8 @@ public:
    TR::IlValue *ConstInt64(int64_t value);
    TR::IlValue *ConstFloat(float value);
    TR::IlValue *ConstDouble(double value);
-   TR::IlValue *ConstAddress(void* value);
-   TR::IlValue *ConstString(const char *value);
+   TR::IlValue *ConstAddress(const void * const value);
+   TR::IlValue *ConstString(const char * const value);
    TR::IlValue *ConstzeroValueForValue(TR::IlValue *v);
 
    // arithmetic
@@ -317,7 +320,6 @@ protected:
    TR::IlValue *lookupSymbol(const char *name);
    void defineSymbol(const char *name, TR::IlValue *v);
    TR::IlValue *newValue(TR::DataType dt);
-   TR::IlValue *newValue(TR::IlType *dt);
    void defineValue(const char *name, TR::IlType *dt);
 
    TR::Node *loadValue(TR::IlValue *v);

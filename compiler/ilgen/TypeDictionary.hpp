@@ -398,6 +398,8 @@ public:
    TR::IlType* toIlType(typename std::enable_if<std::is_pointer<T>::value && is_supported<typename std::remove_pointer<T>::type>::value>::type* = 0) {
       return PointerTo(toIlType<typename std::remove_pointer<T>::type>());
    }
+   TR::IlType *getWordType() { return Word; }
+   TR::IlType *getpWordType() { return pWord; }
 
 protected:
    TR::SegmentProvider *_segmentProvider;

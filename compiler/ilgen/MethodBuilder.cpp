@@ -41,6 +41,7 @@
 #include "ilgen/MethodBuilder.hpp"
 #include "ilgen/BytecodeBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
+#include "ilgen/VirtualMachineState.hpp"
 
 #define OPT_DETAILS "O^O ILBLD: "
 
@@ -91,7 +92,8 @@ MethodBuilder::MethodBuilder(TR::TypeDictionary *types)
    _useBytecodeBuilders(false),
    _countBlocksWorklist(0),
    _connectTreesWorklist(0),
-   _allBytecodeBuilders(0)
+   _allBytecodeBuilders(0),
+   _vmState(0)
    {
    REPLAY({
       std::fstream rpHpp("ReplayMethod.hpp",std::fstream::out);
@@ -397,6 +399,14 @@ MethodBuilder::OrphanBytecodeBuilder(int32_t bcIndex, char *name)
    orphan->initialize(_details, _methodSymbol, _fe, _symRefTab);
    orphan->setupForBuildIL();
    return orphan;
+   }
+
+void
+MethodBuilder::AppendBuilder(TR::BytecodeBuilder *bb)
+   {
+   this->OMR::IlBuilder::AppendBuilder(bb);
+   if (_vmState)
+      bb->setVMState(_vmState->MakeCopy());
    }
 
 void

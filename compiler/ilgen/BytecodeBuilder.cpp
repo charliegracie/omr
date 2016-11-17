@@ -25,6 +25,7 @@
 #include "ilgen/MethodBuilder.hpp"
 #include "ilgen/BytecodeBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
+#include "ilgen/VirtualMachineState.hpp"
 
 // should really move into IlInjector.hpp
 #define TraceEnabled    (comp()->getOption(TR_TraceILGen))
@@ -37,22 +38,26 @@ OMR::BytecodeBuilder::BytecodeBuilder(TR::MethodBuilder *methodBuilder,
    : TR::IlBuilder(methodBuilder, methodBuilder->typeDictionary()),
    _fallThroughBuilder(0),
    _bcIndex(bcIndex),
-   _name(name)
+   _name(name),
+   _initialVMState(0),
+   _vmState(0)
    {
    _successorBuilders = new (PERSISTENT_NEW) List<TR::BytecodeBuilder>(_types->trMemory());
    }
 
 void
 TR::BytecodeBuilder::initialize(TR::IlGeneratorMethodDetails * details,
-                           TR::ResolvedMethodSymbol     * methodSymbol,
-                           TR::FrontEnd                 * fe,
-                           TR::SymbolReferenceTable     * symRefTab)
+                                TR::ResolvedMethodSymbol     * methodSymbol,
+                                TR::FrontEnd                 * fe,
+                                TR::SymbolReferenceTable     * symRefTab)
     {
-    _details = details;
-    _methodSymbol = methodSymbol;
-    _fe = fe;
-    _symRefTab = symRefTab;
-    _comp = TR::comp();
+    this->OMR::IlInjector::initialize(details, methodSymbol, fe, symRefTab);
+    //_details = details;
+    //_methodSymbol = methodSymbol;
+    //_fe = fe;
+    //_symRefTab = symRefTab;
+    //_comp = TR::comp();
+
     //addBytecodeBuilderToList relies on _comp and it won't be ready until now
     _methodBuilder->addBytecodeBuilderToList(this);
     }
@@ -120,20 +125,31 @@ OMR::BytecodeBuilder::addAllSuccessorBuildersToWorklist()
       _methodBuilder->addToTreeConnectingWorklist(builder);
    }
 
+// Must be called *after* all code has been added to the bytecode builder
+// Also, current VM state is assumed to be what should propagate to the fallthrough builder
 void
 OMR::BytecodeBuilder::AddFallThroughBuilder(TR::BytecodeBuilder *ftb)
-    {
-    TR_ASSERT(comesBack(), "builder does not appear to have a fall through path");
+   {
+   TR_ASSERT(comesBack(), "builder does not appear to have a fall through path");
 
-    _fallThroughBuilder = ftb;
-    TraceIL("IlBuilder[ %p ]:: fallThrough successor [ %p ]\n", this, ftb);
+   TraceIL("IlBuilder[ %p ]:: fallThrough successor [ %p ]\n", this, ftb);
 
-    // add explicit goto the fall-through block
-    // requires that AddFallThroughBuilder() be called *after* any code is added to it
-    TR::IlBuilder *b = ftb;
-    Goto(&b);
-    }
+   TR::BytecodeBuilder *b = ftb;
+   transferVMState(&b);    // may change what b points at!
+   _fallThroughBuilder = b;
 
+   // add explicit goto and register the actual fall-through block
+   TR::IlBuilder *tgtb = b;
+   Goto(&tgtb);
+   }
+
+// AddSuccessorBuilders() should be called with a list of TR::BytecodeBuilder ** pointers.
+// Each one of these pointers could be changed by AddSuccessorBuilders() in the case where
+// some operations need to be inserted along the control flow edges to synchronize the
+// vm state from "this" builder to the target BytecodeBuilder. For this reason, the actual
+// control flow edges should be created (i.e. with Goto, IfCmp*, etc.) *after* calling
+// AddSuccessorBuilders, and the target used when creating those flow edges should take
+// into account that AddSuccessorBuilders may change the builder object provided.
 void
 OMR::BytecodeBuilder::AddSuccessorBuilders(uint32_t numExits, ...)
    {
@@ -141,9 +157,10 @@ OMR::BytecodeBuilder::AddSuccessorBuilders(uint32_t numExits, ...)
    va_start(exits, numExits);
    for (int32_t e=0;e < numExits;e++)
       {
-      TR::BytecodeBuilder *builder = (TR::BytecodeBuilder *) va_arg(exits, TR::BytecodeBuilder *);
-      _successorBuilders->add(builder);
-      TraceIL("IlBuilder[ %p ]:: successor [ %p ]\n", this, builder);
+      TR::BytecodeBuilder **builder = (TR::BytecodeBuilder **) va_arg(exits, TR::BytecodeBuilder **);
+      transferVMState(builder);            // may change what builder points at!
+      _successorBuilders->add(*builder);   // must be the bytecode builder that comes back from transferVMState()
+      TraceIL("IlBuilder[ %p ]:: successor [ %p ]\n", this, *builder);
       }
    va_end(exits);
    }
@@ -156,3 +173,40 @@ OMR::BytecodeBuilder::setHandlerInfo(uint32_t catchType)
    catchBlock->setHandlerInfo(catchType, comp()->getInlineDepth(), -1, _methodSymbol->getResolvedMethod(), comp());
    }
 
+void
+OMR::BytecodeBuilder::propagateVMState(OMR::VirtualMachineState *vmState)
+   {
+   _initialVMState = vmState->MakeCopy();
+   _vmState = vmState->MakeCopy();
+   }
+
+// transferVMState needs to be called before the actual transfer operation (Goto, IfCmp,
+// etc.) is created because we may need to insert a builder object along that control
+// flow edge to synchronize the vm state at the target (in the case of a merge point).
+// On return, the object pointed at by the "b" parameter may have changed. The caller
+// should direct control for this edge to whatever the parameter passed to "b" is
+// pointing at on return
+void
+OMR::BytecodeBuilder::transferVMState(TR::BytecodeBuilder **b)
+   {
+   TR_ASSERT(_vmState != NULL, "asked to transfer a NULL vmState");
+   if ((*b)->initialVMState())
+      {
+      // there is already a vm state at the target builder
+      // so we need to synchronized the current vm state with that vm state
+      // create an intermediate builder object to do that synchronization
+      TR::BytecodeBuilder *intermediateBuilder = new (TR::comp()->trHeapMemory()) TR::BytecodeBuilder((*b)->_methodBuilder, (*b)->_bcIndex, (*b)->_name);
+
+      _vmState->MergeInto((*b)->initialVMState(), intermediateBuilder);
+
+      TR::IlBuilder *tgtb = *b;
+      intermediateBuilder->Goto(&tgtb);
+      intermediateBuilder->_fallThroughBuilder = *b;
+      TraceIL("IlBuilder[ %p ]:: transferVMState merged vm state on way to [ %p ] using [ %p ]\n", this, *b, intermediateBuilder);
+      *b = intermediateBuilder; // branches should direct towards syncBuilder not original *b
+      }
+   else
+      {
+      (*b)->propagateVMState(_vmState);
+      }
+   }
