@@ -28,6 +28,7 @@ localarray
 structarray
 mandelbrot
 nestedloop
+operandstacktests
 pointer
 pow2
 recfib
