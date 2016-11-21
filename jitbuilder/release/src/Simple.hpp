@@ -29,4 +29,4 @@ class SimpleMethod : public TR::MethodBuilder
    virtual bool buildIL();
    };
 
-#endif // !defined(POINTER_INCL)
+#endif // !defined(SIMPLE_INCL)
