@@ -22,7 +22,7 @@ CXXFLAGS=-g -std=c++0x -O2 -c -fno-rtti -fPIC -I./include/compiler -I./include
 
 .SUFFIXES: .cpp .o
 
-goal: call conststring dotproduct iterfib linkedlist localarray mandelbrot nestedloop pointer recfib simple switch pow2 structarray controlflowtests issupportedtype toiltype
+goal: call conststring dotproduct iterfib linkedlist localarray mandelbrot nestedloop pointer recfib simple switch pow2 structarray controlflowtests issupportedtype toiltype operandstacktests
 
 all: goal
 
@@ -43,6 +43,7 @@ test: goal
 	./controlflowtests
 	./issupportedtype
 	./toiltype
+	./operandstacktests
 
 call : libjitbuilder.a Call.o
 	g++ -g -fno-rtti -o $@ Call.o -L. -ljitbuilder -ldl
@@ -165,6 +166,12 @@ controlflowtests : libjitbuilder.a ControlFlowTests.o
 ControlFlowTests.o: src/ControlFlowTests.cpp src/ControlFlowTests.hpp
 	g++ -o $@ $(CXXFLAGS) $<
 
+operandstacktests : libjitbuilder.a OperandStackTests.o
+	g++ -g -fno-rtti -o $@ OperandStackTests.o -L. -ljitbuilder -ldl
+
+OperandStackTests.o: src/OperandStackTests.cpp src/OperandStackTests.hpp
+	g++ -o $@ $(CXXFLAGS) $<
+
 
 issupportedtype : libjitbuilder.a IsSupportedType.o
 	g++ -g -fno-rtti -o $@ IsSupportedType.o -L. -ljitbuilder -ldl
@@ -189,4 +196,4 @@ BadToIlType.o: src/ToIlType.cpp
 
 
 clean:
-	@rm -f call conststring dotproduct iterfib linkedlist localarray mandelbrot matmult nestedloop pointer recfib simple switch pow2 structarray controlflowtests issupportedtype toiltype badtoiltype *.o
+	@rm -f call conststring dotproduct iterfib linkedlist localarray mandelbrot matmult nestedloop pointer recfib simple switch pow2 structarray controlflowtests issupportedtype toiltype badtoiltype operandstacktests *.o
