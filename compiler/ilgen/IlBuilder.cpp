@@ -914,6 +914,17 @@ IlBuilder::ConstAddress(const void * const value)
    return returnValue;
    }
 
+TR::IlValue *
+IlBuilder::ConstInteger(TR::IlType *intType, int64_t value)
+   {
+   if      (intType == Int8)  return ConstInt8 ((int8_t)  value);
+   else if (intType == Int16) return ConstInt16((int16_t) value);
+   else if (intType == Int32) return ConstInt32((int32_t) value);
+   else if (intType == Int64) return ConstInt64(          value);
+
+   TR_ASSERT(0, "unknown integer type");
+   return NULL;
+   }
 
 TR::IlValue *
 IlBuilder::ConvertTo(TR::IlType *t, TR::IlValue *v)

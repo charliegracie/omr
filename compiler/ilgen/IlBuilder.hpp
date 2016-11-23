@@ -151,6 +151,16 @@ public:
    TR::IlValue *ConstString(const char * const value);
    TR::IlValue *ConstzeroValueForValue(TR::IlValue *v);
 
+   TR::IlValue *Const(int8_t value)             { return ConstInt8(value); }
+   TR::IlValue *Const(int16_t value)            { return ConstInt16(value); }
+   TR::IlValue *Const(int32_t value)            { return ConstInt32(value); }
+   TR::IlValue *Const(int64_t value)            { return ConstInt64(value); }
+   TR::IlValue *Const(float value)              { return ConstFloat(value); }
+   TR::IlValue *Const(double value)             { return ConstDouble(value); }
+   TR::IlValue *Const(const void * const value) { return ConstAddress(value); }
+
+   TR::IlValue *ConstInteger(TR::IlType *intType, int64_t value);
+
    // arithmetic
    TR::IlValue *Add(TR::IlValue *left, TR::IlValue *right);
    TR::IlValue *AddWithOverflow(TR::IlBuilder **handler, TR::IlValue *left, TR::IlValue *right);

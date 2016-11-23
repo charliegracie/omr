@@ -22,7 +22,9 @@
 
 #include "ilgen/MethodBuilder.hpp"
 
-class TestOperandStack;
+#define STACKVALUEILTYPE	Int64
+#define	STACKVALUETYPE		int64_t
+
 
 class OperandStackTestMethod : public TR::MethodBuilder
    {
@@ -34,12 +36,14 @@ class OperandStackTestMethod : public TR::MethodBuilder
    static bool verifyUntouched(int32_t maxTouched);
 
    private:
-   TestOperandStack            * _stack;
-   OMR::VirtualMachineRegister *_stackTop;
+   TR::IlType                      * _valueType;
 
-   static int32_t * _realStack;
-   static int32_t   _realStackTop;
-   static int32_t   _realStackSize;
+   OMR::VirtualMachineOperandStack * _stack;
+   OMR::VirtualMachineRegister     * _stackTop;
+
+   static STACKVALUETYPE           * _realStack;
+   static STACKVALUETYPE           * _realStackTop;
+   static int32_t                    _realStackSize;
    };
 
 #endif // !defined(OPERANDSTACKTESTS_INCL)

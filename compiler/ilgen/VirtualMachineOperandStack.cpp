@@ -28,24 +28,24 @@
 namespace OMR
 {
 
-// Use this constructor most of the time (see below)
-VirtualMachineOperandStack::VirtualMachineOperandStack(TR::MethodBuilder *mb, int32_t sizeHint, TR::IlType *elementType)
-   : _mb(mb), _stackMax(sizeHint), _stackTop(-1), _elementType(elementType)
+VirtualMachineOperandStack::VirtualMachineOperandStack(TR::MethodBuilder *mb, int32_t sizeHint,
+   TR::IlType *elementType, OMR::VirtualMachineRegister *stackTopRegister)
+   : _mb(mb), _stackTopRegister(stackTopRegister), _stackMax(sizeHint), _stackTop(-1),
+     _elementType(elementType)
    {
    int32_t numBytes = _stackMax * sizeof(TR::IlValue *);
    _stack = (TR::IlValue **) TR::comp()->trMemory()->allocateHeapMemory(numBytes);
    memset(_stack, 0, numBytes);
+   mb->Store("OperandStack_base", stackTopRegister->Load(mb));
+
+   _pushAmount = (growsUp()) ? +1 : -1;
    }
 
-// This constructor should only be used at the start of the method builder; it provides the
-// register used to hold the stack top address, and this constructor stores the current top
-// of stack into a local variable called "OperandStack_base". This variable is used by
-// Commit() as the location for the operand stack.
-VirtualMachineOperandStack::VirtualMachineOperandStack(TR::MethodBuilder *mb, int32_t sizeHint, TR::IlType *elementType, OMR::VirtualMachineRegister *stackBaseReg)
-   : VirtualMachineOperandStack(mb, sizeHint, elementType)
-   {
-   mb->Store("OperandStack_base", stackBaseReg->Load(mb));
-   }
+VirtualMachineOperandStack::VirtualMachineOperandStack(OMR::VirtualMachineOperandStack *other)
+   : _mb(other->_mb), _stackTopRegister(other->_stackTopRegister), _stackMax(other->_stackMax),
+     _stackTop(other->_stackTop), _elementType(other->_elementType)
+   { }
+
 
 // commits the simulated operand stack of values to the virtual machine state
 // the given builder object is the path to the interpreter
@@ -66,8 +66,9 @@ VirtualMachineOperandStack::Commit(TR::IlBuilder *b)
       b->   IndexAt(pElement,
                stack,
       b->      ConstInt32(i)),
-            Pick(i)); // should generalize, delegate element storage ?
+            Pick(i)); // should generalize, maybe delegate element storage ?
       }
+   _stackTopRegister->Commit(b);
    }
 
 void
@@ -96,7 +97,7 @@ VirtualMachineOperandStack *
 VirtualMachineOperandStack::MakeCopy()
    {
    VirtualMachineOperandStack *copy = (VirtualMachineOperandStack *) TR::comp()->trMemory()->allocateHeapMemory(sizeof(VirtualMachineOperandStack));
-   new (copy) VirtualMachineOperandStack(_mb, _stackMax, _elementType);
+   new (copy) VirtualMachineOperandStack(this);
 
    copyTo(copy);
 
@@ -104,10 +105,11 @@ VirtualMachineOperandStack::MakeCopy()
    }
 
 void
-VirtualMachineOperandStack::Push(TR::IlValue *value)
+VirtualMachineOperandStack::Push(TR::IlBuilder *b, TR::IlValue *value)
    {
    checkSize();
    _stack[++_stackTop] = value;
+   _stackTopRegister->Adjust(b, +_pushAmount);
    }
 
 TR::IlValue *
@@ -118,17 +120,11 @@ VirtualMachineOperandStack::Top()
    }
 
 TR::IlValue *
-VirtualMachineOperandStack::Pop()
+VirtualMachineOperandStack::Pop(TR::IlBuilder *b)
    {
    TR_ASSERT(_stackTop >= 0, "stack underflow");
+   _stackTopRegister->Adjust(b, -_pushAmount);
    return _stack[_stackTop--];
-   }
-
-void
-VirtualMachineOperandStack::Drop(int32_t depth)
-   {
-   TR_ASSERT(_stackTop >= depth-1, "stack underflow");
-   _stackTop-=depth;
    }
 
 TR::IlValue *
@@ -139,12 +135,21 @@ VirtualMachineOperandStack::Pick(int32_t depth)
    }
 
 void
-VirtualMachineOperandStack::Dup()
+VirtualMachineOperandStack::Drop(TR::IlBuilder *b, int32_t depth)
+   {
+   TR_ASSERT(_stackTop >= depth-1, "stack underflow");
+   _stackTop-=depth;
+   _stackTopRegister->Adjust(b, -depth * _pushAmount);
+   }
+
+void
+VirtualMachineOperandStack::Dup(TR::IlBuilder *b)
    {
    TR_ASSERT(_stackTop >= 0, "cannot dup: stack empty");
    TR::IlValue *top = _stack[_stackTop];
    checkSize();
    _stack[++_stackTop] = top;
+   _stackTopRegister->Adjust(b, +_pushAmount);
    }
 
 void
@@ -154,6 +159,7 @@ VirtualMachineOperandStack::copyTo(VirtualMachineOperandStack *copy)
    memcpy(copy->_stack, _stack, numBytes);
    copy->_stackTop = _stackTop;
    copy->_stackMax = _stackMax;
+   copy->_stackTopRegister = _stackTopRegister;
    }
 
 void

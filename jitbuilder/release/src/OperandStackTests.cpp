@@ -28,7 +28,7 @@
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/MethodBuilder.hpp"
 #include "ilgen/VirtualMachineOperandStack.hpp"
-#include "ilgen/VirtualMachineRegister.hpp"
+#include "ilgen/VirtualMachineRegisterPointer.hpp"
 #include "OperandStackTests.hpp"
 
 using std::cout;
@@ -70,8 +70,8 @@ main(int argc, char *argv[])
    }
 
 
-int32_t *OperandStackTestMethod::_realStack = NULL;
-int32_t OperandStackTestMethod::_realStackTop = -1;
+STACKVALUETYPE *OperandStackTestMethod::_realStack = NULL;
+STACKVALUETYPE *OperandStackTestMethod::_realStackTop = _realStack;
 int32_t OperandStackTestMethod::_realStackSize = -1;
 
 #define REPORT1(c,n,v)         { if (c) cout << "Pass\n"; else cout << "Fail: " << (n) << " is " << (v) << "\n"; }
@@ -93,7 +93,7 @@ verifyResult1()
    }
 
 void
-verifyResult2(int32_t top)
+verifyResult2(STACKVALUETYPE top)
    {
    cout << "Push(2); Push(3); Top()   [ no commit]\n";
    cout << "\tResult 2: top value == 3: ";
@@ -103,7 +103,7 @@ verifyResult2(int32_t top)
    }
 
 void
-verifyResult3(int32_t top)
+verifyResult3(STACKVALUETYPE top)
    {
    cout << "Commit(); Top()\n";
    cout << "\tResult 3: top value == 3: ";
@@ -113,7 +113,7 @@ verifyResult3(int32_t top)
    }
 
 void
-verifyResult4(int32_t popValue)
+verifyResult4(STACKVALUETYPE popValue)
    {
    cout << "Pop()    [ no commit]\n";
    cout << "\tResult 4: pop value == 3: ";
@@ -123,7 +123,7 @@ verifyResult4(int32_t popValue)
    }
 
 void
-verifyResult5(int32_t popValue)
+verifyResult5(STACKVALUETYPE popValue)
    {
    cout << "Pop()    [ no commit]\n";
    cout << "\tResult 5: pop value == 2: ";
@@ -133,7 +133,7 @@ verifyResult5(int32_t popValue)
    }
 
 void
-verifyResult6(int32_t top)
+verifyResult6(STACKVALUETYPE top)
    {
    cout << "Push(Add(popValue1, popValue2)); Commit(); Top()\n";
    cout << "\tResult 6: top == 5: ";
@@ -150,7 +150,7 @@ verifyResult7()
    }
 
 void
-verifyResult8(int32_t pick)
+verifyResult8(STACKVALUETYPE pick)
    {
    cout << "Push(5); Push(4); Push(3); Push(2); Push(1); Commit(); Pick(3)\n";
    cout << "\tResult 8: pick == 4: ";
@@ -160,7 +160,7 @@ verifyResult8(int32_t pick)
    }
 
 void
-verifyResult9(int32_t top)
+verifyResult9(STACKVALUETYPE top)
    {
    cout << "Drop(2); Top()\n";
    cout << "\tResult 9: top == 3: ";
@@ -170,7 +170,7 @@ verifyResult9(int32_t top)
    }
 
 void
-verifyResult10(int32_t pick)
+verifyResult10(STACKVALUETYPE pick)
    {
    cout << "Dup(); Pick(2)\n";
    cout << "\tResult 10: pick == 4: ";
@@ -202,12 +202,12 @@ OperandStackTestMethod::verifyStack(const char *step, int32_t max, int32_t num, 
 
    va_start(args, num);
 
-   cout << "\tResult " << step << ": _realStackTop == " << (num-1) << ": ";
-   REPORT2(_realStackTop == num-1, "_realStackTop", _realStackTop, "num", num);
+   cout << "\tResult " << step << ": _realStackTop-_realStack == " << num << ": ";
+   REPORT2((_realStackTop-_realStack) == num, "_realStackTop-_realStack", (_realStackTop-_realStack), "num", num);
 
    for (int32_t a=0;a < num;a++)
       {
-      int32_t val = va_arg(args, int32_t);
+      STACKVALUETYPE val = va_arg(args, STACKVALUETYPE);
       cout << "\tResult " << step << ": _realStack[" << a << "] == " << val << ": ";
       REPORT2(_realStack[a] == val, "_realStack[a]", _realStack[a], "val", val);
       }
@@ -227,107 +227,48 @@ OperandStackTestMethod::OperandStackTestMethod(TR::TypeDictionary *d)
    DefineReturnType(NoType);
 
    _realStackSize = 32;
-   _realStack = (int32_t *) malloc (_realStackSize * sizeof(int32_t));
-   _realStackTop = -1;
-   memset(_realStack, 0, _realStackSize*sizeof(int32_t));
+   _realStack = (STACKVALUETYPE *) malloc (_realStackSize * sizeof(STACKVALUETYPE));
+   _realStackTop = _realStack;
+   memset(_realStack, 0, _realStackSize*sizeof(STACKVALUETYPE));
+
+   _valueType = STACKVALUEILTYPE;
 
    DefineFunction("verifyResult0", "0", "0", (void *)&verifyResult0, NoType, 0);
    DefineFunction("verifyResult1", "0", "0", (void *)&verifyResult1, NoType, 0);
-   DefineFunction("verifyResult2", "0", "0", (void *)&verifyResult2, NoType, 1, Int32);
-   DefineFunction("verifyResult3", "0", "0", (void *)&verifyResult3, NoType, 1, Int32);
-   DefineFunction("verifyResult4", "0", "0", (void *)&verifyResult4, NoType, 1, Int32);
-   DefineFunction("verifyResult5", "0", "0", (void *)&verifyResult5, NoType, 1, Int32);
-   DefineFunction("verifyResult6", "0", "0", (void *)&verifyResult6, NoType, 1, Int32);
+   DefineFunction("verifyResult2", "0", "0", (void *)&verifyResult2, NoType, 1, _valueType);
+   DefineFunction("verifyResult3", "0", "0", (void *)&verifyResult3, NoType, 1, _valueType);
+   DefineFunction("verifyResult4", "0", "0", (void *)&verifyResult4, NoType, 1, _valueType);
+   DefineFunction("verifyResult5", "0", "0", (void *)&verifyResult5, NoType, 1, _valueType);
+   DefineFunction("verifyResult6", "0", "0", (void *)&verifyResult6, NoType, 1, _valueType);
    DefineFunction("verifyResult7", "0", "0", (void *)&verifyResult7, NoType, 0);
-   DefineFunction("verifyResult8", "0", "0", (void *)&verifyResult8, NoType, 1, Int32);
-   DefineFunction("verifyResult9", "0", "0", (void *)&verifyResult9, NoType, 1, Int32);
-   DefineFunction("verifyResult10", "0", "0", (void *)&verifyResult10, NoType, 1, Int32);
+   DefineFunction("verifyResult8", "0", "0", (void *)&verifyResult8, NoType, 1, _valueType);
+   DefineFunction("verifyResult9", "0", "0", (void *)&verifyResult9, NoType, 1, _valueType);
+   DefineFunction("verifyResult10", "0", "0", (void *)&verifyResult10, NoType, 1, _valueType);
    DefineFunction("verifyResult11", "0", "0", (void *)&verifyResult11, NoType, 0);
    }
 
-class TestOperandStack : public OMR::VirtualMachineOperandStack
-   {
-   public:
-   TestOperandStack(TR::MethodBuilder *mb, TR::IlType *Int32, OMR::VirtualMachineRegister *stackBase, OMR::VirtualMachineRegister *stackTop)
-      : OMR::VirtualMachineOperandStack(mb, 32, Int32, stackBase),
-      _stackTop(stackTop)
-      {
-      }
-
-   virtual void Commit(TR::IlBuilder *b)
-      {
-      this->OMR::VirtualMachineOperandStack::Commit(b);
-      _stackTop->Commit(b);
-      }
-
-   virtual void Push(TR::IlBuilder *b, TR::IlValue *v)
-      {
-      this->OMR::VirtualMachineOperandStack::Push(v);
-      adjustTop(b, +1);
-      }
-
-   virtual TR::IlValue *Pop(TR::IlBuilder *b)
-      {
-      adjustTop(b, -1);
-      return this->OMR::VirtualMachineOperandStack::Pop();
-      }
-
-   virtual TR::IlValue *Top(TR::IlBuilder *b)
-      {
-      return this->OMR::VirtualMachineOperandStack::Top();
-      }
-
-   virtual TR::IlValue *Pick(TR::IlBuilder *b, int32_t depth)
-      {
-      return this->OMR::VirtualMachineOperandStack::Pick(depth);
-      }
-
-   virtual void Drop(TR::IlBuilder *b, int32_t depth)
-      {
-      adjustTop(b, -depth);
-      this->OMR::VirtualMachineOperandStack::Drop(depth);
-      }
-
-   void Dup(TR::IlBuilder *b)
-      {
-      this->OMR::VirtualMachineOperandStack::Dup();
-      adjustTop(b, +1);
-      }
-
-
-   private:
-   void adjustTop(TR::IlBuilder *b, int32_t amount)
-      {
-      _stackTop->Store(b, b->Add(_stackTop->Load(b), b->ConstInt32(amount)));
-      }
-
-   OMR::VirtualMachineRegister *_stackTop;
-   };
 
 bool
 OperandStackTestMethod::buildIL()
    {
-   TR::IlType *pInt32 = _types->PointerTo(Int32);
-   _stackTop = new OMR::VirtualMachineRegister(this, "stackTop", pInt32, &_realStackTop);
-
-   TR::IlType *pWord = _types->PointerTo(Word);
-   OMR::VirtualMachineRegister stackBase(this, "stackBase", pWord, &_realStack);
-   _stack = new TestOperandStack(this, Int32, &stackBase, _stackTop);
+   TR::IlType *pValueType = _types->PointerTo(_valueType);
+   _stackTop = new OMR::VirtualMachineRegisterPointer(this, "SP", pValueType, &_realStackTop);
+   _stack = new OMR::VirtualMachineOperandStack(this, 32, _valueType, _stackTop);
 
    TR::IlBuilder *b = this;
 
-   _stack->Push(b, ConstInt32(1));
+   _stack->Push(b, ConstInteger(_valueType, 1));
    Call("verifyResult0", 0);
 
    _stack->Commit(b);
    Call("verifyResult1", 0);
 
-   _stack->Push(b, ConstInt32(2));
-   _stack->Push(b, ConstInt32(3));
-   Call("verifyResult2", 1, _stack->Top(b));
+   _stack->Push(b, ConstInteger(_valueType, 2));
+   _stack->Push(b, ConstInteger(_valueType, 3));
+   Call("verifyResult2", 1, _stack->Top());
 
    _stack->Commit(b);
-   Call("verifyResult3", 1, _stack->Top(b));
+   Call("verifyResult3", 1, _stack->Top());
 
    TR::IlValue *val1 = _stack->Pop(b);
    Call("verifyResult4", 1, val1);
@@ -338,24 +279,24 @@ OperandStackTestMethod::buildIL()
    TR::IlValue *sum = Add(val1, val2);
    _stack->Push(b, sum);
    _stack->Commit(b);
-   Call("verifyResult6", 1, _stack->Top(b));
+   Call("verifyResult6", 1, _stack->Top());
 
    _stack->Drop(b, 2);
    _stack->Commit(b);
    Call("verifyResult7", 0);
 
-   _stack->Push(b, ConstInt32(5));
-   _stack->Push(b, ConstInt32(4));
-   _stack->Push(b, ConstInt32(3));
-   _stack->Push(b, ConstInt32(2));
-   _stack->Push(b, ConstInt32(1));
-   Call("verifyResult8", 1, _stack->Pick(b, 3));
+   _stack->Push(b, ConstInteger(_valueType, 5));
+   _stack->Push(b, ConstInteger(_valueType, 4));
+   _stack->Push(b, ConstInteger(_valueType, 3));
+   _stack->Push(b, ConstInteger(_valueType, 2));
+   _stack->Push(b, ConstInteger(_valueType, 1));
+   Call("verifyResult8", 1, _stack->Pick(3));
 
    _stack->Drop(b, 2);
-   Call("verifyResult9", 1, _stack->Top(b));
+   Call("verifyResult9", 1, _stack->Top());
 
    _stack->Dup(b);
-   Call("verifyResult10", 1, _stack->Pick(b, 2));
+   Call("verifyResult10", 1, _stack->Pick(2));
 
    _stack->Commit(b);
    Call("verifyResult11", 0);

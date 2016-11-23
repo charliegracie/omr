@@ -16,15 +16,11 @@
  *    Multiple authors (IBM Corp.) - initial implementation and documentation
  *******************************************************************************/
 
-#ifndef OMR_VIRTUALMACHINEREGISTER_INCL
-#define OMR_VIRTUALMACHINEREGISTER_INCL
+#ifndef OMR_VIRTUALMACHINEREGISTERPOINTER_INCL
+#define OMR_VIRTUALMACHINEREGISTERPOINTER_INCL
 
 
-#include "ilgen/VirtualMachineState.hpp"
-#include "ilgen/IlBuilder.hpp"
-#include "ilgen/TypeDictionary.hpp"
-
-namespace TR { class IlBuilder; }
+#include "ilgen/VirtualMachineRegister.hpp"
 
 namespace OMR
 {
@@ -49,76 +45,40 @@ namespace OMR
 // Store() will store the provided "value" into the *simulated* register by
 // appending to the builder "b"
 
-class VirtualMachineRegister : public OMR::VirtualMachineState
+class VirtualMachineRegisterPointer : public OMR::VirtualMachineRegister
    {
    public:
    // "type" must be pointer to the type of the register
-   VirtualMachineRegister(TR::IlBuilder *b,
-                          const char * const localName,
-                          TR::IlType * type,
-                          const void * const address) :
-      ::OMR::VirtualMachineState(),
-      _localName(localName),
-      _type(type),
-      _address(address)
-      {
-      Reload(b);
-      }
+   VirtualMachineRegisterPointer(TR::IlBuilder *b,
+                                 const char * const localName,
+                                 TR::IlType * type,
+                                 const void * const address) :
+      ::OMR::VirtualMachineRegister(b, localName, type, address)
+      { }
 
-   // Commit() writes the simulated register value to the actual virtual machine
-   // register, typically done in preparation for transition TO the interpreter
-   virtual void Commit(TR::IlBuilder *b)
-      {
-      b->StoreAt(
-      b->   ConstAddress(_address),
-      b->   Load(_localName));
-      }
-
-   // Reload() writes the actual register value to the simulated virtual machine
-   // register, typically done in preparation for transition FROM the interpreter
-   virtual void Reload(TR::IlBuilder *b)
-      {
-      b->Store(_localName,
-      b->   LoadAt((TR::IlType *)_type,
-      b->      ConstAddress(_address)));
-      }
-
-   // Load() returns the current value of the simulated register
-   TR::IlValue *Load(TR::IlBuilder *b)
-      {
-      return b->Load(_localName);
-      }
-
-   // Store() writes a new value into the simulated register; the previous value is lost
-   void Store(TR::IlBuilder *b, TR::IlValue *value)
-      {
-      b->Store(_localName, value);
-      }
-
-   // Adjust() with a TR::IlValue amount adds to the simulated register
+   // Adjust() with a TR::IlValue amount adds to the simulated register multiplied by the
+   // size of the type
    virtual void Adjust(TR::IlBuilder *b, TR::IlValue *amount)
       {
+      TR::IlType *elementType = _type->baseType();
       b->Store(_localName,
       b->   Add(
       b->      Load(_localName),
-               amount));
+      b->      Mul(
+      b->         ConstInteger(elementType, elementType->getSize()),
+                  amount)));
       }
-
-   // Adjust() with a constant amount adds the constant to the simulated register
+   // Adjust() with a constant amount adds the constant to the simulated register multiplied
+   // by the size of the type
    virtual void Adjust(TR::IlBuilder *b, int64_t amount)
       {
+      TR::IlType *elementType = _type->baseType();
       b->Store(_localName,
       b->   Add(
       b->      Load(_localName),
-      b->      ConstInteger(_type->baseType(), amount)));
+      b->      ConstInteger(elementType, amount * elementType->getSize())));
       }
-
-   protected:
-
-   const char * const _localName;
-   TR::IlType * _type;
-   const void * const _address;
    };
 }
 
-#endif // !defined(OMR_VIRTUALMACHINEREGISTER_INCL
+#endif // !defined(OMR_VIRTUALMACHINEREGISTERPOINTER_INCL)

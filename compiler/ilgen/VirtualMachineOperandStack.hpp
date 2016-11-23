@@ -82,8 +82,8 @@ class VirtualMachineOperandStack : public ::OMR::VirtualMachineState
    {
    public:
    // must be instantiated inside a compilation because uses heap memory
-   VirtualMachineOperandStack(TR::MethodBuilder *mb, int32_t sizeHint, TR::IlType *elementType);
-   VirtualMachineOperandStack(TR::MethodBuilder *mb, int32_t sizeHint, TR::IlType *elementType, OMR::VirtualMachineRegister *stackBaseReg);
+   VirtualMachineOperandStack(TR::MethodBuilder *mb, int32_t sizeHint, TR::IlType *elementType, OMR::VirtualMachineRegister *stackTop);
+   VirtualMachineOperandStack(OMR::VirtualMachineOperandStack *other);
 
    // Commit() writes out the values currently on the simulated
    // operand stack to the actual virtual machine state, typically done in preparation
@@ -102,21 +102,25 @@ class VirtualMachineOperandStack : public ::OMR::VirtualMachineState
    virtual VirtualMachineOperandStack *MakeCopy();
 
    // the usual stack operation to Push an expression onto the operand stack
-   virtual void Push(TR::IlValue *value);
+   virtual void Push(TR::IlBuilder *b, TR::IlValue *value);
 
    // the usual destructive Pop() and non-destructive Top() calls for a stack
-   virtual TR::IlValue *Pop();
+   virtual TR::IlValue *Pop(TR::IlBuilder *b);
    virtual TR::IlValue *Top();
 
-   // Pick nondestructively returns the value that would be returned by Top() after
-   // "depth" successive Pop()s, except that the stack is not changed at all
+   // Pick returns the value that would be returned by Top() after "depth" successive
+   // Pop()s, except that the stack is not changed at all
    virtual TR::IlValue *Pick(int32_t depth);
 
    // drop the top "depth" elements from the stack: same as calling Pop "depth" times
-   virtual void Drop(int32_t depth);
+   virtual void Drop(TR::IlBuilder *b, int32_t depth);
 
    // the usual stack operation to duplicate the top element on the stack
-   virtual void Dup();
+   virtual void Dup(TR::IlBuilder *b);
+
+   // stack grows up (Push increments top, Pop decrements top) by default
+   // override and return false to handle a stack that grows down
+   virtual bool growsUp() { return true; }
 
    protected:
    void copyTo(OMR::VirtualMachineOperandStack *copy);
@@ -125,10 +129,12 @@ class VirtualMachineOperandStack : public ::OMR::VirtualMachineState
 
    private:
    TR::MethodBuilder *_mb;
+   OMR::VirtualMachineRegister *_stackTopRegister;
    int32_t _stackMax;
    int32_t _stackTop;
    TR::IlValue **_stack;
    TR::IlType *_elementType;
+   int32_t _pushAmount;
    };
 }
 
