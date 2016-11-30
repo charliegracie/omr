@@ -748,8 +748,8 @@ TR::IlValue *
 IlBuilder::LoadAt(TR::IlType *dt, TR::IlValue *address)
    {
    TR_ASSERT(address->getSymbol()->getDataType() == TR::Address, "LoadAt needs an address operand");
-   TraceIL("IlBuilder[ %p ]::LoadAt type %d address %d\n", this, dt->getPrimitiveType(), address->getCPIndex());
    TR::IlValue *returnValue = indirectLoadNode(dt, loadValue(address));
+   TraceIL("IlBuilder[ %p ]::%d is LoadAt type %d address %d\n", this, returnValue->getCPIndex(), dt->getPrimitiveType(), address->getCPIndex());
    ILB_REPLAY("%s = %s->LoadAt(%s, %s);", REPLAY_VALUE(returnValue), REPLAY_BUILDER(this), REPLAY_TYPE(dt), REPLAY_VALUE(address));
    return returnValue;
    }
@@ -758,8 +758,8 @@ TR::IlValue *
 IlBuilder::VectorLoadAt(TR::IlType *dt, TR::IlValue *address)
    {
    TR_ASSERT(address->getSymbol()->getDataType() == TR::Address, "LoadAt needs an address operand");
-   TraceIL("IlBuilder[ %p ]::LoadAt type %d address %d\n", this, dt->getPrimitiveType(), address->getCPIndex());
    TR::IlValue *returnValue = indirectLoadNode(dt, loadValue(address), true);
+   TraceIL("IlBuilder[ %p ]::%d is VectorLoadAt type %d address %d\n", this, returnValue->getCPIndex(), dt->getPrimitiveType(), address->getCPIndex());
    ILB_REPLAY("%s = %s->LoadAt(%s, %s);", REPLAY_VALUE(returnValue), REPLAY_BUILDER(this), REPLAY_TYPE(dt), REPLAY_VALUE(address));
    return returnValue;
    }
