@@ -401,6 +401,17 @@ MethodBuilder::OrphanBytecodeBuilder(int32_t bcIndex, char *name)
    return orphan;
    }
 
+TR::BytecodeBuilder *
+MethodBuilder::OrphanBytecodeBuilder(OMR::VirtualMachineState *vmState, int32_t bcIndex, char *name)
+   {
+   MB_REPLAY("OrphanBytecodeBuilder(%d, \"%s\");", bcIndex, name);
+
+   TR::BytecodeBuilder *orphan = new (comp()->trHeapMemory()) TR::BytecodeBuilder(_methodBuilder, vmState, bcIndex, name);
+   orphan->initialize(_details, _methodSymbol, _fe, _symRefTab);
+   orphan->setupForBuildIL();
+   return orphan;
+   }
+
 void
 MethodBuilder::AppendBuilder(TR::BytecodeBuilder *bb)
    {

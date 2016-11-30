@@ -47,7 +47,11 @@ VirtualMachineOperandStack::VirtualMachineOperandStack(TR::MethodBuilder *mb, in
 VirtualMachineOperandStack::VirtualMachineOperandStack(OMR::VirtualMachineOperandStack *other)
    : _mb(other->_mb), _stackTopRegister(other->_stackTopRegister), _stackMax(other->_stackMax),
      _stackTop(other->_stackTop), _elementType(other->_elementType)
-   { }
+   {
+   int32_t numBytes = _stackMax * sizeof(TR::IlValue *);
+   _stack = (TR::IlValue **) TR::comp()->trMemory()->allocateHeapMemory(numBytes);
+   memset(_stack, 0, numBytes);
+   }
 
 
 // commits the simulated operand stack of values to the virtual machine state

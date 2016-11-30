@@ -196,6 +196,8 @@ OMR::BytecodeBuilder::transferVMState(TR::BytecodeBuilder **b)
       // so we need to synchronized the current vm state with that vm state
       // create an intermediate builder object to do that synchronization
       TR::BytecodeBuilder *intermediateBuilder = new (TR::comp()->trHeapMemory()) TR::BytecodeBuilder((*b)->_methodBuilder, (*b)->_bcIndex, (*b)->_name);
+//      intermediateBuilder->initialize(_details, _methodSymbol, _fe, _symRefTab);
+      intermediateBuilder->setupForBuildIL();
 
       _vmState->MergeInto((*b)->initialVMState(), intermediateBuilder);
 

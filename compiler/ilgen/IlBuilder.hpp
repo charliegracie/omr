@@ -88,22 +88,7 @@ public:
 
    friend class OMR::MethodBuilder;
 
-   IlBuilder(TR::MethodBuilder *methodBuilder, TR::TypeDictionary *types)
-      : TR::IlInjector(types),
-      _methodBuilder(methodBuilder),
-      _sequence(0),
-      _sequenceAppender(0),
-      _entryBlock(0),
-      _exitBlock(0),
-      _count(-1),
-      _partOfSequence(false),
-      _connectedTrees(false),
-      _comesBack(true),
-      _haveReplayName(false),
-      _isHandler(false),
-      _rpILCpp(0)
-      {
-      }
+   IlBuilder(TR::MethodBuilder *methodBuilder, TR::TypeDictionary *types);
    IlBuilder(TR::IlBuilder *source);
 
    void initSequence();

@@ -92,6 +92,26 @@
 namespace OMR
 {
 
+IlBuilder::IlBuilder(TR::MethodBuilder *methodBuilder, TR::TypeDictionary *types)
+   : TR::IlInjector(types),
+   _methodBuilder(methodBuilder),
+   _sequence(0),
+   _sequenceAppender(0),
+   _entryBlock(0),
+   _exitBlock(0),
+   _count(-1),
+   _partOfSequence(false),
+   _connectedTrees(false),
+   _comesBack(true),
+   _haveReplayName(false),
+   _rpILCpp(0)
+   {
+   _comp = methodBuilder->_comp;
+   _fe = methodBuilder->_fe;
+   _symRefTab = methodBuilder->_symRefTab;
+   _methodSymbol = methodBuilder->_methodSymbol;
+   }
+
 IlBuilder::IlBuilder(TR::IlBuilder *source)
    : TR::IlInjector(source),
    _methodBuilder(source->_methodBuilder),
