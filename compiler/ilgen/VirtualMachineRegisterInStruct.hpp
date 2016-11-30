@@ -50,15 +50,14 @@ class VirtualMachineRegisterInStruct : public ::OMR::VirtualMachineRegister
                           const char * const localNameHoldingStructAddress,
                           const char * const fieldName,
                           const char * const localNameToUse) :
-      ::OMR::VirtualMachineRegister(),
+      ::OMR::VirtualMachineRegister(localNameToUse),
       _structName(structName),
       _fieldName(fieldName),
-      _localNameHoldingStructAddress(localNameHoldingStructAddress),
-      _localName(localNameToUse),
+      _localNameHoldingStructAddress(localNameHoldingStructAddress)
       {
-      _type = b->typeDictionary()->GetFieldType(structName, fieldName);
-      _adjustByStep = _type->getSize();
-      ReloadState(b);
+      _elementType = b->typeDictionary()->GetFieldType(structName, fieldName)->baseType();
+      _adjustByStep = _elementType->getSize();
+      Reload(b);
       }
 
    // CommitState() writes the simulated register value to the actual virtual machine
@@ -74,7 +73,7 @@ class VirtualMachineRegisterInStruct : public ::OMR::VirtualMachineRegister
    // register, typically done in preparation for transition FROM the interpreter
    virtual void Reload(TR::IlBuilder *b)
       {
-      b->Store(_localNameToUse,
+      b->Store(_localName,
       b->   LoadIndirect(_structName, _fieldName,
       b->      Load(_localNameHoldingStructAddress)));
       }
@@ -84,7 +83,6 @@ class VirtualMachineRegisterInStruct : public ::OMR::VirtualMachineRegister
    const char * const _structName;
    const char * const _fieldName;
    const char * const _localNameHoldingStructAddress;
-   const char * const _name;
    };
 }
 

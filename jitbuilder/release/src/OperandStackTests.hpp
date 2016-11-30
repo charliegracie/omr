@@ -35,7 +35,12 @@ class OperandStackTestMethod : public TR::MethodBuilder
    static void verifyStack(const char *step, int32_t max, int32_t num, ...);
    static bool verifyUntouched(int32_t maxTouched);
 
-   private:
+   STACKVALUETYPE **getSPPtr() { return &_realStackTop; }
+   STACKVALUETYPE *getSP()     { return _realStackTop; }
+
+   protected:
+   bool testStack();
+
    TR::IlType                      * _valueType;
 
    OMR::VirtualMachineOperandStack * _stack;
@@ -44,6 +49,13 @@ class OperandStackTestMethod : public TR::MethodBuilder
    static STACKVALUETYPE           * _realStack;
    static STACKVALUETYPE           * _realStackTop;
    static int32_t                    _realStackSize;
+   };
+
+class OperandStackTestUsingStructMethod : public OperandStackTestMethod
+   {
+   public:
+   OperandStackTestUsingStructMethod(TR::TypeDictionary *);
+   virtual bool buildIL();
    };
 
 #endif // !defined(OPERANDSTACKTESTS_INCL)

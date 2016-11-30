@@ -29,11 +29,20 @@
 #include "ilgen/MethodBuilder.hpp"
 #include "ilgen/VirtualMachineOperandStack.hpp"
 #include "ilgen/VirtualMachineRegister.hpp"
+#include "ilgen/VirtualMachineRegisterInStruct.hpp"
 #include "OperandStackTests.hpp"
 
 using std::cout;
 using std::cerr;
 
+typedef struct Thread
+   {
+   int pad;
+   STACKVALUETYPE *sp;
+   } Thread;
+
+
+static STACKVALUETYPE **verifySP = NULL;
 
 int
 main(int argc, char *argv[])
@@ -46,26 +55,45 @@ main(int argc, char *argv[])
       exit(-1);
       }
 
-   cout << "Step 2: define type dictionary\n";
-   TR::TypeDictionary types;
-
-   cout << "Step 3: compile method builder\n";
-   OperandStackTestMethod method(&types);
-   uint8_t *entry = 0;
-   int32_t rc = compileMethodBuilder(&method, &entry);
-   if (rc != 0)
+   cout << "Step 2: compile operand stack tests using a straight pointer\n";
+   TR::TypeDictionary types2;
+   OperandStackTestMethod pointerMethod(&types2);
+   uint8_t *entry2 = 0;
+   int32_t rc2 = compileMethodBuilder(&pointerMethod, &entry2);
+   if (rc2 != 0)
       {
-      cerr << "FAIL: compilation error " << rc << "\n";
+      cerr << "FAIL: compilation error " << rc2 << "\n";
       exit(-2);
       }
 
-   cout << "Step 4: invoke compiled code and print results\n";
+   cout << "Step 3: invoke compiled code and print results\n";
    typedef void (OperandStackTestMethodFunction)();
-   OperandStackTestMethodFunction *test = (OperandStackTestMethodFunction *) entry;
+   OperandStackTestMethodFunction *ptrTest = (OperandStackTestMethodFunction *) entry2;
+   verifySP = pointerMethod.getSPPtr();
+   ptrTest();
 
-   test();
+   cout << "Step 4: compile operand stack tests using a Thread structure\n";
+   TR::TypeDictionary types4;
+   OperandStackTestUsingStructMethod threadMethod(&types4);
+   uint8_t *entry4 = 0;
+   int32_t rc4 = compileMethodBuilder(&threadMethod, &entry4);
+   if (rc4 != 0)
+      {
+      cerr << "FAIL: compilation error " << rc4 << "\n";
+      exit(-2);
+      }
 
-   cout << "Step 5: shutdown JIT\n";
+   cout << "Step 5: invoke compiled code and print results\n";
+   typedef void (OperandStackTestUsingStructMethodFunction)(Thread *thread);
+   OperandStackTestUsingStructMethodFunction *threadTest = (OperandStackTestUsingStructMethodFunction *) entry4;
+
+   Thread thread;
+   thread.sp = threadMethod.getSP();
+
+   verifySP = &thread.sp;
+   threadTest(&thread);
+
+   cout << "Step 6: shutdown JIT\n";
    shutdownJit();
    }
 
@@ -202,8 +230,10 @@ OperandStackTestMethod::verifyStack(const char *step, int32_t max, int32_t num, 
 
    va_start(args, num);
 
-   cout << "\tResult " << step << ": _realStackTop-_realStack == " << num << ": ";
-   REPORT2((_realStackTop-_realStack) == num, "_realStackTop-_realStack", (_realStackTop-_realStack), "num", num);
+   STACKVALUETYPE *realSP = *verifySP;
+
+   cout << "\tResult " << step << ": realSP-_realStack == " << num << ": ";
+   REPORT2((realSP-_realStack) == num, "_realStackTop-_realStack", (realSP-_realStack), "num", num);
 
    for (int32_t a=0;a < num;a++)
       {
@@ -249,13 +279,8 @@ OperandStackTestMethod::OperandStackTestMethod(TR::TypeDictionary *d)
 
 
 bool
-OperandStackTestMethod::buildIL()
+OperandStackTestMethod::testStack()
    {
-   TR::IlType *pValueType = _types->PointerTo(_valueType);
-   TR::IlValue *realStackTopAddress = ConstAddress(&_realStackTop);
-   _stackTop = new OMR::VirtualMachineRegister(this, "SP", pValueType, sizeof(STACKVALUETYPE), realStackTopAddress);
-   _stack = new OMR::VirtualMachineOperandStack(this, 32, _valueType, _stackTop);
-
    TR::IlBuilder *b = this;
 
    _stack->Push(b, ConstInteger(_valueType, 1));
@@ -305,4 +330,37 @@ OperandStackTestMethod::buildIL()
    Return();
 
    return true;
+   }
+
+bool
+OperandStackTestMethod::buildIL()
+   {
+   TR::IlType *pValueType = _types->PointerTo(_valueType);
+   TR::IlValue *realStackTopAddress = ConstAddress(&_realStackTop);
+   _stackTop = new OMR::VirtualMachineRegister(this, "SP", pValueType, sizeof(STACKVALUETYPE), realStackTopAddress);
+   _stack = new OMR::VirtualMachineOperandStack(this, 32, _valueType, _stackTop);
+
+   return testStack();
+   }
+
+
+
+
+OperandStackTestUsingStructMethod::OperandStackTestUsingStructMethod(TR::TypeDictionary *d)
+   : OperandStackTestMethod(d)
+   {
+   d->DefineStruct("Thread");
+   d->DefineField("Thread", "sp", d->PointerTo(STACKVALUEILTYPE), offsetof(Thread, sp));
+   d->CloseStruct("Thread");
+
+   DefineParameter("thread", d->PointerTo("Thread"));
+   }
+
+bool
+OperandStackTestUsingStructMethod::buildIL()
+   {
+   _stackTop = new OMR::VirtualMachineRegisterInStruct(this, "Thread", "thread", "sp", "SP");
+   _stack = new OMR::VirtualMachineOperandStack(this, 32, _valueType, _stackTop);
+
+   return testStack();
    }

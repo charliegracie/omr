@@ -52,7 +52,7 @@ namespace OMR
 class VirtualMachineRegister : public OMR::VirtualMachineState
    {
    public:
-   // "type" must be pointer to the type of the register
+   // "pointerToRegisterType" must be pointer to the type of the register
    // adjustByStep will be multiplied by any amount given to the Adjust functions
    VirtualMachineRegister(TR::IlBuilder *b,
                           const char * const localName,
@@ -69,6 +69,14 @@ class VirtualMachineRegister : public OMR::VirtualMachineState
       Reload(b);
       }
 
+   protected:
+   // only used by subclasses to initialize the const pointer
+   VirtualMachineRegister(const char * const localName)
+      : OMR::VirtualMachineState(),
+      _localName(localName)
+      { }
+
+   public:
    // Commit() writes the simulated register value to the actual virtual machine
    // register, typically done in preparation for transition TO the interpreter
    virtual void Commit(TR::IlBuilder *b)
