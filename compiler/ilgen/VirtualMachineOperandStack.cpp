@@ -36,6 +36,9 @@ VirtualMachineOperandStack::VirtualMachineOperandStack(TR::MethodBuilder *mb, in
    int32_t numBytes = _stackMax * sizeof(TR::IlValue *);
    _stack = (TR::IlValue **) TR::comp()->trMemory()->allocateHeapMemory(numBytes);
    memset(_stack, 0, numBytes);
+
+   // store current operand stack pointer base address so we can use it whenever we need to
+   // to recreate the stack as the interpreter would have
    mb->Store("OperandStack_base", stackTopRegister->Load(mb));
 
    _pushAmount = (growsUp()) ? +1 : -1;

@@ -43,7 +43,7 @@ namespace OMR
 // the CopyState() and MergeInto() functions do not need to do anything (the
 // value is accessible from the same variable at all locations). The Commit()
 // and Reload() functions simply move the value back and forth between the
-// local variable and the structure that holds the actual virtual machine state.
+// local variable and the address of the actual virtual machine state variable.
 // VirtualMachineRegister provides two additional functions:
 // Load() will load the *simulated* value of the register for use in the builder "b"
 // Store() will store the provided "value" into the *simulated* register by
@@ -53,14 +53,18 @@ class VirtualMachineRegister : public OMR::VirtualMachineState
    {
    public:
    // "type" must be pointer to the type of the register
+   // adjustByStep will be multiplied by any amount given to the Adjust functions
    VirtualMachineRegister(TR::IlBuilder *b,
                           const char * const localName,
-                          TR::IlType * type,
-                          const void * const address) :
-      ::OMR::VirtualMachineState(),
+                          TR::IlType * pointerToRegisterType,
+                          uint32_t adjustByStep,
+                          TR::IlValue * addressOfRegister)
+      : OMR::VirtualMachineState(),
       _localName(localName),
-      _type(type),
-      _address(address)
+      _addressOfRegister(addressOfRegister),
+      _pointerToRegisterType(pointerToRegisterType),
+      _elementType(pointerToRegisterType->baseType()),
+      _adjustByStep(adjustByStep)
       {
       Reload(b);
       }
@@ -70,7 +74,7 @@ class VirtualMachineRegister : public OMR::VirtualMachineState
    virtual void Commit(TR::IlBuilder *b)
       {
       b->StoreAt(
-      b->   ConstAddress(_address),
+            _addressOfRegister,
       b->   Load(_localName));
       }
 
@@ -79,8 +83,8 @@ class VirtualMachineRegister : public OMR::VirtualMachineState
    virtual void Reload(TR::IlBuilder *b)
       {
       b->Store(_localName,
-      b->   LoadAt((TR::IlType *)_type,
-      b->      ConstAddress(_address)));
+      b->   LoadAt((TR::IlType *)_pointerToRegisterType,
+               _addressOfRegister));
       }
 
    // Load() returns the current value of the simulated register
@@ -95,30 +99,36 @@ class VirtualMachineRegister : public OMR::VirtualMachineState
       b->Store(_localName, value);
       }
 
-   // Adjust() with a TR::IlValue amount adds to the simulated register
+   // Adjust() with a TR::IlValue amount adds to the simulated register after
+   // multiplying it by _adjustByStep
    virtual void Adjust(TR::IlBuilder *b, TR::IlValue *amount)
       {
       b->Store(_localName,
       b->   Add(
       b->      Load(_localName),
-               amount));
+      b->      Mul(
+                  amount,
+      b->         ConstInteger(_elementType, _adjustByStep))));
       }
 
    // Adjust() with a constant amount adds the constant to the simulated register
+   // after multiplying by _adjustByStep
    virtual void Adjust(TR::IlBuilder *b, int64_t amount)
       {
       b->Store(_localName,
       b->   Add(
       b->      Load(_localName),
-      b->      ConstInteger(_type->baseType(), amount)));
+      b->      ConstInteger(_elementType, amount * _adjustByStep)));
       }
 
    protected:
 
-   const char * const _localName;
-   TR::IlType * _type;
-   const void * const _address;
+   const char  * const _localName;
+   TR::IlValue * _addressOfRegister;
+   TR::IlType  * _pointerToRegisterType;
+   TR::IlType  * _elementType;
+   uint32_t      _adjustByStep;
    };
 }
 
-#endif // !defined(OMR_VIRTUALMACHINEREGISTER_INCL
+#endif // !defined(OMR_VIRTUALMACHINEREGISTER_INCL)

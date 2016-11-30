@@ -28,7 +28,7 @@
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/MethodBuilder.hpp"
 #include "ilgen/VirtualMachineOperandStack.hpp"
-#include "ilgen/VirtualMachineRegisterPointer.hpp"
+#include "ilgen/VirtualMachineRegister.hpp"
 #include "OperandStackTests.hpp"
 
 using std::cout;
@@ -252,7 +252,8 @@ bool
 OperandStackTestMethod::buildIL()
    {
    TR::IlType *pValueType = _types->PointerTo(_valueType);
-   _stackTop = new OMR::VirtualMachineRegisterPointer(this, "SP", pValueType, &_realStackTop);
+   TR::IlValue *realStackTopAddress = ConstAddress(&_realStackTop);
+   _stackTop = new OMR::VirtualMachineRegister(this, "SP", pValueType, sizeof(STACKVALUETYPE), realStackTopAddress);
    _stack = new OMR::VirtualMachineOperandStack(this, 32, _valueType, _stackTop);
 
    TR::IlBuilder *b = this;

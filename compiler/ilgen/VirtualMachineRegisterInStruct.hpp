@@ -33,7 +33,7 @@ namespace OMR
 // VirtualMachineRegister, which can be more convenient if the virtual machine
 // value is stored in a more arbitrary place or in a structure that isn't readily
 // accessible inside the compiled method. 
-// VirtualMachineRegisterInStruct must implement the same API as VirtualMachineState.
+// VirtualMachineRegisterInStruct is a subclass of VirtualMachineRegister
 // The simulated register value is simply stored in a single local variable, which
 // gives the compiler visibility to all changes to the register (and enables
 // optimization / simplification). Because there is just a single local variable,
@@ -41,10 +41,6 @@ namespace OMR
 // the same location at all locations). The Commit() and Reload() functions simply
 // move the value back and forth between the local variable and the structure that
 // holds the actual virtual machine state.
-// VirtualMachineRegisterInStruct provides two additional functions:
-//   Load() loads the *simulated* value of the register for use in the builder "b"
-//   Store() stores the provided "value" into the *simulated* register by
-// appending to the builder "b"
 
 class VirtualMachineRegisterInStruct : public ::OMR::VirtualMachineRegister
    {
@@ -54,12 +50,14 @@ class VirtualMachineRegisterInStruct : public ::OMR::VirtualMachineRegister
                           const char * const localNameHoldingStructAddress,
                           const char * const fieldName,
                           const char * const localNameToUse) :
-      ::OMR::VirtualMachineState(),
+      ::OMR::VirtualMachineRegister(),
       _structName(structName),
       _fieldName(fieldName),
       _localNameHoldingStructAddress(localNameHoldingStructAddress),
       _localName(localNameToUse),
       {
+      _type = b->typeDictionary()->GetFieldType(structName, fieldName);
+      _adjustByStep = _type->getSize();
       ReloadState(b);
       }
 
@@ -81,18 +79,6 @@ class VirtualMachineRegisterInStruct : public ::OMR::VirtualMachineRegister
       b->      Load(_localNameHoldingStructAddress)));
       }
 
-   // Load() returns the current value of the simulated register
-   TR::IlValue *Load(TR::IlBuilder *b)
-      {
-      return b->Load(_localName);
-      }
-
-   // Store() writes a new value into the simulated register; the previous value is lost
-   void Store(TR::IlBuilder *b, TR::IlValue *value)
-      {
-      b->Store(_localName, value);
-      }
-
    private:
 
    const char * const _structName;
@@ -102,4 +88,4 @@ class VirtualMachineRegisterInStruct : public ::OMR::VirtualMachineRegister
    };
 }
 
-#endif // !defined(OMR_VIRTUALMACHINEREGISTERINSTRUCT_INCL
+#endif // !defined(OMR_VIRTUALMACHINEREGISTERINSTRUCT_INCL)
