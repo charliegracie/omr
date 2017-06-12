@@ -169,13 +169,17 @@ class VirtualMachineOperandStack : public VirtualMachineState
     */
    virtual void Drop(TR::IlBuilder *b, int32_t depth);
 
+   virtual void DropAll(TR::IlBuilder *b);
+
    /**
     * @brief Duplicates the expression on top of the simulated operand stack
     * @param b builder object to use for any operations used to duplicate the expression (e.g. to update the top of stack)
     */
    virtual void Dup(TR::IlBuilder *b);
 
- 
+   int32_t GetStackTop() {return _stackTop;}
+
+   void SetStackTop(int32_t stackTop) {_stackTop = stackTop;}
 
    protected:
    void copyTo(OMR::VirtualMachineOperandStack *copy);

@@ -186,6 +186,13 @@ VirtualMachineOperandStack::Drop(TR::IlBuilder *b, int32_t depth)
    }
 
 void
+VirtualMachineOperandStack::DropAll(TR::IlBuilder *b)
+   {
+   TR_ASSERT(_stackTop >= -1, "drop all: invalid _stackTop");
+   _stackTop = -1;
+   }
+
+void
 VirtualMachineOperandStack::Dup(TR::IlBuilder *b)
    {
    TR_ASSERT(_stackTop >= 0, "cannot dup: stack empty");

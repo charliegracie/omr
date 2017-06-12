@@ -96,7 +96,6 @@ CX_FLAGS+=\
 
 CXX_FLAGS+=\
     -std=c++0x \
-    -fno-rtti \
     -fno-threadsafe-statics \
     -Wno-deprecated \
     -Wno-enum-compare \
