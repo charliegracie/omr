@@ -42,6 +42,7 @@ public:
    TR_ALLOC(TR_Memory::IlGenerator)
 
    BytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, char *name=NULL);
+   TR::BytecodeBuilder *self();
 
    virtual bool isBytecodeBuilder() { return true; }
 

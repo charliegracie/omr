@@ -26,6 +26,7 @@
 #include "compile/SymbolReferenceTable.hpp"
 #include "compile/Compilation.hpp"
 #include "env/FrontEnd.hpp"
+#include "ilgen/JitBuilderRecorder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "env/Region.hpp"
 #include "env/SystemSegmentProvider.hpp"
@@ -51,6 +52,12 @@ static const char *signatureNameForType[] =
    // TODO: vector types!
    };
 
+const TR::IlType *
+IlType::self()
+   {
+   return static_cast<const TR::IlType *>(this);
+   }
+
 char *
 IlType::getSignatureName()
    {
@@ -65,6 +72,19 @@ IlType::getSize()
    {
    TR_ASSERT(0, "The input type does not have a defined size\n");
    return 0;
+   }
+
+void
+IlType::RecordFirstTime(TR::JitBuilderRecorder *recorder)
+   {
+   if (!recorder->EnsureAvailableID(self()))
+      Record(recorder);
+   }
+
+void
+IlType::Record(TR::JitBuilderRecorder *recorder)
+   {
+   TR_ASSERT(0, "This type cannot be written\n");
    }
 
 const uint8_t primitiveTypeAlignment[TR::NumOMRTypes] =
@@ -111,6 +131,14 @@ public:
 
    virtual size_t getSize() { return TR::DataType::getSize(_type); }
 
+   virtual void Record(TR::JitBuilderRecorder *recorder)
+      {
+      recorder->BeginStatement(recorder->STATEMENT_PRIMITIVETYPE);
+      recorder->Type(this);
+      recorder->Number((int32_t)(getPrimitiveType()));
+      recorder->EndStatement();
+      }
+
 protected:
    TR::DataType _type;
    };
@@ -143,6 +171,17 @@ public:
    FieldInfo *getNext()                          { return _next; }
    void setNext(FieldInfo *next)                 { _next = next; }
 
+   virtual void Record(TR::JitBuilderRecorder *recorder, const TR::IlType *myStruct)
+      {
+      _type->RecordFirstTime(recorder);
+      recorder->BeginStatement(recorder->STATEMENT_DEFINEFIELD);
+      recorder->Type(myStruct);
+      recorder->Type(_type);
+      recorder->String(_name);
+      recorder->Number((int64_t)_offset);
+      recorder->EndStatement();
+      }
+
 //private:
    FieldInfo           * _next;
    const char          * _name;
@@ -167,7 +206,7 @@ public:
    virtual ~StructType()
       { }
 
-   TR::DataType getPrimitiveType()                 { return TR::Address; }
+   TR::DataType getPrimitiveType()             { return TR::Address; }
    void Close(size_t finalSize)                      { TR_ASSERT(_size <= finalSize, "Final size %d of struct %s is less than its current size %d\n", finalSize, _name, _size); _size = finalSize; _closed = true; };
    void Close()                                      { _closed = true; };
 
@@ -181,6 +220,8 @@ public:
    virtual size_t getSize() { return _size; }
 
    void clearSymRefs();
+
+   virtual void Record(TR::JitBuilderRecorder *recorder);
 
 protected:
    FieldInfo * findField(const char *fieldName);
@@ -306,6 +347,21 @@ StructType::clearSymRefs()
       }
    }
 
+void
+StructType::Record(TR::JitBuilderRecorder *recorder)
+   {
+   recorder->BeginStatement(recorder->STATEMENT_DEFINESTRUCT);
+   recorder->Type(self());
+   recorder->String(_name);
+   recorder->EndStatement();
+
+   FieldInfo *field = _firstField;
+   while (field)
+      {
+      field->Record(recorder, self());
+      field = field->_next;
+      }
+   }
 
 class UnionType : public TR::IlType
    {
@@ -324,7 +380,7 @@ public:
    virtual ~UnionType()
       { }
 
-   TR::DataType getPrimitiveType()                 { return TR::Address; }
+   TR::DataType getPrimitiveType() { return TR::Address; }
    void Close();
 
    void AddField(const char *name, TR::IlType *fieldType);
@@ -335,6 +391,8 @@ public:
    virtual size_t getSize() { return _size; }
 
    void clearSymRefs();
+
+   virtual void Record(TR::JitBuilderRecorder *recorder);
 
 protected:
    FieldInfo * findField(const char *fieldName);
@@ -439,6 +497,22 @@ UnionType::clearSymRefs()
    _symRefBV.init(4, _trMemory);
    }
 
+void
+UnionType::Record(TR::JitBuilderRecorder *recorder)
+   {
+   recorder->BeginStatement(recorder->STATEMENT_DEFINEUNION);
+   recorder->Type(self());
+   recorder->String(_name);
+   recorder->EndStatement();
+
+   FieldInfo *field = _firstField;
+   while (field)
+      {
+      field->Record(recorder, self());
+      field = field->_next;
+      }
+   }
+
 
 class PointerType : public TR::IlType
    {
@@ -462,6 +536,14 @@ public:
    virtual TR::DataType getPrimitiveType() { return TR::Address; }
 
    virtual size_t getSize() { return TR::DataType::getSize(TR::Address); }
+
+   virtual void Record(TR::JitBuilderRecorder *recorder)
+      {
+      recorder->BeginStatement(recorder->STATEMENT_POINTERTYPE);
+      recorder->Type(this);
+      recorder->Type(_baseType);
+      recorder->EndStatement();
+      }
 
 protected:
    TR::IlType          * _baseType;

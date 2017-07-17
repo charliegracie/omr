@@ -38,6 +38,13 @@
 #include "ilgen/IlBuilder.hpp"
 #include "env/TypedAllocator.hpp"
 
+class TR_HashTabString;
+
+namespace TR { typedef TR::SymbolReference IlReference; }
+
+namespace TR { class SegmentProvider; }
+namespace TR { class Region; }
+namespace TR { class JitBuilderRecorder; }
 class TR_Memory;
 
 namespace OMR { class StructType; }
@@ -64,6 +71,8 @@ public:
    virtual ~IlType()
       { }
 
+   const TR::IlType *self();
+
    const char *getName() { return _name; }
    virtual char *getSignatureName();
 
@@ -73,10 +82,13 @@ public:
    virtual bool isPointer() { return false; }
    virtual TR::IlType *baseType() { return NULL; }
 
-   virtual bool isStruct() {return false; }
+   virtual bool isStruct() { return false; }
    virtual bool isUnion() { return false; }
 
    virtual size_t getSize();
+
+   void RecordFirstTime(TR::JitBuilderRecorder *recorder);
+   virtual void Record(TR::JitBuilderRecorder *recorder);
 
 protected:
    const char *_name;
@@ -488,6 +500,8 @@ class IlType : public OMR::IlType
       IlType()
          : OMR::IlType()
          { }
+      virtual ~IlType()
+         { }
    };
 } // namespace TR
 #endif // defined(PUT_OMR_ILTYPE_INTO_TR)
@@ -501,6 +515,8 @@ class TypeDictionary : public OMR::TypeDictionary
    public:
       TypeDictionary()
          : OMR::TypeDictionary()
+         { }
+      virtual ~TypeDictionary()
          { }
    };
 } // namespace TR

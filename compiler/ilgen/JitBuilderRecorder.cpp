@@ -40,7 +40,7 @@ OMR::JitBuilderRecorder::start()
    // special reserved value, must do it first !
    StoreID(0);
 
-   // special reserved value, must do it first !
+   // another special reserved value, so do it first
    StoreID((const void *)1);
 
    String(RECORDER_SIGNATURE);
@@ -123,7 +123,7 @@ OMR::JitBuilderRecorder::BeginStatement(const char *s)
    }
 
 void
-OMR::JitBuilderRecorder::BeginStatement(const TR::IlBuilder *b, const char *s)
+OMR::JitBuilderRecorder::BeginStatement(const TR::IlBuilderRecorder *b, const char *s)
    {
    ensureStatementDefined(s);
    Builder(b);

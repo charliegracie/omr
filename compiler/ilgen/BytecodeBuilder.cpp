@@ -51,6 +51,12 @@ OMR::BytecodeBuilder::BytecodeBuilder(TR::MethodBuilder *methodBuilder,
    initSequence();
    }
 
+TR::BytecodeBuilder *
+OMR::BytecodeBuilder::self()
+   {
+   return static_cast<TR::BytecodeBuilder *>(this);
+   }
+
 /**
  * Call this function at the top of your bytecode iteration loop so that all services called
  * while this bytecode builder is being translated will mark their IL nodes as having this
@@ -73,7 +79,7 @@ TR::BytecodeBuilder::initialize(TR::IlGeneratorMethodDetails * details,
     this->OMR::IlInjector::initialize(details, methodSymbol, fe, symRefTab);
 
     //addBytecodeBuilderToList relies on _comp and it won't be ready until now
-    _methodBuilder->addToAllBytecodeBuildersList(this);
+    _methodBuilder->addToAllBytecodeBuildersList(self());
     }
 
 void
@@ -154,7 +160,7 @@ OMR::BytecodeBuilder::AddFallThroughBuilder(TR::BytecodeBuilder *ftb)
    if (b != ftb)
       TraceIL("IlBuilder[ %p ]:: fallThrough successor changed to [ %p ]\n", this, b);
    _fallThroughBuilder = b;
-    _methodBuilder->addBytecodeBuilderToWorklist(ftb);
+   _methodBuilder->addBytecodeBuilderToWorklist(ftb);
 
    // add explicit goto and register the actual fall-through block
    TR::IlBuilder *tgtb = b;

@@ -1,149 +1,65 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2017 IBM Corp. and others
  *
- * This program and the accompanying materials are made available under
- * the terms of the Eclipse Public License 2.0 which accompanies this
- * distribution and is available at http://eclipse.org/legal/epl-2.0
- * or the Apache License, Version 2.0 which accompanies this distribution
- * and is available at https://www.apache.org/licenses/LICENSE-2.0.
+ * (c) Copyright IBM Corp. 2016, 2017
  *
- * This Source Code may also be made available under the following Secondary
- * Licenses when the conditions for such availability set forth in the
- * Eclipse Public License, v. 2.0 are satisfied: GNU General Public License,
- * version 2 with the GNU Classpath Exception [1] and GNU General Public
- * License, version 2 with the OpenJDK Assembly Exception [2].
+ *  This program and the accompanying materials are made available
+ *  under the terms of the Eclipse Public License v1.0 and
+ *  Apache License v2.0 which accompanies this distribution.
  *
- * [1] https://www.gnu.org/software/classpath/license.html
- * [2] http://openjdk.java.net/legal/assembly-exception.html
+ *      The Eclipse Public License is available at
+ *      http://www.eclipse.org/legal/epl-v10.html
  *
- * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
- *******************************************************************************/
+ *      The Apache License v2.0 is available at
+ *      http://www.opensource.org/licenses/apache2.0.php
+ *
+ * Contributors:
+ *    Multiple authors (IBM Corp.) - initial implementation and documentation
+ ******************************************************************************/
 
-#ifndef OMR_ILBUILDER_INCL
-#define OMR_ILBUILDER_INCL
 
-#ifndef TR_ILBUILDER_DEFINED
-#define TR_ILBUILDER_DEFINED
-#define PUT_OMR_ILBUILDER_INTO_TR
-#endif // !defined(TR_ILBUILDER_DEFINED)
+#ifndef OMR_ILBUILDERRECORDER_INCL
+#define OMR_ILBUILDERRECORDER_INCL
+
+#ifndef TR_ILBUILDERRECORDER_DEFINED
+#define TR_ILBUILDERRECORDER_DEFINED
+#define PUT_OMR_ILBUILDERRECORDER_INTO_TR
+#endif // !defined(TR_ILBUILDERRECORDER_DEFINED)
 
 #include <fstream>
 #include <stdarg.h>
 #include <string.h>
-#include "ilgen/IlBuilderRecorder.hpp"
+#include "ilgen/IlInjector.hpp"
 #include "il/ILHelpers.hpp"
 
-#include "ilgen/IlValue.hpp" // must go after IlBuilderRecorder.hpp or TR_ALLOC isn't cleaned up
+#include "ilgen/IlValue.hpp" // must go after IlInjector.hpp or TR_ALLOC isn't cleaned up
 
-namespace OMR { class MethodBuilder; }
-namespace OMR { class JitBuilderWriter; }
-
-namespace TR { class Block; }
-namespace TR { class IlGeneratorMethodDetails; }
+namespace TR { class JitBuilderRecorder; }
+namespace TR { class MethodBuilder; }
 namespace TR { class IlBuilder; }
-namespace TR { class ResolvedMethodSymbol; } 
-namespace TR { class SymbolReference; }
-namespace TR { class SymbolReferenceTable; }
-
+namespace TR { class IlBuilderRecorder; }
 namespace TR { class IlType; }
 namespace TR { class TypeDictionary; }
-class TR_HeapMemory;
-
-template <class T> class List;
-template <class T> class ListAppender;
 
 namespace OMR
 {
 
-typedef TR::ILOpCodes (*OpCodeMapper)(TR::DataType);
-
-
-class IlBuilder : public TR::IlBuilderRecorder
+class IlBuilderRecorder : public TR::IlInjector
    {
-
-protected:
-   struct SequenceEntry
-      {
-      TR_ALLOC(TR_Memory::IlGenerator)
-
-      SequenceEntry(TR::Block *block)
-         {
-         _isBlock = true;
-         _block = block;
-         }
-      SequenceEntry(TR::IlBuilder *builder)
-         {
-         _isBlock = false;
-         _builder = builder;
-         }
-
-      bool _isBlock;
-      union
-         {
-         TR::Block *_block;
-         TR::IlBuilder *_builder;
-         };
-      };
-
-   SequenceEntry *blockEntry(TR::Block *block);
-   SequenceEntry *builderEntry(TR::IlBuilder *builder);
 
 public:
    TR_ALLOC(TR_Memory::IlGenerator)
 
-   friend class OMR::MethodBuilder;
+   IlBuilderRecorder(TR::MethodBuilder *methodBuilder, TR::TypeDictionary *types);
+   IlBuilderRecorder(TR::IlBuilder *source);
+   virtual ~IlBuilderRecorder() { }
 
-   IlBuilder(TR::MethodBuilder *methodBuilder, TR::TypeDictionary *types)
-      : TR::IlBuilderRecorder(methodBuilder, types),
-      _sequence(0),
-      _sequenceAppender(0),
-      _entryBlock(0),
-      _exitBlock(0),
-      _count(-1),
-      _partOfSequence(false),
-      _connectedTrees(false),
-      _comesBack(true),
-      _isHandler(false)
-      {
-      }
-   IlBuilder(TR::IlBuilder *source);
-   virtual ~IlBuilder() { }
+   // needed to make IlBuilderRecorder a concrete class
+   virtual bool injectIL()      { return true; }
 
-   void initSequence();
-
-   virtual bool injectIL();
-   virtual void setupForBuildIL();
-
-   virtual bool isMethodBuilder()               { return false; }
-   virtual TR::MethodBuilder *asMethodBuilder() { return NULL; }
-
-   virtual bool isBytecodeBuilder()             { return false; }
-
-   //char *getName();
-
-   void print(const char *title, bool recurse=false);
-   void printBlock(TR::Block *block);
-
-   TR::TreeTop *getFirstTree();
-   TR::TreeTop *getLastTree();
-   TR::Block *getEntry() { return _entryBlock; }
-   TR::Block *getExit()  { return _exitBlock; }
-
-   void setDoesNotComeBack() { _comesBack = false; }
-   void setComesBack()       { _comesBack = true; }
-   bool comesBack()          { return _comesBack; }
-
-   bool blocksHaveBeenCounted() { return _count > -1; }
-
-   TR::IlBuilder *createBuilderIfNeeded(TR::IlBuilder *builder);
-   TR::IlBuilder *OrphanBuilder();
-   bool TraceEnabled_log();
-   void TraceIL_log(const char *s, ...);
+   void NewIlBuilder();
 
    // create a new local value (temporary variable)
    TR::IlValue *NewValue(TR::IlType *dt);
-
-   TR::IlValue *Copy(TR::IlValue *value);
 
    // constants
    TR::IlValue *NullAddress();
@@ -155,6 +71,7 @@ public:
    TR::IlValue *ConstDouble(double value);
    TR::IlValue *ConstAddress(const void * const value);
    TR::IlValue *ConstString(const char * const value);
+   TR::IlValue *ConstzeroValueForValue(TR::IlValue *v);
 
    TR::IlValue *Const(int8_t value)             { return ConstInt8(value); }
    TR::IlValue *Const(int16_t value)            { return ConstInt16(value); }
@@ -176,7 +93,6 @@ public:
    TR::IlValue *Mul(TR::IlValue *left, TR::IlValue *right);
    TR::IlValue *MulWithOverflow(TR::IlBuilder **handler, TR::IlValue *left, TR::IlValue *right);
    TR::IlValue *Div(TR::IlValue *left, TR::IlValue *right);
-   TR::IlValue *Rem(TR::IlValue *left, TR::IlValue *right);
    TR::IlValue *And(TR::IlValue *left, TR::IlValue *right);
    TR::IlValue *Or(TR::IlValue *left, TR::IlValue *right);
    TR::IlValue *Xor(TR::IlValue *left, TR::IlValue *right);
@@ -200,19 +116,18 @@ public:
    TR::IlValue *UnsignedConvertTo(TR::IlType *t, TR::IlValue *v);
 
    // memory
-   TR::IlValue *CreateLocalArray(int32_t numElements, TR::IlType *elementType);
-   TR::IlValue *CreateLocalStruct(TR::IlType *structType);
-   TR::IlValue *Load(const char *name);
    void Store(const char *name, TR::IlValue *value);
    void StoreOver(TR::IlValue *dest, TR::IlValue *value);
-   TR::IlValue *LoadAt(TR::IlType *dt, TR::IlValue *address);
    void StoreAt(TR::IlValue *address, TR::IlValue *value);
-   TR::IlValue *LoadIndirect(const char *type, const char *field, TR::IlValue *object);
    void StoreIndirect(const char *type, const char *field, TR::IlValue *object, TR::IlValue *value);
+   TR::IlValue *Load(const char *name);
+   TR::IlValue *LoadIndirect(const char *type, const char *field, TR::IlValue *object);
+   TR::IlValue *LoadAt(TR::IlType *dt, TR::IlValue *address);
    TR::IlValue *IndexAt(TR::IlType *dt, TR::IlValue *base, TR::IlValue *index);
+   TR::IlValue *CreateLocalArray(int32_t numElements, TR::IlType *elementType);
+   TR::IlValue *CreateLocalStruct(TR::IlType *structType);
+   TR::IlValue *AtomicAddWithOffset(TR::IlValue *baseAddress, TR::IlValue *offset, TR::IlValue *value);
    TR::IlValue *AtomicAdd(TR::IlValue *baseAddress, TR::IlValue * value);
-   void Transaction(TR::IlBuilder **persistentFailureBuilder, TR::IlBuilder **transientFailureBuilder, TR::IlBuilder **fallThroughBuilder);
-   void TransactionAbort();
 
    /**
     * `StructFieldAddress` and `UnionFieldAddress` are two functions that
@@ -232,16 +147,25 @@ public:
    void VectorStoreAt(TR::IlValue *address, TR::IlValue *value);
 
    // control
+   void Transaction(TR::IlBuilder **persistentFailureBuilder, TR::IlBuilder **transientFailureBuilder, TR::IlBuilder **fallThroughBuilder);
+   void TransactionAbort();
    void AppendBuilder(TR::IlBuilder *builder);
    TR::IlValue *Call(const char *name, int32_t numArgs, ...);
    TR::IlValue *Call(const char *name, int32_t numArgs, TR::IlValue **argValues);
    TR::IlValue *ComputedCall(const char *name, int32_t numArgs, ...);
    TR::IlValue *ComputedCall(const char *name, int32_t numArgs, TR::IlValue **args);
-   TR::IlValue *genCall(TR::SymbolReference *methodSymRef, int32_t numArgs, TR::IlValue ** paramValues, bool isDirectCall = true);
    void Goto(TR::IlBuilder **dest);
    void Goto(TR::IlBuilder *dest);
    void Return();
    void Return(TR::IlValue *value);
+   virtual void ForLoop(bool countsUp,
+                const char *indVar,
+                TR::IlBuilder *body,
+                TR::IlBuilder *breakBuilder,
+                TR::IlBuilder *continueBuilder,
+                TR::IlValue *initial,
+                TR::IlValue *iterateWhile,
+                TR::IlValue *increment);
    virtual void ForLoop(bool countsUp,
                 const char *indVar,
                 TR::IlBuilder **body,
@@ -260,7 +184,6 @@ public:
       ForLoop(true, indVar, body, NULL, NULL, initial, iterateWhile, increment);
       }
 
-#if 0
    void ForLoopDown(const char *indVar,
                     TR::IlBuilder **body,
                     TR::IlValue *initial,
@@ -291,10 +214,9 @@ public:
       {
       ForLoop(countsUp, indVar, body, NULL, continueBody, initial, iterateWhile, increment);
       }
-#endif
 
-   virtual void WhileDoLoop(const char *exitCondition, TR::IlBuilder **body, TR::IlBuilder **breakBuilder = NULL, TR::IlBuilder **continueBuilder = NULL);
 #if 0
+   virtual void WhileDoLoop(const char *exitCondition, TR::IlBuilder **body, TR::IlBuilder **breakBuilder = NULL, TR::IlBuilder **continueBuilder = NULL);
    void WhileDoLoopWithBreak(const char *exitCondition, TR::IlBuilder **body, TR::IlBuilder **breakBuilder)
       {
       WhileDoLoop(exitCondition, body, breakBuilder);
@@ -304,10 +226,8 @@ public:
       {
       WhileDoLoop(exitCondition, body, NULL, continueBuilder);
       }
-#endif
 
    virtual void DoWhileLoop(const char *exitCondition, TR::IlBuilder **body, TR::IlBuilder **breakBuilder = NULL, TR::IlBuilder **continueBuilder = NULL);
-#if 0
    void DoWhileLoopWithBreak(const char *exitCondition, TR::IlBuilder **body, TR::IlBuilder **breakBuilder)
       {
       DoWhileLoop(exitCondition, body, breakBuilder);
@@ -348,13 +268,13 @@ public:
    void IfCmpUnsignedGreaterOrEqual(TR::IlBuilder **target, TR::IlValue *left, TR::IlValue *right);
    void IfCmpUnsignedGreaterOrEqual(TR::IlBuilder *target, TR::IlValue *left, TR::IlValue *right);
 
-   void IfThenElse(TR::IlBuilder **thenPath,
-                   TR::IlBuilder **elsePath,
-                   TR::IlValue *condition);
+   void IfThenElse(TR::IlBuilder *thenPath, TR::IlBuilder *elsePath, TR::IlValue *condition);
+   void IfThenElse(TR::IlBuilder **thenPath, TR::IlBuilder **elsePath, TR::IlValue *condition);
    virtual void IfThen(TR::IlBuilder **thenPath, TR::IlValue *condition)
       {
       IfThenElse(thenPath, NULL, condition);
       }
+#if 0
    void Switch(const char *selectionVar,
                TR::IlBuilder **defaultBuilder,
                uint32_t numCases,
@@ -365,156 +285,50 @@ public:
                TR::IlBuilder **defaultBuilder,
                uint32_t numCases,
                ...);
+#endif
 
 protected:
 
    /**
-    * @brief sequence of TR::Blocks and other TR::IlBuilder objects that should execute when control reaches this IlBuilder
+    * @brief MethodBuilder parent for this IlBuilder object
     */
-   List<SequenceEntry>         * _sequence;
+   TR::MethodBuilder      * _methodBuilder;
 
-   /**
-    * @brief used to track the end of the current sequence
-    */
-   ListAppender<SequenceEntry> * _sequenceAppender;
+   TR::IlBuilder *asIlBuilder();
+   TR::IlValue *newValue();
+   TR::IlBuilder *createBuilderIfNeeded(TR::IlBuilder *builder);
 
-   /**
-    * @brief each IlBuilder object is like a mini-CFG, with its own unique entry block
-    */
-   TR::Block                   * _entryBlock;
+   void convertTo(TR::IlValue *returnValue, TR::IlType *dt, TR::IlValue *v, const char *s);
+   void binaryOp(const TR::IlValue *returnValue, const TR::IlValue *left, const TR::IlValue *right, const char *s);
+   void unaryOp(TR::IlValue *returnValue, TR::IlValue *v, const char *s);
 
-   /**
-    * @brief each IlBuilder object is like a mini-CFG, with its own unique exit block
-    */
-   TR::Block                   * _exitBlock;
-
-   /**
-    * @brief counter for how many TR::Blocks are needed to represent everything inside this IlBuilder object
-    */
-   int32_t                       _count;
-
-   /**
-    * @brief has this IlBuilder object been made part of some other builder's sequence
-    */
-   bool                          _partOfSequence;
-
-   /**
-    * @brief has connectTrees been run on this IlBuilder object yet
-    */
-   bool                          _connectedTrees;
-
-   /**
-    * @brief returns true if there is a control edge to this IlBuilder's exit block
-    */
-   bool                          _comesBack;
-
-   /**
-    * @brief returns true if this IlBuilder object is a handler for an exception edge
-    */
-   bool                          _isHandler;
-
-   TR::IlBuilder *self();
-
-   virtual bool buildIL() { return true; }
-
-   TR_HeapMemory trHeapMemory();
-
-   TR::SymbolReference *lookupSymbol(const char *name);
-   void defineSymbol(const char *name, TR::SymbolReference *v);
-   TR::IlValue *newValue(TR::IlType *dt, TR::Node *n=NULL);
-   TR::IlValue *newValue(TR::DataType dt, TR::Node *n=NULL);
-   void closeValue(TR::IlValue *v, TR::IlType *dt, TR::Node *n);
-   void closeValue(TR::IlValue *v, TR::DataType dt, TR::Node *n);
-   void defineValue(const char *name, TR::IlType *dt);
-
-   TR::Node *loadValue(TR::IlValue *v);
-   void storeNode(TR::SymbolReference *symRef, TR::Node *v);
-   void indirectStoreNode(TR::Node *addr, TR::Node *v);
-   TR::IlValue *indirectLoadNode(TR::IlType *dt, TR::Node *addr, bool isVectorLoad=false);
-
-   TR::Node *zero(TR::DataType dt);
-   TR::Node *zero(TR::IlType *dt);
-   TR::Node *zeroNodeForValue(TR::IlValue *v);
-   TR::IlValue *zeroForValue(TR::IlValue *v);
-
-   TR::IlValue *unaryOp(TR::ILOpCodes op, TR::IlValue *v);
-   void doVectorConversions(TR::Node **leftPtr, TR::Node **rightPtr);
-   TR::IlValue *widenIntegerTo32Bits(TR::IlValue *v);
-
-   void binaryOpFromNodes(TR::ILOpCodes op, TR::IlValue *returnValue, TR::Node *leftNode, TR::Node *rightNode);
-   TR::IlValue *binaryOpFromNodes(TR::ILOpCodes op, TR::Node *leftNode, TR::Node *rightNode);
-   TR::Node *binaryOpNodeFromNodes(TR::ILOpCodes op, TR::Node *leftNode, TR::Node *rightNode);
-   void binaryOpFromOpMap(OpCodeMapper mapOp, TR::IlValue *returnValue, TR::IlValue *left, TR::IlValue *right);
-   TR::IlValue *binaryOpFromOpMap(OpCodeMapper mapOp, TR::IlValue *left, TR::IlValue *right);
-   void binaryOpFromOpCode(TR::ILOpCodes op, TR::IlValue *returnValue, TR::IlValue *left, TR::IlValue *right);
-   TR::IlValue *binaryOpFromOpCode(TR::ILOpCodes op, TR::IlValue *left, TR::IlValue *right);
-   TR::Node *shiftOpNodeFromNodes(TR::ILOpCodes op, TR::Node *leftNode, TR::Node *rightNode);
-   TR::IlValue *shiftOpFromNodes(TR::ILOpCodes op, TR::Node *leftNode, TR::Node *rightNode);
-   TR::IlValue *shiftOpFromOpMap(OpCodeMapper mapOp, TR::IlValue *left, TR::IlValue *right);
-
-   TR::IlValue *compareOp(TR_ComparisonTypes ct, bool needUnsigned, TR::IlValue *left, TR::IlValue *right);
-   void compareOp(TR_ComparisonTypes ct, bool needUnsigned, TR::IlValue *returnValue, TR::IlValue *left, TR::IlValue *right);
-
-   void convertTo(TR::IlValue *convertedValue, TR::IlType *t, TR::IlValue *v, bool needUnsigned);
-
-   void ifCmpCondition(TR_ComparisonTypes ct, bool isUnsignedCmp, TR::IlValue *left, TR::IlValue *right, TR::Block *target);
-   void ifCmpNotEqualZero(TR::IlValue *condition, TR::Block *target);
-   void ifCmpEqualZero(TR::IlValue *condition, TR::Block *target);
-
-   void integerizeAddresses(TR::IlValue **leftPtr, TR::IlValue **rightPtr);
-
-   void appendGoto(TR::Block *destBlock);
-
-   virtual void appendBlock(TR::Block *block = 0, bool addEdge=true);
-   void appendNoFallThroughBlock(TR::Block *block = 0)
-      {
-      appendBlock(block, false);
-      }
-
-   TR::Block *emptyBlock();
-   
-   virtual uint32_t countBlocks();
-
-   void pullInBuilderTrees(TR::IlBuilder *builder,
-                           uint32_t *currentBlock,
-                           TR::TreeTop **firstTree,
-                           TR::TreeTop **newLastTree);
-
-   // BytecodeBuilder needs this interface, but IlBuilders doesn't so just ignore the parameter
-   virtual bool connectTrees(uint32_t *currentBlock) { return connectTrees(); }
-
-   virtual bool connectTrees();
-
-   TR::Node *genOverflowCHKTreeTop(TR::Node *operationNode, TR::ILOpCodes overflow);
-   TR::ILOpCodes getOpCode(TR::IlValue *leftValue, TR::IlValue *rightValue);
-   void appendExceptionHandler(TR::Block *blockThrowsException, TR::IlBuilder **builder, uint32_t catchType);
-   TR::IlValue *genOperationWithOverflowCHK(TR::ILOpCodes op, TR::Node *leftNode, TR::Node *rightNode, TR::IlBuilder **handler, TR::ILOpCodes overflow);
-   virtual void setHandlerInfo(uint32_t catchType);
-   TR::IlValue **processCallArgs(TR::Compilation *comp, int numArgs, va_list args);
+   TR::JitBuilderRecorder *recorder() const;
+   TR::JitBuilderRecorder *clearRecorder();
+   void restoreRecorder(TR::JitBuilderRecorder *recorder);
    };
 
 } // namespace OMR
 
 
 
-#if defined(PUT_OMR_ILBUILDER_INTO_TR)
+#if defined(PUT_OMR_ILBUILDERRECORDER_INTO_TR)
 
 namespace TR
 {
-   class IlBuilder : public OMR::IlBuilder
+   class IlBuilderRecorder : public OMR::IlBuilderRecorder
       {
       public:
-         IlBuilder(TR::MethodBuilder *methodBuilder, TR::TypeDictionary *types)
-            : OMR::IlBuilder(methodBuilder, types)
+         IlBuilderRecorder(TR::MethodBuilder *methodBuilder, TR::TypeDictionary *types)
+            : OMR::IlBuilderRecorder(methodBuilder, types)
             { }
 
-         IlBuilder(TR::IlBuilder *source)
-            : OMR::IlBuilder(source)
+         IlBuilderRecorder(TR::IlBuilder *source)
+            : OMR::IlBuilderRecorder(source)
             { }
       };
 
 } // namespace TR
 
-#endif // defined(PUT_OMR_ILBUILDER_INTO_TR)
+#endif // defined(PUT_OMR_ILBUILDERRECORDER_INTO_TR)
 
-#endif // !defined(OMR_ILBUILDER_INCL)
+#endif // !defined(OMR_ILBUILDERRECORDER_INCL)

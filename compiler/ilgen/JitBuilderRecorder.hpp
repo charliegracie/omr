@@ -31,7 +31,7 @@
 #include <fstream>
 #include <map>
 
-namespace TR { class IlBuilder; }
+namespace TR { class IlBuilderRecorder; }
 namespace TR { class MethodBuilderRecorder; }
 namespace TR { class IlType; }
 namespace TR { class IlValue; }
@@ -69,10 +69,10 @@ class JitBuilderRecorder
    virtual void Statement(const char *s)                      { }
    virtual void Type(const TR::IlType *type)                  { }
    virtual void Value(const TR::IlValue *v)                   { }
-   virtual void Builder(const TR::IlBuilder *b)               { }
+   virtual void Builder(const TR::IlBuilderRecorder *b)       { }
    virtual void Location(const void * location)               { }
 
-   virtual void BeginStatement(const TR::IlBuilder *b, const char *s);
+   virtual void BeginStatement(const TR::IlBuilderRecorder *b, const char *s);
    virtual void BeginStatement(const char *s);
    virtual void EndStatement()                                { }
 
