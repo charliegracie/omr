@@ -35,6 +35,7 @@ namespace TR { class Block; }
 namespace TR { class Symbol; }
 namespace TR { class SymbolReference; }
 namespace TR { class MethodBuilder; }
+namespace TR { class MethodBuilderRecorder; }
 namespace TR { class IlValue; }
 
 namespace OMR
@@ -46,9 +47,19 @@ public:
    TR_ALLOC(TR_Memory::IlGenerator)
 
    /**
+    * @brief used to create a TR::IlValue before nodes, treetops, or blocks can be associated
+    */
+   IlValue(TR::MethodBuilderRecorder *methodBuilder);
+
+   /**
     * @brief initial state assumes value will only be used locally
     */
-   IlValue(TR::Node *node, TR::TreeTop *treeTop, TR::Block *block, TR::MethodBuilder *methodBuilder);
+   IlValue(TR::Node *node, TR::TreeTop *treeTop, TR::Block *block, TR::MethodBuilderRecorder *methodBuilder);
+
+   /**
+    * @brief fill in details if IlValue was created without values
+    */
+   void close(TR::Node *node, TR::TreeTop *treeTop, TR::Block *block);
 
    /**
     * @brief return a TR::Node that computes this value, either directly if in same block or by loading a local variable if not
@@ -98,27 +109,27 @@ private:
    /**
     * @brief identifying number for values guaranteed to be unique per MethodBuilder
     */
-   int32_t               _id;
+   int32_t _id;
 
    /**
     * @brief TR::Node pointer that computes the actual value
     */
-   TR::Node            * _nodeThatComputesValue;
+   TR::Node * _nodeThatComputesValue;
 
    /**
     * @brief TR::TreeTop that anchors this node (though not necessarily directly)
     */
-   TR::TreeTop         * _treeTopThatAnchorsValue;
+   TR::TreeTop * _treeTopThatAnchorsValue;
 
    /**
     * @brief TR::Block where the value is computed
     */
-   TR::Block           * _blockThatComputesValue;
+   TR::Block * _blockThatComputesValue;
 
    /**
     * @brief Method builder object where value is computed
     */
-   TR::MethodBuilder   * _methodBuilder;
+   TR::MethodBuilderRecorder * _methodBuilder;
 
    /**
     * @brief TR::SymbolReference for temp holding value if it needs to be used outside basic block that computes it
@@ -137,7 +148,10 @@ namespace TR
    class IlValue : public OMR::IlValue
       {
       public:
-         IlValue(TR::Node *node, TR::TreeTop *treeTop, TR::Block *block, TR::MethodBuilder *methodBuilder)
+         IlValue(TR::MethodBuilderRecorder *methodBuilder)
+            : OMR::IlValue(methodBuilder)
+            { }
+         IlValue(TR::Node *node, TR::TreeTop *treeTop, TR::Block *block, TR::MethodBuilderRecorder *methodBuilder)
             : OMR::IlValue(node, treeTop, block, methodBuilder)
             { }
       };

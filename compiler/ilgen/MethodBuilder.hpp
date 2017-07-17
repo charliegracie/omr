@@ -32,16 +32,18 @@
 #include <map>
 #include <set>
 #include <fstream>
-#include "ilgen/IlBuilder.hpp"
 #include "env/TypedAllocator.hpp"
+#include "ilgen/MethodBuilderRecorder.hpp"
 
 // Maximum length of _definingLine string (including null terminator)
 #define MAX_LINE_NUM_LEN 7
 
 class TR_BitVector;
+namespace TR { class IlBuilder; }
 namespace TR { class BytecodeBuilder; }
 namespace TR { class ResolvedMethod; }
 namespace TR { class SymbolReference; }
+namespace TR { class JitBuilderRecorder; }
 namespace OMR { class VirtualMachineState; }
 
 namespace TR { class SegmentProvider; }
@@ -51,12 +53,12 @@ class TR_Memory;
 namespace OMR
 {
 
-class MethodBuilder : public TR::IlBuilder
+class MethodBuilder : public TR::MethodBuilderRecorder
    {
    public:
    TR_ALLOC(TR_Memory::IlGenerator)
 
-   MethodBuilder(TR::TypeDictionary *types, OMR::VirtualMachineState *vmState = NULL);
+   MethodBuilder(TR::TypeDictionary *types, TR::JitBuilderRecorder *recorder, OMR::VirtualMachineState *vmState);
    MethodBuilder(const MethodBuilder &src);
    virtual ~MethodBuilder();
 
@@ -64,28 +66,16 @@ class MethodBuilder : public TR::IlBuilder
 
    virtual bool injectIL();
 
-   int32_t getNextValueID()                                  { return _nextValueID++; }
-
-   bool usesBytecodeBuilders()                               { return _useBytecodeBuilders; }
-   void setUseBytecodeBuilders()                             { _useBytecodeBuilders = true; }
-
-   void addToAllBytecodeBuildersList(TR::BytecodeBuilder *bcBuilder);
    void addToTreeConnectingWorklist(TR::BytecodeBuilder *builder);
    void addToBlockCountingWorklist(TR::BytecodeBuilder *builder);
 
-   OMR::VirtualMachineState *vmState()                       { return _vmState; }
-   void setVMState(OMR::VirtualMachineState *vmState)        { _vmState = vmState; }
-
    virtual bool isMethodBuilder()                            { return true; }
-   virtual TR::MethodBuilder *asMethodBuilder();
-
-   TR::TypeDictionary *typeDictionary()                      { return _types; }
 
    const char *getDefiningFile()                             { return _definingFile; }
    const char *getDefiningLine()                             { return _definingLine; }
 
    const char *getMethodName()                               { return _methodName; }
-   void AllLocalsHaveBeenDefined()                           { _newSymbolsAreTemps = true; }
+   void AllLocalsHaveBeenDefined();
 
    TR::IlType *getReturnType()                               { return _returnType; }
    int32_t getNumParameters()                                { return _numParameters; }
@@ -107,19 +97,14 @@ class MethodBuilder : public TR::IlBuilder
 
    TR::BytecodeBuilder *OrphanBytecodeBuilder(int32_t bcIndex=0, char *name=NULL);
 
-   void AppendBuilder(TR::BytecodeBuilder *bb);
-   void AppendBuilder(TR::IlBuilder *b)    { this->OMR::IlBuilder::AppendBuilder(b); }
+   // we can't use "using" on all platforms yet, so help out the compiler overloading explicitly
+   void AppendBuilder(TR::IlBuilder *b)                     { TR::MethodBuilderRecorder::AppendBuilder(b); }
+   void AppendBuilder(TR::BytecodeBuilder *bcb)             { TR::MethodBuilderRecorder::AppendBuilder(bcb); }
 
-   void DefineFile(const char *file)                         { _definingFile = file; }
+   void DefineFile(const char *file);
 
-   void DefineLine(const char *line)
-      {
-      snprintf(_definingLine, MAX_LINE_NUM_LEN * sizeof(char), "%s", line);
-      }
-   void DefineLine(int line)
-      {
-      snprintf(_definingLine, MAX_LINE_NUM_LEN * sizeof(char), "%d", line);
-      }
+   void DefineLine(const char *line);
+   void DefineLine(int32_t line);
 
    void DefineName(const char *name);
    void DefineParameter(const char *name, TR::IlType *type);
@@ -150,33 +135,12 @@ class MethodBuilder : public TR::IlBuilder
     */
    virtual bool RequestFunction(const char *name) { return false; }
 
-   /**
-    * @brief append the first bytecode builder object to this method
-    * @param builder the bytecode builder object to add, usually for bytecode index 0
-    * A side effect of this call is that the builder is added to the worklist so that
-    * all other bytecodes can be processed by asking for GetNextBytecodeFromWorklist()
-    */
-   void AppendBytecodeBuilder(TR::BytecodeBuilder *builder);
+   void addToAllBytecodeBuildersList(TR::BytecodeBuilder* bcBuilder);
 
-   /**
-    * @brief add a bytecode builder to the worklist
-    * @param bcBuilder is the bytecode builder whose bytecode index will be added to the worklist
-    */
-   void addBytecodeBuilderToWorklist(TR::BytecodeBuilder* bcBuilder);
-
-   /**
-    * @brief get lowest index bytecode from the worklist
-    * @returns lowest bytecode index or -1 if worklist is empty
-    * It is important to use the worklist because it guarantees no bytecode will be
-    * processed before at least one predecessor bytecode has been processed, which
-    * means there should be a non-NULL VirtualMachineState object on the associated
-    * BytecodeBuilder object.
-    */
-   int32_t GetNextBytecodeFromWorklist();
-   
    protected:
    virtual uint32_t countBlocks();
    virtual bool connectTrees();
+   TR::MethodBuilder *self();
 
    private:
    TR::SegmentProvider *_segmentProvider;
@@ -228,17 +192,12 @@ class MethodBuilder : public TR::IlBuilder
    TR::IlType                * _cachedParameterTypesArray[10];
 
    bool                        _newSymbolsAreTemps;
-   int32_t                     _nextValueID;
 
-   bool                        _useBytecodeBuilders;
+   List<TR::BytecodeBuilder> * _allBytecodeBuilders;
+
    uint32_t                    _numBlocksBeforeWorklist;
    List<TR::BytecodeBuilder> * _countBlocksWorklist;
    List<TR::BytecodeBuilder> * _connectTreesWorklist;
-   List<TR::BytecodeBuilder> * _allBytecodeBuilders;
-   OMR::VirtualMachineState  * _vmState;
-
-   TR_BitVector              * _bytecodeWorklist;
-   TR_BitVector              * _bytecodeHasBeenInWorklist;
    };
 
 } // namespace OMR
@@ -251,11 +210,8 @@ namespace TR
    class MethodBuilder : public OMR::MethodBuilder
       {
       public:
-         MethodBuilder(TR::TypeDictionary *types)
-            : OMR::MethodBuilder(types)
-            { }
-         MethodBuilder(TR::TypeDictionary *types, OMR::VirtualMachineState *vmState)
-            : OMR::MethodBuilder(types, vmState)
+         MethodBuilder(TR::TypeDictionary *types, TR::JitBuilderRecorder *recorder=NULL, OMR::VirtualMachineState *vmState=NULL)
+            : OMR::MethodBuilder(types, recorder, vmState)
             { }
       };
 

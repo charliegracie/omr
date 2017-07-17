@@ -32,7 +32,7 @@
 #include <map>
 
 namespace TR { class IlBuilder; }
-namespace TR { class MethodBuilder; }
+namespace TR { class MethodBuilderRecorder; }
 namespace TR { class IlType; }
 namespace TR { class IlValue; }
 
@@ -51,7 +51,7 @@ class JitBuilderRecorder
    typedef uint32_t                      TypeID;
    typedef std::map<const void *,TypeID> TypeMapID;
 
-   JitBuilderRecorder(const TR::MethodBuilder *mb);
+   JitBuilderRecorder(const TR::MethodBuilderRecorder *mb);
    virtual ~JitBuilderRecorder();
 
    /**
@@ -157,7 +157,7 @@ class JitBuilderRecorder
    TypeID getNewID();
    TypeID myID();
 
-   const TR::MethodBuilder         * _mb;
+   const TR::MethodBuilderRecorder * _mb;
    TypeID                            _nextID;
    TypeMapID                         _idMap;
    uint8_t                           _idSize;
@@ -173,7 +173,7 @@ namespace TR
    class JitBuilderRecorder : public OMR::JitBuilderRecorder
       {
       public:
-         JitBuilderRecorder(const TR::MethodBuilder *mb)
+         JitBuilderRecorder(const TR::MethodBuilderRecorder *mb)
             : OMR::JitBuilderRecorder(mb)
             { }
          virtual ~JitBuilderRecorder()

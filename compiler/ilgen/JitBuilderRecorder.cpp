@@ -22,10 +22,10 @@
 
 #include "infra/Assert.hpp"
 #include "ilgen/JitBuilderRecorder.hpp"
-#include "ilgen/MethodBuilder.hpp"
+#include "ilgen/MethodBuilderRecorder.hpp"
 
 
-OMR::JitBuilderRecorder::JitBuilderRecorder(const TR::MethodBuilder *mb)
+OMR::JitBuilderRecorder::JitBuilderRecorder(const TR::MethodBuilderRecorder *mb)
    : _mb(mb), _nextID(0), _idSize(8)
    {
    }
