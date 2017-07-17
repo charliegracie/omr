@@ -123,6 +123,15 @@ $(RELEASE_INCLUDE)/$(JIT_OMR_DIRTY_DIR)/ilgen/TypeDictionary.hpp: $(FIXED_SRCBAS
 $(RELEASE_INCLUDE)/$(JIT_OMR_DIRTY_DIR)/ilgen/JitBuilderRecorder.hpp: $(FIXED_SRCBASE)/$(JIT_OMR_DIRTY_DIR)/ilgen/JitBuilderRecorder.hpp $(RELEASE_INCLUDE)/$(JIT_OMR_DIRTY_DIR)/ilgen
 	cp $< $@ || cp $< $@
 
+$(RELEASE_INCLUDE)/$(JIT_OMR_DIRTY_DIR)/ilgen/JitBuilderRecorderBinaryBuffer.hpp: $(FIXED_SRCBASE)/$(JIT_OMR_DIRTY_DIR)/ilgen/JitBuilderRecorderBinaryBuffer.hpp $(RELEASE_INCLUDE)/$(JIT_OMR_DIRTY_DIR)/ilgen
+	cp $< $@ || cp $< $@
+
+$(RELEASE_INCLUDE)/$(JIT_OMR_DIRTY_DIR)/ilgen/JitBuilderRecorderBinaryFile.hpp: $(FIXED_SRCBASE)/$(JIT_OMR_DIRTY_DIR)/ilgen/JitBuilderRecorderBinaryFile.hpp $(RELEASE_INCLUDE)/$(JIT_OMR_DIRTY_DIR)/ilgen
+	cp $< $@ || cp $< $@
+
+$(RELEASE_INCLUDE)/$(JIT_OMR_DIRTY_DIR)/ilgen/JitBuilderRecorderTextFile.hpp: $(FIXED_SRCBASE)/$(JIT_OMR_DIRTY_DIR)/ilgen/JitBuilderRecorderTextFile.hpp $(RELEASE_INCLUDE)/$(JIT_OMR_DIRTY_DIR)/ilgen
+	cp $< $@ || cp $< $@
+
 $(RELEASE_INCLUDE)/$(JIT_OMR_DIRTY_DIR)/ilgen/VirtualMachineState.hpp: $(FIXED_SRCBASE)/$(JIT_OMR_DIRTY_DIR)/ilgen/VirtualMachineState.hpp $(RELEASE_INCLUDE)/$(JIT_OMR_DIRTY_DIR)/ilgen
 	cp $< $@ || cp $< $@
 
@@ -160,6 +169,9 @@ JITBUILDER_FILES=$(RELEASE_DIR)/Makefile \
              $(RELEASE_INCLUDE)/$(JIT_OMR_DIRTY_DIR)/ilgen/IlValue.hpp \
              $(RELEASE_INCLUDE)/$(JIT_OMR_DIRTY_DIR)/ilgen/IlInjector.hpp \
              $(RELEASE_INCLUDE)/$(JIT_OMR_DIRTY_DIR)/ilgen/JitBuilderRecorder.hpp \
+             $(RELEASE_INCLUDE)/$(JIT_OMR_DIRTY_DIR)/ilgen/JitBuilderRecorderBinaryBuffer.hpp \
+             $(RELEASE_INCLUDE)/$(JIT_OMR_DIRTY_DIR)/ilgen/JitBuilderRecorderBinaryFile.hpp \
+             $(RELEASE_INCLUDE)/$(JIT_OMR_DIRTY_DIR)/ilgen/JitBuilderRecorderTextFile.hpp \
              $(RELEASE_INCLUDE)/$(JIT_OMR_DIRTY_DIR)/ilgen/IlBuilderRecorder.hpp \
              $(RELEASE_INCLUDE)/$(JIT_OMR_DIRTY_DIR)/ilgen/IlBuilder.hpp \
              $(RELEASE_INCLUDE)/$(JIT_OMR_DIRTY_DIR)/ilgen/MethodBuilderRecorder.hpp \
