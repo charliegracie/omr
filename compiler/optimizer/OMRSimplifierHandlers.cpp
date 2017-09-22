@@ -6649,6 +6649,258 @@ TR::Node *daddSimplifier(TR::Node * node, TR::Block * block, TR::Simplifier * s)
 
    if (isOperationFPCompliant(node, firstChild, s)) firstChild->setIsFPStrictCompliant(true);
    if (isOperationFPCompliant(node, secondChild, s))secondChild->setIsFPStrictCompliant(true);
+
+   static const char * enableDaddSimplifierCommon = feGetEnv("TR_EnableDaddSimplifierCommon");
+   if (NULL != enableDaddSimplifierCommon)
+      return addSimplifierCommon(node, block, s);
+
+   // START of code copied from addSimplifierCommon
+   static const char * enableDaddSimplifierCommonInline = feGetEnv("TR_EnableDaddSimplifierCommonInline");
+
+   if ((NULL != enableDaddSimplifierCommonInline) && node->getOpCode().isAdd())
+      {
+      TR_RegionStructure * region = s->containingStructure();
+      firstChild = node->getFirstChild();
+      secondChild = node->getSecondChild();
+
+      // R9:    +              +
+      //       / \            / \
+      //      +-  c2    =>   t   +-
+      //     / \                / \
+      //    t   c1             c2 c1
+      if ((firstChild->getOpCode().isAdd() ||
+           firstChild->getOpCode().isSub()) &&
+          ((!isExprInvariant(region, firstChild->getFirstChild()) &&
+          isExprInvariant(region, firstChild->getSecondChild()) &&
+     isExprInvariant(region, secondChild))  ||
+          (!firstChild->getFirstChild()->getOpCode().isLoadConst() &&
+          firstChild->getSecondChild()->getOpCode().isLoadConst() &&
+     secondChild->getOpCode().isLoadConst())) &&
+
+     !(firstChild->getReferenceCount() > 1 &&
+          secondChild->getOpCode().isLoadConst() &&
+          !s->comp()->cg()->isMaterialized(secondChild))
+          )
+         {
+         if (performTransformation(s->comp(), "%sApplied reassociation rule 9 to node 0x%p\n", s->optDetailString(), node))
+            {
+            TR::Node * newSecondChild = TR::Node::create(secondChild,
+                                       firstChild->getOpCode().isAdd() ?
+                                          addOps[secondChild->getDataType()] :
+                                          subOps[secondChild->getDataType()], 2);
+
+            TR::Node * c1 = firstChild->getSecondChild();
+            if (c1->getDataType() !=
+                secondChild->getDataType())
+               {
+               TR::ILOpCodes conversionOpCode = TR::ILOpCode::getProperConversion(c1->getDataType(), secondChild->getDataType(), false /* !wantZeroExtension */);
+
+               c1 = TR::Node::create(conversionOpCode, 1, c1);
+               }
+            newSecondChild->setAndIncChild(0, secondChild);
+            newSecondChild->setAndIncChild(1, c1);
+
+            node->setAndIncChild(0, firstChild->getFirstChild());
+            node->setAndIncChild(1, newSecondChild);
+            firstChild->recursivelyDecReferenceCount();
+            secondChild->recursivelyDecReferenceCount();
+
+            setExprInvariant(region, newSecondChild);
+            node->setVisitCount(0);
+            node = s->simplify(node, block);
+            }
+         }
+
+      // R9_1:
+      //        +              +
+      //       / \            / \
+      //      c1  +    =>    +   t
+      //         / \        / \
+      //        t   c2     c1 c2
+      else if (isExprInvariant(region, firstChild) &&
+               secondChild->getOpCode().isAdd() &&
+               !isExprInvariant(region, secondChild->getFirstChild()) &&
+               isExprInvariant(region, secondChild->getSecondChild()) &&
+               !isSmallConstant(secondChild->getSecondChild(), s))
+         {
+         if (performTransformation(s->comp(), "%sApplied reassociation rule 9_1 to node 0x%p\n", s->optDetailString(), node))
+            {
+            TR::Node * newFirstChild = TR::Node::create(firstChild, node->getOpCodeValue(), 2);
+            newFirstChild->setAndIncChild(0, firstChild);
+            newFirstChild->setAndIncChild(1, secondChild->getSecondChild());
+
+            node->setAndIncChild(0, newFirstChild);
+            node->setAndIncChild(1, secondChild->getFirstChild());
+            firstChild->recursivelyDecReferenceCount();
+            secondChild->recursivelyDecReferenceCount();
+
+            setExprInvariant(region, newFirstChild);
+            }
+         }
+      // R9_1_1:
+      //        +              +
+      //       / \            / \
+      //      +  t2     =>   c   +
+      //     / \                / \
+      //    c  t1              t1 t2
+      else if (firstChild->getOpCode().isAdd() &&
+               isExprInvariant(region, firstChild->getFirstChild()) &&
+               !isExprInvariant(region, firstChild->getSecondChild()) &&
+               (!isExprInvariant(region, secondChild) ||
+                 (node->getOpCode().isArrayRef() && isSmallConstant(secondChild, s))) &&
+               firstChild->getSecondChild()->getDataType() == secondChild->getDataType())
+         {
+         if (performTransformation(s->comp(), "%sApplied reassociation rule 9_1_1 to node 0x%p\n", s->optDetailString(), node))
+            {
+            TR::Node * newSecondChild = TR::Node::create(secondChild, addOps[secondChild->getDataType()], 2);
+            newSecondChild->setAndIncChild(0, firstChild->getSecondChild());
+            newSecondChild->setAndIncChild(1, secondChild);
+
+            node->setAndIncChild(0, firstChild->getFirstChild());
+            node->setAndIncChild(1, newSecondChild);
+            firstChild->recursivelyDecReferenceCount();
+            secondChild->recursivelyDecReferenceCount();
+            }
+         }
+      // R9_1_2:
+      //        +              -
+      //       / \            / \
+      //      -  c2     =>   +   t
+      //     / \            / \
+      //    c1  t         c1  c2
+      else if (firstChild->getOpCode().isSub() &&
+               firstChild->getFirstChild()->getOpCode().isLoadConst() &&
+               secondChild->getOpCode().isLoadConst() &&
+               firstChild->getFirstChild()->getDataType() == secondChild->getDataType())
+         {
+         if (performTransformation(s->comp(), "%sApplied reassociation rule 9_1_2 to node 0x%p\n", s->optDetailString(), node))
+            {
+            TR::Node * newFirstChild = TR::Node::create(firstChild, node->getOpCodeValue(), 2);
+            newFirstChild->setAndIncChild(0, firstChild->getFirstChild());
+            newFirstChild->setAndIncChild(1, secondChild);
+
+            node->setAndIncChild(0, newFirstChild);
+            node->setAndIncChild(1, firstChild->getSecondChild());
+            TR::Node::recreate(node, subOps[node->getDataType()]);
+
+            firstChild->recursivelyDecReferenceCount();
+            secondChild->recursivelyDecReferenceCount();
+
+            setExprInvariant(region, newFirstChild);
+            }
+         }
+
+      // R9_1_3:
+      //         +                +               +               -
+      //       /   \            /   \           /   \           /   \
+      //      +     +     =>   +     +         -     -    =>   +     +
+      //     / \   / \        / \   / \       / \   / \       / \   / \
+      //    t1  c1 t2 c2     t1 t2  c1 c2    t1 c1 t2 c2     t1 t2 c1 c2
+      else if (!node->getOpCode().isRef() &&
+               firstChild->getOpCodeValue() == secondChild->getOpCodeValue() &&
+               (firstChild->getOpCode().isAdd() || firstChild->getOpCode().isSub()) &&
+               !isExprInvariant(region, firstChild->getFirstChild()) &&
+               !isExprInvariant(region, secondChild->getFirstChild()) &&
+               isExprInvariant(region, firstChild->getSecondChild()) &&
+               isExprInvariant(region, secondChild->getSecondChild()))
+         {
+         if (performTransformation(s->comp(), "%sApplied reassociation rule 9_1_3 to node 0x%p\n", s->optDetailString(), node))
+            {
+            TR::Node * newFirstChild = TR::Node::create(firstChild, node->getOpCodeValue(), 2);
+            newFirstChild->setAndIncChild(0, firstChild->getFirstChild());
+            newFirstChild->setAndIncChild(1, secondChild->getFirstChild());
+
+            TR::Node * newSecondChild = TR::Node::create(secondChild, node->getOpCodeValue(), 2);
+            newSecondChild->setAndIncChild(0, firstChild->getSecondChild());
+            newSecondChild->setAndIncChild(1, secondChild->getSecondChild());
+
+            TR::Node::recreate(node, firstChild->getOpCodeValue());
+            node->setAndIncChild(0, newFirstChild);
+            node->setAndIncChild(1, newSecondChild);
+            firstChild->recursivelyDecReferenceCount();
+            secondChild->recursivelyDecReferenceCount();
+
+            setExprInvariant(region, newSecondChild);
+
+            simplifyChildren(node, block, s);
+            }
+         }
+      // R9_2:
+      //        +              +
+      //       / \            / \
+      //      c1  -    =>    -   t
+      //         / \        / \
+      //        t   c2     c1 c2
+      else if (node->getOpCode().isAdd() &&
+               !node->getOpCode().isArrayRef() &&
+               isExprInvariant(region, firstChild) &&
+               secondChild->getOpCode().isSub() &&
+               firstChild->getDataType() == secondChild->getSecondChild()->getDataType() &&
+               !isExprInvariant(region, secondChild->getFirstChild()) &&
+               isExprInvariant(region, secondChild->getSecondChild()))
+         {
+         if (performTransformation(s->comp(), "%sApplied reassociation rule 9_2 to node 0x%p\n", s->optDetailString(), node))
+            {
+            TR::Node * newFirstChild = TR::Node::create(firstChild,
+                                      subOps[firstChild->getDataType()], 2);
+            newFirstChild->setAndIncChild(0, firstChild);
+            newFirstChild->setAndIncChild(1, secondChild->getSecondChild());
+
+            node->setAndIncChild(0, newFirstChild);
+            node->setAndIncChild(1, secondChild->getFirstChild());
+            firstChild->recursivelyDecReferenceCount();
+            secondChild->recursivelyDecReferenceCount();
+
+            setExprInvariant(region, newFirstChild);
+            }
+         }
+
+      // R9_3:
+      //       aiadd          aiadd
+      //       /  \            /  \
+      //      c1  isub  =>  aiadd  t
+      //          / \        / \
+      //         t   c2     c1 ineg
+      //                         \
+      //                          c2
+      else if (node->getOpCode().isArrayRef() &&
+               isExprInvariant(region, firstChild) &&
+               secondChild->getOpCode().isSub() &&
+               !secondChild->getFirstChild()->getOpCode().isRef() && // can't move ref to the RHS
+
+          (!isExprInvariant(region, secondChild->getFirstChild()) ||
+                isSmallConstant(secondChild->getFirstChild(), s)) && // better address expression
+
+               isExprInvariant(region, secondChild->getSecondChild()) &&
+               !isSmallConstant(secondChild->getSecondChild(), s))
+         {
+         if (performTransformation(s->comp(), "%sApplied reassociation rule 9_3 to node 0x%p\n", s->optDetailString(), node))
+            {
+            TR::Node * newFirstChild = TR::Node::create(firstChild, node->getOpCodeValue(), 2);
+            TR::Node * newNeg = TR::Node::create(secondChild->getSecondChild(),
+                               negOps[secondChild->getSecondChild()->getDataType()], 1);
+            TR::Node * zero = TR::Node::create(secondChild->getSecondChild(),
+                              constOps[secondChild->getSecondChild()->getDataType()], 0);
+            zero->set64bitIntegralValue(0);
+
+            newNeg->setAndIncChild(0, secondChild->getSecondChild());
+            newNeg = s->simplify(newNeg, block);
+
+            newFirstChild->setAndIncChild(0, firstChild);
+            newFirstChild->setAndIncChild(1, newNeg);
+            newFirstChild->setIsInternalPointer(node->isInternalPointer());
+
+            node->setAndIncChild(0, newFirstChild);
+            node->setAndIncChild(1, secondChild->getFirstChild());
+            firstChild->recursivelyDecReferenceCount();
+            secondChild->recursivelyDecReferenceCount();
+
+            setExprInvariant(region, newFirstChild);
+            }
+         }
+      }
+   // END of code copied from addSimplifierCommon
+
    return node;
    }
 

@@ -41,6 +41,8 @@ ALL_TESTS = \
             iterfib \
             linkedlist \
             localarray \
+            mandelbrot \
+            mathperf \
             nestedloop \
             operandarraytests \
             operandstacktests \
@@ -65,6 +67,8 @@ common_goal: $(ALL_TESTS)
 	./conditionals
 	./issupportedtype
 	./iterfib
+	./mathperf
+	./mandelbrot
 	./nestedloop
 	./pow2
 	./simple
@@ -192,6 +196,11 @@ mandelbrot : libjitbuilder.a Mandelbrot.o
 Mandelbrot.o: src/Mandelbrot.cpp src/Mandelbrot.hpp
 	$(CXX) -o $@ $(CXXFLAGS) $<
 
+mathperf : libjitbuilder.a MathPerf.o
+	$(CXX) -g -fno-rtti -o $@ MathPerf.o -L. -ljitbuilder -ldl
+
+MathPerf.o: src/MathPerf.cpp src/MathPerf.hpp
+	$(CXX) -o $@ $(CXXFLAGS) $<
 
 matmult : libjitbuilder.a MatMult.o
 	$(CXX) -g -fno-rtti -o $@ MatMult.o -L. -ljitbuilder -ldl
