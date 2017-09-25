@@ -44,20 +44,20 @@ extern "C" {
 /**
  * Hash table flags
  */
-#define J9HASH_TABLE_DO_NOT_GROW	0x00000001	/*!< Do not grow & rehash the table while set */
-#define J9HASH_TABLE_COLLISION_RESILIENT	0x00000002	/*!< Use hash table using avl trees for collision resolution instead of lists */
-#define J9HASH_TABLE_ALLOCATE_ELEMENTS_USING_MALLOC32	0x00000004	/*!< Allocate table elements using the malloc32 function */
-#define J9HASH_TABLE_ALLOW_SIZE_OPTIMIZATION	0x00000008	/*!< Allow space optimized hashTable, some functions not supported */
-#define J9HASH_TABLE_DO_NOT_REHASH	0x00000010	/*!< Do not rehash the table while set */
+#define OMRHASH_TABLE_DO_NOT_GROW	0x00000001	/*!< Do not grow & rehash the table while set */
+#define OMRHASH_TABLE_COLLISION_RESILIENT	0x00000002	/*!< Use hash table using avl trees for collision resolution instead of lists */
+#define OMRHASH_TABLE_ALLOCATE_ELEMENTS_USING_MALLOC32	0x00000004	/*!< Allocate table elements using the malloc32 function */
+#define OMRHASH_TABLE_ALLOW_SIZE_OPTIMIZATION	0x00000008	/*!< Allow space optimized hashTable, some functions not supported */
+#define OMRHASH_TABLE_DO_NOT_REHASH	0x00000010	/*!< Do not rehash the table while set */
 
-#define J9HASH_TABLE_AVL_TREE_TAG_BIT ((uintptr_t)0x00000001) /*!< Bit to indicate that hastable slot contains a pointer to an AVL tree */
+#define OMRHASH_TABLE_AVL_TREE_TAG_BIT ((uintptr_t)0x00000001) /*!< Bit to indicate that hastable slot contains a pointer to an AVL tree */
 
 /**
  * Hash Table state constants for iteration
  */
-#define J9HASH_TABLE_ITERATE_STATE_LIST_NODES 0
-#define J9HASH_TABLE_ITERATE_STATE_TREE_NODES 1
-#define J9HASH_TABLE_ITERATE_STATE_FINISHED  2
+#define OMRHASH_TABLE_ITERATE_STATE_LIST_NODES 0
+#define OMRHASH_TABLE_ITERATE_STATE_TREE_NODES 1
+#define OMRHASH_TABLE_ITERATE_STATE_FINISHED  2
 
 /**
  * Macros for getting at data directly from AVLTreeNodes
@@ -68,8 +68,8 @@ extern "C" {
 /**
  * Hash table flag macros
  */
-#define hashTableCanGrow(table) (((table)->flags & J9HASH_TABLE_DO_NOT_GROW) ? 0 : 1)
-#define hashTableCanRehash(table) (((table)->flags & J9HASH_TABLE_DO_NOT_REHASH) ? 0 : 1)
+#define hashTableCanGrow(table) (((table)->flags & OMRHASH_TABLE_DO_NOT_GROW) ? 0 : 1)
+#define hashTableCanRehash(table) (((table)->flags & OMRHASH_TABLE_DO_NOT_REHASH) ? 0 : 1)
 #define hashTableSetFlag(table,flag) ((table)->flags |= (flag))
 #define hashTableResetFlag(table,flag) ((table)->flags &= ~(flag))
 
@@ -79,14 +79,14 @@ extern "C" {
 #define hashTableIsSpaceOptimized(table) (NULL == table->listNodePool)
 
 
-struct J9HashTable; /* Forward struct declaration */
+struct OMRHashTable; /* Forward struct declaration */
 struct J9AVLTreeNode; /* Forward struct declaration */
-typedef uintptr_t (*J9HashTableHashFn)(void *entry, void *userData);  /* Forward struct declaration */
-typedef uintptr_t (*J9HashTableEqualFn)(void *leftEntry, void *rightEntry, void *userData);  /* Forward struct declaration */
-typedef intptr_t (*J9HashTableComparatorFn)(struct J9AVLTree *tree, struct J9AVLTreeNode *leftNode, struct J9AVLTreeNode *rightNode);  /* Forward struct declaration */
-typedef void (*J9HashTablePrintFn)(OMRPortLibrary *portLibrary, void *entry, void *userData);  /* Forward struct declaration */
-typedef uintptr_t (*J9HashTableDoFn)(void *entry, void *userData);  /* Forward struct declaration */
-typedef struct J9HashTable {
+typedef uintptr_t (*OMRHashTableHashFn)(void *entry, void *userData);  /* Forward struct declaration */
+typedef uintptr_t (*OMRHashTableEqualFn)(void *leftEntry, void *rightEntry, void *userData);  /* Forward struct declaration */
+typedef intptr_t (*OMRHashTableComparatorFn)(struct J9AVLTree *tree, struct J9AVLTreeNode *leftNode, struct J9AVLTreeNode *rightNode);  /* Forward struct declaration */
+typedef void (*OMRHashTablePrintFn)(OMRPortLibrary *portLibrary, void *entry, void *userData);  /* Forward struct declaration */
+typedef uintptr_t (*OMRHashTableDoFn)(void *entry, void *userData);  /* Forward struct declaration */
+typedef struct OMRHashTable {
 	const char *tableName;
 	uint32_t tableSize;
 	uint32_t numberOfNodes;
@@ -109,17 +109,35 @@ typedef struct J9HashTable {
 	struct OMRPortLibrary *portLibrary;
 	void *equalFnUserData;
 	void *hashFnUserData;
-	struct J9HashTable *previous;
-} J9HashTable;
+	struct OMRHashTable *previous;
+} OMRHashTable;
 
-typedef struct J9HashTableState {
-	struct J9HashTable *table;
+typedef struct OMRHashTableState {
+	struct OMRHashTable *table;
 	uint32_t bucketIndex;
 	uint32_t didDeleteCurrentNode;
 	void **pointerToCurrentNode;
 	uintptr_t iterateState;
 	struct J9PoolState poolState;
-} J9HashTableState;
+} OMRHashTableState;
+
+//TODO Remove once all downstream project use OMR namespace instead of J9
+#define J9HashTable OMRHashTable
+#define J9HashTableState OMRHashTableState
+#define J9HashTableComparatorFn OMRHashTableComparatorFn
+#define J9HashTableDoFn OMRHashTableDoFn
+#define J9HashTableEqualFn OMRHashTableEqualFn
+#define J9HashTableHashFn OMRHashTableHashFn
+#define J9HashTablePrintFn OMRHashTablePrintFn
+#define J9HASH_TABLE_DO_NOT_GROW OMRHASH_TABLE_DO_NOT_GROW
+#define J9HASH_TABLE_COLLISION_RESILIENT OMRHASH_TABLE_COLLISION_RESILIENT
+#define J9HASH_TABLE_ALLOCATE_ELEMENTS_USING_MALLOC32 OMRHASH_TABLE_ALLOCATE_ELEMENTS_USING_MALLOC32
+#define J9HASH_TABLE_ALLOW_SIZE_OPTIMIZATION OMRHASH_TABLE_ALLOW_SIZE_OPTIMIZATION
+#define J9HASH_TABLE_DO_NOT_REHASH OMRHASH_TABLE_DO_NOT_REHASH
+#define J9HASH_TABLE_AVL_TREE_TAG_BIT OMRHASH_TABLE_AVL_TREE_TAG_BIT
+#define J9HASH_TABLE_ITERATE_STATE_LIST_NODES OMRHASH_TABLE_ITERATE_STATE_LIST_NODES
+#define J9HASH_TABLE_ITERATE_STATE_TREE_NODES OMRHASH_TABLE_ITERATE_STATE_TREE_NODES
+#define J9HASH_TABLE_ITERATE_STATE_FINISHED OMRHASH_TABLE_ITERATE_STATE_FINISHED
 
 #ifdef __cplusplus
 }

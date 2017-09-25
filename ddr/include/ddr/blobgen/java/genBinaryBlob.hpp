@@ -93,7 +93,7 @@ private:
 		/* Data members */
 	public:
 		BlobHeader header;
-		J9HashTable *stringHash;
+		OMRHashTable *stringHash;
 		uint32_t fieldCount;
 		uint32_t constCount;
 		BlobStruct *blobStructs;
@@ -133,7 +133,7 @@ private:
 	bool _printEmptyTypes;
 
 	void copyStringTable();
-	DDR_RC stringTableOffset(BlobHeader *blobHeader, J9HashTable *stringTable, const char *cString, uint32_t *offset);
+	DDR_RC stringTableOffset(BlobHeader *blobHeader, OMRHashTable *stringTable, const char *cString, uint32_t *offset);
 	DDR_RC enumerateCLimits();
 	DDR_RC addCLimits();
 	DDR_RC countStructsAndStrings(Symbol_IR *const ir);

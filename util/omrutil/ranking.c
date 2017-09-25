@@ -68,7 +68,7 @@ hashFn(void *key, void *userData)
 void
 rankingClear(OMRRanking *ranking)
 {
-	J9HashTableState state;
+	OMRHashTableState state;
 	hashTableEntry *entry;
 	ranking->curSize = 0;
 
@@ -97,7 +97,7 @@ rankingNew(OMRPortLibrary *portLibrary, uint32_t size)
 	if (NULL == newRanking->rankTable) {
 		return NULL;
 	}
-	newRanking->hashTable = hashTableNew(portLibrary, OMR_GET_CALLSITE(), size * HASHTABLE_RATIO, sizeof(hashTableEntry), 0, J9HASH_TABLE_ALLOW_SIZE_OPTIMIZATION, OMRMEM_CATEGORY_VM, hashFn, hashEqualFn, NULL, NULL);
+	newRanking->hashTable = hashTableNew(portLibrary, OMR_GET_CALLSITE(), size * HASHTABLE_RATIO, sizeof(hashTableEntry), 0, OMRHASH_TABLE_ALLOW_SIZE_OPTIMIZATION, OMRMEM_CATEGORY_VM, hashFn, hashEqualFn, NULL, NULL);
 	if (NULL == newRanking->hashTable) {
 		return NULL;
 	}

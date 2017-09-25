@@ -36,7 +36,7 @@ struct OMRRanking {
 	uint32_t curSize;
 	rankTableEntry *rankTable;
 	OMRPortLibrary *portLib;
-	J9HashTable *hashTable;
+	OMRHashTable *hashTable;
 };
 
 /*

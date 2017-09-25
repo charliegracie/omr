@@ -76,7 +76,7 @@ public:
 	{
 		OMR_VM_Example *omrVM = (OMR_VM_Example *)env->getOmrVM()->_language_vm;
 		if (env->_currentTask->synchronizeGCThreadsAndReleaseSingleThread(env, UNIQUE_ID)) {
-			J9HashTableState state;
+			OMRHashTableState state;
 			MM_EnvironmentStandard *envStd = MM_EnvironmentStandard::getEnvironment(env);
 			if (NULL != omrVM->rootTable) {
 				RootEntry *rootEntry = (RootEntry *)hashTableStartDo(omrVM->rootTable, &state);
@@ -109,7 +109,7 @@ public:
 		OMR_VM_Example *omrVM = (OMR_VM_Example *)env->getOmrVM()->_language_vm;
 		if (NULL != omrVM->objectTable) {
 			if (env->_currentTask->synchronizeGCThreadsAndReleaseSingleThread(env, UNIQUE_ID)) {
-				J9HashTableState state;
+				OMRHashTableState state;
 				ObjectEntry *objectEntry = (ObjectEntry *)hashTableStartDo(omrVM->objectTable, &state);
 				while (NULL != objectEntry) {
 					if (_scavenger->isObjectInEvacuateMemory(objectEntry->objPtr)) {

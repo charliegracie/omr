@@ -30,12 +30,12 @@
 #include "Debug.hpp"
 
 /**
- * \brief       Get the next slot of a J9HashTable
+ * \brief       Get the next slot of a OMRHashTable
  * \ingroup     GC_Structs
  *  
  * @return      A slot pointer (NULL when no more slots)
  * 
- *	Continues the interation of all nodes in a J9HashTable
+ *	Continues the interation of all nodes in a OMRHashTable
  *      
  */
 void **
@@ -55,10 +55,10 @@ GC_HashTableIterator::nextSlot()
 }
 
 /**
- * \brief       Remove the current slot in a J9HashTable
+ * \brief       Remove the current slot in a OMRHashTable
  * \ingroup     GC_Structs
  *  
- *	Removes the current slot in a J9HashTable (not valid in Out Of Process) 
+ *	Removes the current slot in a OMRHashTable (not valid in Out Of Process) 
  *      
  */
 void 
@@ -70,7 +70,7 @@ GC_HashTableIterator::removeSlot()
 void
 GC_HashTableIterator::disableTableGrowth()
 {
-	hashTableSetFlag(_hashTable, J9HASH_TABLE_DO_NOT_REHASH);
+	hashTableSetFlag(_hashTable, OMRHASH_TABLE_DO_NOT_REHASH);
 }
 
 /**
@@ -79,5 +79,5 @@ GC_HashTableIterator::disableTableGrowth()
 void
 GC_HashTableIterator::enableTableGrowth()
 {
-	hashTableResetFlag(_hashTable, J9HASH_TABLE_DO_NOT_REHASH);
+	hashTableResetFlag(_hashTable, OMRHASH_TABLE_DO_NOT_REHASH);
 }

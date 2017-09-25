@@ -164,7 +164,7 @@ void
 JavaBlobGenerator::copyStringTable()
 {
 	uint8_t *stringData = _buildInfo.stringBuffer;
-	J9HashTableState state;
+	OMRHashTableState state;
 
 	/* Iterate the table and copy each string to its already-assigned offset */
 	StringTableEntry *entry = (StringTableEntry *)hashTableStartDo(_buildInfo.stringHash, &state);
@@ -188,7 +188,7 @@ JavaBlobGenerator::copyStringTable()
 }
 
 DDR_RC
-JavaBlobGenerator::stringTableOffset(BlobHeader *blobHeader, J9HashTable *stringTable, const char *cString, uint32_t *offset)
+JavaBlobGenerator::stringTableOffset(BlobHeader *blobHeader, OMRHashTable *stringTable, const char *cString, uint32_t *offset)
 {
 	DDR_RC rc = DDR_RC_OK;
 	StringTableEntry exemplar;

@@ -26,7 +26,7 @@
 #include "hashtable_api.h"
 #include "omrport.h"
 /*
- * Testing the following functions of J9HashTable using the J9HASH_TABLE_ALLOW_SIZE_OPTIMIZATION flag:
+ * Testing the following functions of OMRHashTable using the OMRHASH_TABLE_ALLOW_SIZE_OPTIMIZATION flag:
  * 		hashTableAdd()
  * 		hashTableGetCount()
  * 		hashTableFind()
@@ -84,11 +84,11 @@ static uintptr_t dataOffset(uintptr_t startOffset, uintptr_t dataLength, uintptr
 }
 
 static BOOLEAN
-checkHashtableIntegrity(OMRPortLibrary *portLib, J9HashTable *table, const uintptr_t *data, uintptr_t dataLength, uintptr_t removeOffset, uintptr_t i)
+checkHashtableIntegrity(OMRPortLibrary *portLib, OMRHashTable *table, const uintptr_t *data, uintptr_t dataLength, uintptr_t removeOffset, uintptr_t i)
 {
 	uintptr_t count, j;
 	uintptr_t dup[256];
-	J9HashTableState walkState;
+	OMRHashTableState walkState;
 	uintptr_t *next;
 
 	count = hashTableGetCount(table);
@@ -147,7 +147,7 @@ checkHashtableIntegrity(OMRPortLibrary *portLib, J9HashTable *table, const uintp
 }
 
 static int32_t
-runHashtableTests(OMRPortLibrary *portLib, J9HashTable *table, const uintptr_t *data, uintptr_t dataLength, uintptr_t removeOffset)
+runHashtableTests(OMRPortLibrary *portLib, OMRHashTable *table, const uintptr_t *data, uintptr_t dataLength, uintptr_t removeOffset)
 {
 	uintptr_t i = 0;
 	uintptr_t entry = 0;
@@ -193,10 +193,10 @@ runHashtableTests(OMRPortLibrary *portLib, J9HashTable *table, const uintptr_t *
 	return 0;
 }
 
-static J9HashTable *
+static OMRHashTable *
 allocateHashtable(OMRPortLibrary *portLib, HashtableInputData *inputData)
 {
-	J9HashTable *hashtable = NULL;
+	OMRHashTable *hashtable = NULL;
 	const char *tableName = inputData->hashtableName;
 	uint32_t tableSize = 17;
 	uint32_t entrySize = sizeof(uintptr_t);
@@ -221,7 +221,7 @@ allocateHashtable(OMRPortLibrary *portLib, HashtableInputData *inputData)
 				tableSize,
 				entrySize,
 				sizeof(char *),
-				flags | J9HASH_TABLE_ALLOW_SIZE_OPTIMIZATION,
+				flags | OMRHASH_TABLE_ALLOW_SIZE_OPTIMIZATION,
 				OMRMEM_CATEGORY_VM,
 				hashFn,
 				hashEqualFn,
@@ -235,7 +235,7 @@ allocateHashtable(OMRPortLibrary *portLib, HashtableInputData *inputData)
 int32_t
 buildAndVerifyHashtable(OMRPortLibrary *portLib, HashtableInputData *inputData)
 {
-	J9HashTable *table = NULL;
+	OMRHashTable *table = NULL;
 	uintptr_t i = 0;
 	int32_t result = 0;
 

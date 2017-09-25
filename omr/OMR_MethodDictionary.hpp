@@ -37,7 +37,7 @@ public:
 protected:
 private:
 	omrthread_monitor_t _lock;
-	J9HashTable *_hashTable;
+	OMRHashTable *_hashTable;
 	size_t _currentBytes; /* approx current byte size of the hash table */
 	size_t _maxBytes; /* highest # of bytes */
 	uint32_t _maxEntries; /* # of entries in the hash table when _maxBytes was achieved */

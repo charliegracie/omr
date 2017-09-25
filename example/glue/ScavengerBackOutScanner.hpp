@@ -59,7 +59,7 @@ public:
 	void
 	scanAllSlots(MM_EnvironmentBase *env)
 	{
-		J9HashTableState state;
+		OMRHashTableState state;
 		OMR_VM_Example *omrVM = (OMR_VM_Example *)env->getOmrVM()->_language_vm;
 		RootEntry *rootEntry = (RootEntry *)hashTableStartDo(omrVM->rootTable, &state);
 		while (rootEntry != NULL) {

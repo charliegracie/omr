@@ -33,7 +33,7 @@ void
 MM_MarkingDelegate::scanRoots(MM_EnvironmentBase *env)
 {
 	OMR_VM_Example *omrVM = (OMR_VM_Example *)env->getOmrVM()->_language_vm;
-	J9HashTableState state;
+	OMRHashTableState state;
 	RootEntry *rEntry = NULL;
 	rEntry = (RootEntry *)hashTableStartDo(omrVM->rootTable, &state);
 	while (rEntry != NULL) {
@@ -56,7 +56,7 @@ void
 MM_MarkingDelegate::masterCleanupAfterGC(MM_EnvironmentBase *env)
 {
 	OMRPORT_ACCESS_FROM_OMRVM(env->getOmrVM());
-	J9HashTableState state;
+	OMRHashTableState state;
 	ObjectEntry *objEntry = NULL;
 	OMR_VM_Example *omrVM = (OMR_VM_Example *)env->getOmrVM()->_language_vm;
 	objEntry = (ObjectEntry *)hashTableStartDo(omrVM->objectTable, &state);

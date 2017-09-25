@@ -47,7 +47,7 @@ extern "C" {
 * @return void *
 */
 void *
-hashTableAdd(J9HashTable *table, void *entry);
+hashTableAdd(OMRHashTable *table, void *entry);
 
 
 /**
@@ -56,7 +56,7 @@ hashTableAdd(J9HashTable *table, void *entry);
 * @return uintptr_t
 */
 uintptr_t
-hashTableDoRemove(J9HashTableState *handle);
+hashTableDoRemove(OMRHashTableState *handle);
 
 
 /**
@@ -65,7 +65,7 @@ hashTableDoRemove(J9HashTableState *handle);
 * @return void
 */
 void
-hashTableDumpDistribution(J9HashTable *table);
+hashTableDumpDistribution(OMRHashTable *table);
 
 
 /**
@@ -75,7 +75,7 @@ hashTableDumpDistribution(J9HashTable *table);
 * @return void *
 */
 void *
-hashTableFind(J9HashTable *table, void *entry);
+hashTableFind(OMRHashTable *table, void *entry);
 
 
 /**
@@ -86,7 +86,7 @@ hashTableFind(J9HashTable *table, void *entry);
 * @return void
 */
 void
-hashTableForEachDo(J9HashTable *table, J9HashTableDoFn doFn, void *opaque);
+hashTableForEachDo(OMRHashTable *table, OMRHashTableDoFn doFn, void *opaque);
 
 
 /**
@@ -95,7 +95,7 @@ hashTableForEachDo(J9HashTable *table, J9HashTableDoFn doFn, void *opaque);
 * @return void
 */
 void
-hashTableFree(J9HashTable *table);
+hashTableFree(OMRHashTable *table);
 
 
 /**
@@ -104,7 +104,7 @@ hashTableFree(J9HashTable *table);
 * @return uint32_t
 */
 uint32_t
-hashTableGetCount(J9HashTable *table);
+hashTableGetCount(OMRHashTable *table);
 
 
 /**
@@ -118,9 +118,9 @@ hashTableGetCount(J9HashTable *table);
 * @param hashEqualFn
 * @param printFn
 * @param *functionUserData
-* @return J9HashTable *
+* @return OMRHashTable *
 */
-J9HashTable *
+OMRHashTable *
 hashTableNew(
 	OMRPortLibrary *portLibrary,
 	const char *tableName,
@@ -129,9 +129,9 @@ hashTableNew(
 	uint32_t entryAlignment,
 	uint32_t flags,
 	uint32_t memoryCategory,
-	J9HashTableHashFn hashFn,
-	J9HashTableEqualFn hashEqualFn,
-	J9HashTablePrintFn printFn,
+	OMRHashTableHashFn hashFn,
+	OMRHashTableEqualFn hashEqualFn,
+	OMRHashTablePrintFn printFn,
 	void *functionUserData);
 
 /**
@@ -148,7 +148,7 @@ hashTableNew(
 * @param userData  Optional userData ptr to be passed to hashFn and hashEqualFn
 * @return  An initialized hash table
 */
-J9HashTable *
+OMRHashTable *
 collisionResilientHashTableNew(
 	OMRPortLibrary *portLibrary,
 	const char *tableName,
@@ -157,9 +157,9 @@ collisionResilientHashTableNew(
 	uint32_t flags,
 	uint32_t memoryCategory,
 	uint32_t listToTreeThreshold,
-	J9HashTableHashFn hashFn,
-	J9HashTableComparatorFn comparatorFn,
-	J9HashTablePrintFn printFn,
+	OMRHashTableHashFn hashFn,
+	OMRHashTableComparatorFn comparatorFn,
+	OMRHashTablePrintFn printFn,
 	void *functionUserData);
 
 /**
@@ -168,7 +168,7 @@ collisionResilientHashTableNew(
 * @return void  *
 */
 void  *
-hashTableNextDo(J9HashTableState *handle);
+hashTableNextDo(OMRHashTableState *handle);
 
 
 /**
@@ -177,7 +177,7 @@ hashTableNextDo(J9HashTableState *handle);
 * @return void
 */
 void
-hashTableRehash(J9HashTable *table);
+hashTableRehash(OMRHashTable *table);
 
 
 /**
@@ -187,7 +187,7 @@ hashTableRehash(J9HashTable *table);
 * @return uint32_t
 */
 uint32_t
-hashTableRemove(J9HashTable *table, void *entry);
+hashTableRemove(OMRHashTable *table, void *entry);
 
 
 /**
@@ -197,8 +197,7 @@ hashTableRemove(J9HashTable *table, void *entry);
 * @return void *
 */
 void *
-hashTableStartDo(J9HashTable *table,  J9HashTableState *handle);
-
+hashTableStartDo(OMRHashTable *table,  OMRHashTableState *handle);
 
 
 #ifdef __cplusplus

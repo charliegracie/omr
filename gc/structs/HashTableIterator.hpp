@@ -29,7 +29,7 @@
 #include "hashtable_api.h"
 
 /**
- * Iterate over all slots in a J9HashTable.  The hash table is actually backed
+ * Iterate over all slots in a OMRHashTable.  The hash table is actually backed
  * by a pool, and as long as no slots are being deleted (as in the out-of-process
  * case), we can just use the pool iterator.
  * 
@@ -37,12 +37,12 @@
  */
 class GC_HashTableIterator
 {
-	J9HashTable *_hashTable;
-	J9HashTableState _handle;
+	OMRHashTable *_hashTable;
+	OMRHashTableState _handle;
 	bool _firstIteration;	
 
 public:
-	GC_HashTableIterator(J9HashTable *hashTable)
+	GC_HashTableIterator(OMRHashTable *hashTable)
 	{
 		initialize(hashTable);
 	}
@@ -67,7 +67,7 @@ public:
 	 * Reuse this iterator on a different hashTable
 	 */
 	MMINLINE void 
-	initialize(J9HashTable *hashTable)
+	initialize(OMRHashTable *hashTable)
 	{
 		_firstIteration = true;
 		_hashTable = hashTable;

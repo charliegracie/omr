@@ -1858,7 +1858,7 @@ consumeToken(J9StringTokens *tokens, const char *key)
 
 	/* Now let's start querying the hash table for tokens */
 	while (lookupEntry.keyLen) {
-		entry = hashTableFind((J9HashTable *)tokens, &lookupEntry);
+		entry = hashTableFind((OMRHashTable *)tokens, &lookupEntry);
 		if (NULL != entry) {
 			return entry;
 		}
@@ -1955,7 +1955,7 @@ omrstr_set_time_tokens(struct OMRPortLibrary *portLibrary, struct J9StringTokens
 struct J9StringTokens *
 omrstr_create_tokens(struct OMRPortLibrary *portLibrary, int64_t timeMillis)
 {
-	J9HashTable *tokens = NULL;
+	OMRHashTable *tokens = NULL;
 	J9TokenEntry percentEntry;
 
 	percentEntry.key = NULL;
@@ -1989,7 +1989,7 @@ omrstr_create_tokens(struct OMRPortLibrary *portLibrary, int64_t timeMillis)
 	percentEntry.value[0] = '%';
 	percentEntry.value[1] = '\0';
 	percentEntry.valueLen = 1;
-	if (NULL == hashTableAdd((J9HashTable *)tokens, &percentEntry)) {
+	if (NULL == hashTableAdd((OMRHashTable *)tokens, &percentEntry)) {
 		goto fail;
 	}
 
@@ -2094,7 +2094,7 @@ static intptr_t omrstr_set_token_from_buf(struct OMRPortLibrary *portLibrary, st
 
 	entry.key = (char *) key;
 	entry.keyLen = strlen(key);
-	existingEntry = hashTableFind((J9HashTable *)tokens, &entry);
+	existingEntry = hashTableFind((OMRHashTable *)tokens, &entry);
 
 	if (!existingEntry) {
 		if (NULL == (entry.key = (char *)portLibrary->mem_allocate_memory(portLibrary, entry.keyLen + 1, OMR_GET_CALLSITE(), OMRMEM_CATEGORY_PORT_LIBRARY))) {
@@ -2112,7 +2112,7 @@ static intptr_t omrstr_set_token_from_buf(struct OMRPortLibrary *portLibrary, st
 		entry.value[tokenLen] = '\0';
 
 		/* Finally, let's add the token entry to the table */
-		if (NULL == hashTableAdd((J9HashTable *)tokens, &entry)) {
+		if (NULL == hashTableAdd((OMRHashTable *)tokens, &entry)) {
 			portLibrary->mem_free_memory(portLibrary, entry.key);
 			portLibrary->mem_free_memory(portLibrary, entry.value);
 			return -1;
@@ -2239,10 +2239,10 @@ omrstr_free_tokens(struct OMRPortLibrary *portLibrary, struct J9StringTokens *to
 	}
 
 	/* We must first free memory the entries point to (the actual key and value) */
-	hashTableForEachDo((J9HashTable *)tokens, tokenDoFreeFn, portLibrary);
+	hashTableForEachDo((OMRHashTable *)tokens, tokenDoFreeFn, portLibrary);
 
 	/* We can now free the entries and table */
-	hashTableFree((J9HashTable *)tokens);
+	hashTableFree((OMRHashTable *)tokens);
 }
 
 /**

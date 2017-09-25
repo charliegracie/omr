@@ -29,8 +29,8 @@
 typedef struct OMR_VM_Example {
 	OMR_VM *_omrVM;
 	OMR_VMThread *_omrVMThread;
-	J9HashTable *rootTable;
-	J9HashTable *objectTable;
+	OMRHashTable *rootTable;
+	OMRHashTable *objectTable;
 	omrthread_t self;
 	omrthread_rwmutex_t _vmAccessMutex;
 	volatile uintptr_t _vmExclusiveAccessCount;
