@@ -146,7 +146,7 @@ typedef struct OMRPortPlatformGlobals {
 	GetThreadIdealProcessorExType GetThreadIdealProcessorExProc;	/**< Cached pointer to GetThreadIdealProcessorEx function (or NULL if not supported on host OS level) */
 	SetThreadIdealProcessorExType SetThreadIdealProcessorExProc;	/**< Cached pointer to SetThreadIdealProcessorEx function (or NULL if not supported on host OS level) */
 	GetNumaNodeProcessorMaskExType GetNumaNodeProcessorMaskExProc;	/**< Cached pointer to GetNumaNodeProcessorMaskEx function (or NULL if not supported on host OS level) */
-	J9AVLTree bindingTree;	/**< The tree of all tracked NUMA memory extents for all reserved memory extents - Should ideally be moved into VMIdentifier and tracked on a per-extent basis */
+	OMRAVLTree bindingTree;	/**< The tree of all tracked NUMA memory extents for all reserved memory extents - Should ideally be moved into VMIdentifier and tracked on a per-extent basis */
 	J9Pool *bindingPool;	/**< The pool used for allocating the nodes which are stored in the bindingTree */
 	omrthread_monitor_t bindingAccessMonitor;
 	uintptr_t numa_platform_supports_numa;

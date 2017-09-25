@@ -26,7 +26,7 @@
 #include "avl_api.h"                                // for avl_insert, avl_search
 #include "env/TRMemory.hpp"                         // for TR_Memory, etc
 #include "infra/Assert.hpp"                         // for TR_ASSERT
-#include "j9nongenerated.h"                         // for J9AVLTree, etc
+#include "j9nongenerated.h"                         // for OMRAVLTree, etc
 #include "runtime/CodeCache.hpp"                    // for CodeCache, etc
 #include "runtime/CodeCacheMemorySegment.hpp"       // for CodeCacheMemorySegment
 #include "runtime/CodeMetaDataManager.hpp"          // for MetaDataHashTable, etc
@@ -77,19 +77,18 @@ CodeMetaDataManager::initializeCodeMetaDataManager()
 
 // First allocation
 //
-J9AVLTree *
+OMRAVLTree *
 CodeMetaDataManager::allocateMetaDataAVL()
    {
-   J9AVLTree *metaDataAVLTree;
+   OMRAVLTree *metaDataAVLTree;
 
-   metaDataAVLTree = (J9AVLTree *) TR_Memory::jitPersistentAlloc(sizeof(J9AVLTree), TR_Memory::CodeMetaDataAVL);
+   metaDataAVLTree = (OMRAVLTree *) TR_Memory::jitPersistentAlloc(sizeof(OMRAVLTree), TR_Memory::CodeMetaDataAVL);
 
    if (!metaDataAVLTree)
       return NULL;
 
-   metaDataAVLTree->insertionComparator = (intptr_t (*)(J9AVLTree *, J9AVLTreeNode *, J9AVLTreeNode *))OMR::avl_jit_metadata_insertionCompare;
-   metaDataAVLTree->searchComparator = (intptr_t (*)(J9AVLTree *, uintptr_t, J9AVLTreeNode *))OMR::avl_jit_metadata_searchCompare;
-   metaDataAVLTree->genericActionHook = NULL;
+   metaDataAVLTree->insertionComparator = (intptr_t (*)(OMRAVLTree *, OMRAVLTreeNode *, OMRAVLTreeNode *))OMR::avl_jit_metadata_insertionCompare;
+   metaDataAVLTree->searchComparator = (intptr_t (*)(OMRAVLTree *, uintptr_t, OMRAVLTreeNode *))OMR::avl_jit_metadata_searchCompare;
    metaDataAVLTree->flags = 0;
    metaDataAVLTree->rootNode = 0;
 
@@ -596,7 +595,7 @@ CodeMetaDataManager::addCodeCache(
 
    if (newTable)
       {
-      avl_insert(_metaDataAVL, (J9AVLTreeNode *) newTable);
+      avl_insert(_metaDataAVL, (OMRAVLTreeNode *) newTable);
       }
 
    return newTable;
@@ -646,7 +645,7 @@ extern "C"
 {
 
 intptr_t
-avl_jit_metadata_insertionCompare(J9AVLTree *tree, TR::MetaDataHashTable *insertNode, TR::MetaDataHashTable *walkNode)
+avl_jit_metadata_insertionCompare(OMRAVLTree *tree, TR::MetaDataHashTable *insertNode, TR::MetaDataHashTable *walkNode)
    {
    if (walkNode->start > insertNode->start)
       {
@@ -662,7 +661,7 @@ avl_jit_metadata_insertionCompare(J9AVLTree *tree, TR::MetaDataHashTable *insert
 
 
 intptr_t
-avl_jit_metadata_searchCompare(J9AVLTree *tree, uintptr_t searchValue, TR::MetaDataHashTable *walkNode)
+avl_jit_metadata_searchCompare(OMRAVLTree *tree, uintptr_t searchValue, TR::MetaDataHashTable *walkNode)
    {
    if (searchValue >= walkNode->end)
       return -1;

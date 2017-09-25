@@ -61,7 +61,7 @@ BOOL SetLockPagesPrivilege(HANDLE hProcess, BOOL bEnable);
  * The structure stored in the bindingTree to describe NUMA-bound memory extents.
  */
 typedef struct BindingNode {
-	J9AVLTreeNode avlTree;		/**< This struct needs to be embedded so that the struct can act like a proper AVL node */
+	OMRAVLTreeNode avlTree;		/**< This struct needs to be embedded so that the struct can act like a proper AVL node */
 	void *baseAddress;			/**< The address of the first byte in the bound range */
 	uintptr_t extentOfRangeInBytes;	/**< The number of bytes in the range */
 	uintptr_t j9NodeNumber;			/**< The node number (in our internal node numbering scheme (1-indexed)) */
@@ -74,8 +74,8 @@ DWORD getProtectionBits(uintptr_t mode);
 void update_vmemIdentifier(J9PortVmemIdentifier *identifier, void *address, void *handle, uintptr_t byteAmount, uintptr_t mode, uintptr_t pageSize, uintptr_t pageFlags, OMRMemCategory *category);
 static void *commitAndTouch(struct OMRPortLibrary *portLibrary, J9PortVmemIdentifier *identifier, void *address, uintptr_t byteAmount);
 static void touchOnNumaNode(struct OMRPortLibrary *portLibrary, uintptr_t pageSizeInBytes, void *address, uintptr_t byteAmount, uintptr_t j9NumaNode);
-static intptr_t rangeInsertionComparator(J9AVLTree *tree, BindingNode *insertNode, BindingNode *walkNode);
-static intptr_t rangeSearchComparator(J9AVLTree *tree, uintptr_t value, BindingNode *searchNode);
+static intptr_t rangeInsertionComparator(OMRAVLTree *tree, BindingNode *insertNode, BindingNode *walkNode);
+static intptr_t rangeSearchComparator(OMRAVLTree *tree, uintptr_t value, BindingNode *searchNode);
 static int32_t getProcessPrivateMemorySize(struct OMRPortLibrary *portLibrary, J9VMemMemoryQuery queryType, uint64_t *memorySize);
 
 /**
@@ -224,7 +224,7 @@ omrvmem_free_memory(struct OMRPortLibrary *portLibrary, void *address, uintptr_t
 		/* (note that the sub-allocator can cause us to shut-down the binding pool prior to freeing the last reserved area so ignore NUMA clean-up if the pool is already gone) */
 		if (NULL != portLibrary->portGlobals->platformGlobals.bindingPool) {
 			void *nextBaseToLookup = address;
-			J9AVLTree *boundExtents = &portLibrary->portGlobals->platformGlobals.bindingTree;
+			OMRAVLTree *boundExtents = &portLibrary->portGlobals->platformGlobals.bindingTree;
 
 			/* There is one case where the tree can have precisely zero entries - failure in allocating the first node in the range.
 			 * Otherwise, the sequence of nodes should be complete and contiguous.
@@ -238,7 +238,7 @@ omrvmem_free_memory(struct OMRPortLibrary *portLibrary, void *address, uintptr_t
 					BindingNode *node = (BindingNode *)avl_search(boundExtents, (uintptr_t)nextBaseToLookup);
 					Assert_PRT_true(NULL != node);
 					nextBaseToLookup = (void *)((uintptr_t)nextBaseToLookup + node->extentOfRangeInBytes);
-					avl_delete(boundExtents, (J9AVLTreeNode *)node);
+					avl_delete(boundExtents, (OMRAVLTreeNode *)node);
 					pool_removeElement(extentPool, node);
 				}
 			}
@@ -430,7 +430,7 @@ omrvmem_reserve_memory_ex(struct OMRPortLibrary *portLibrary, struct J9PortVmemI
 			baseNode->baseAddress = (void *)memoryPointer;
 			baseNode->extentOfRangeInBytes = params->byteAmount;
 			baseNode->j9NodeNumber = 0;
-			avl_insert(&portLibrary->portGlobals->platformGlobals.bindingTree, (J9AVLTreeNode *)baseNode);
+			avl_insert(&portLibrary->portGlobals->platformGlobals.bindingTree, (OMRAVLTreeNode *)baseNode);
 			omrthread_monitor_exit(PPG_bindingAccessMonitor);
 		} else {
 			omrthread_monitor_exit(PPG_bindingAccessMonitor);
@@ -519,7 +519,7 @@ omrvmem_startup(struct OMRPortLibrary *portLibrary)
 	uintptr_t handle;
 	uintptr_t (WINAPI *GetLargePageMinimumFunc)();
 	HMODULE kernel32Module = GetModuleHandle("Kernel32.dll");
-	J9AVLTree *boundExtents = &portLibrary->portGlobals->platformGlobals.bindingTree;
+	OMRAVLTree *boundExtents = &portLibrary->portGlobals->platformGlobals.bindingTree;
 	int32_t returnValue = 0;
 
 	/* Slabs may force vmem to initialize early, make second attempt succeed. */
@@ -581,9 +581,9 @@ omrvmem_startup(struct OMRPortLibrary *portLibrary)
 		portLibrary->portGlobals->platformGlobals.GetNumaNodeProcessorMaskExProc = (GetNumaNodeProcessorMaskExType)GetProcAddress(kernel32Module, "GetNumaNodeProcessorMaskEx");
 	}
 
-	memset(boundExtents, 0x0, sizeof(J9AVLTree));
-	boundExtents->insertionComparator = (intptr_t (*)(J9AVLTree *, J9AVLTreeNode *, J9AVLTreeNode *))rangeInsertionComparator;
-	boundExtents->searchComparator = (intptr_t (*)(J9AVLTree *, uintptr_t, J9AVLTreeNode *))rangeSearchComparator;
+	memset(boundExtents, 0x0, sizeof(OMRAVLTree));
+	boundExtents->insertionComparator = (intptr_t (*)(OMRAVLTree *, OMRAVLTreeNode *, OMRAVLTreeNode *))rangeInsertionComparator;
+	boundExtents->searchComparator = (intptr_t (*)(OMRAVLTree *, uintptr_t, OMRAVLTreeNode *))rangeSearchComparator;
 	boundExtents->portLibrary = portLibrary;
 	portLibrary->portGlobals->platformGlobals.bindingPool = pool_new(sizeof(BindingNode), 5, 0, 0, OMR_GET_CALLSITE(), OMRMEM_CATEGORY_PORT_LIBRARY, POOL_FOR_PORT(portLibrary));
 	if (NULL == portLibrary->portGlobals->platformGlobals.bindingPool) {
@@ -941,7 +941,7 @@ omrvmem_numa_set_affinity(struct OMRPortLibrary *portLibrary, uintptr_t numaNode
 {
 	intptr_t returnValue = 0;
 	void *topAddress = (void *)((uintptr_t)address + byteAmount);
-	J9AVLTree *boundExtents = &portLibrary->portGlobals->platformGlobals.bindingTree;
+	OMRAVLTree *boundExtents = &portLibrary->portGlobals->platformGlobals.bindingTree;
 	J9Pool *extentPool = portLibrary->portGlobals->platformGlobals.bindingPool;
 	BindingNode *before = NULL;
 	BindingNode *after = NULL;
@@ -962,13 +962,13 @@ omrvmem_numa_set_affinity(struct OMRPortLibrary *portLibrary, uintptr_t numaNode
 		uintptr_t originalExtentLength = before->extentOfRangeInBytes;
 		BindingNode *newNode = (BindingNode *)pool_newElement(extentPool);
 		if (NULL != newNode) {
-			avl_delete(boundExtents, (J9AVLTreeNode *)before);
+			avl_delete(boundExtents, (OMRAVLTreeNode *)before);
 			before->extentOfRangeInBytes = newBeforeSize;
 			newNode->baseAddress = address;
 			newNode->extentOfRangeInBytes = originalExtentLength - newBeforeSize;
 			newNode->j9NodeNumber = before->j9NodeNumber;
-			avl_insert(boundExtents, (J9AVLTreeNode *)before);
-			avl_insert(boundExtents, (J9AVLTreeNode *)newNode);
+			avl_insert(boundExtents, (OMRAVLTreeNode *)before);
+			avl_insert(boundExtents, (OMRAVLTreeNode *)newNode);
 			match = newNode;
 		} else {
 			returnValue = OMRPORT_ERROR_VMEM_OPFAILED;
@@ -983,13 +983,13 @@ omrvmem_numa_set_affinity(struct OMRPortLibrary *portLibrary, uintptr_t numaNode
 			uintptr_t originalExtentLength = end->extentOfRangeInBytes;
 			BindingNode *newNode = (BindingNode *)pool_newElement(extentPool);
 			if (NULL != newNode) {
-				avl_delete(boundExtents, (J9AVLTreeNode *)end);
+				avl_delete(boundExtents, (OMRAVLTreeNode *)end);
 				end->extentOfRangeInBytes = newEndSize;
 				newNode->baseAddress = topAddress;
 				newNode->extentOfRangeInBytes = originalExtentLength - newEndSize;
 				newNode->j9NodeNumber = end->j9NodeNumber;
-				avl_insert(boundExtents, (J9AVLTreeNode *)end);
-				avl_insert(boundExtents, (J9AVLTreeNode *)newNode);
+				avl_insert(boundExtents, (OMRAVLTreeNode *)end);
+				avl_insert(boundExtents, (OMRAVLTreeNode *)newNode);
 				after = newNode;
 			} else {
 				returnValue = OMRPORT_ERROR_VMEM_OPFAILED;
@@ -1001,7 +1001,7 @@ omrvmem_numa_set_affinity(struct OMRPortLibrary *portLibrary, uintptr_t numaNode
 		while (nextSearchAddress < topAddress) {
 			BindingNode *toDelete = (BindingNode *)avl_search(boundExtents, (uintptr_t)nextSearchAddress);
 			nextSearchAddress = (void *)((uintptr_t)nextSearchAddress + toDelete->extentOfRangeInBytes);
-			avl_delete(boundExtents, (J9AVLTreeNode *)toDelete);
+			avl_delete(boundExtents, (OMRAVLTreeNode *)toDelete);
 			pool_removeElement(extentPool, toDelete);
 		}
 		/* finally, insert the new node */
@@ -1010,7 +1010,7 @@ omrvmem_numa_set_affinity(struct OMRPortLibrary *portLibrary, uintptr_t numaNode
 			insertedNode->baseAddress = address;
 			insertedNode->extentOfRangeInBytes = byteAmount;
 			insertedNode->j9NodeNumber = numaNode;
-			avl_insert(boundExtents, (J9AVLTreeNode *)insertedNode);
+			avl_insert(boundExtents, (OMRAVLTreeNode *)insertedNode);
 		} else {
 			returnValue = OMRPORT_ERROR_VMEM_OPFAILED;
 		}
@@ -1019,20 +1019,20 @@ omrvmem_numa_set_affinity(struct OMRPortLibrary *portLibrary, uintptr_t numaNode
 		/* coalesce matches */
 		if ((NULL != before) && (before->j9NodeNumber == insertedNode->j9NodeNumber)) {
 			uintptr_t sizeToGrowTo = before->extentOfRangeInBytes + insertedNode->extentOfRangeInBytes;
-			avl_delete(boundExtents, (J9AVLTreeNode *)before);
-			avl_delete(boundExtents, (J9AVLTreeNode *)insertedNode);
+			avl_delete(boundExtents, (OMRAVLTreeNode *)before);
+			avl_delete(boundExtents, (OMRAVLTreeNode *)insertedNode);
 			pool_removeElement(extentPool, insertedNode);
 			before->extentOfRangeInBytes = sizeToGrowTo;
 			insertedNode = before;
-			avl_insert(boundExtents, (J9AVLTreeNode *)insertedNode);
+			avl_insert(boundExtents, (OMRAVLTreeNode *)insertedNode);
 		}
 		if ((NULL != after) && (after->j9NodeNumber == insertedNode->j9NodeNumber)) {
 			uintptr_t sizeToGrowTo = after->extentOfRangeInBytes + insertedNode->extentOfRangeInBytes;
-			avl_delete(boundExtents, (J9AVLTreeNode *)after);
-			avl_delete(boundExtents, (J9AVLTreeNode *)insertedNode);
+			avl_delete(boundExtents, (OMRAVLTreeNode *)after);
+			avl_delete(boundExtents, (OMRAVLTreeNode *)insertedNode);
 			pool_removeElement(extentPool, after);
 			insertedNode->extentOfRangeInBytes = sizeToGrowTo;
-			avl_insert(boundExtents, (J9AVLTreeNode *)insertedNode);
+			avl_insert(boundExtents, (OMRAVLTreeNode *)insertedNode);
 		}
 	}
 	omrthread_monitor_exit(PPG_bindingAccessMonitor);
@@ -1128,7 +1128,7 @@ commitAndTouch(struct OMRPortLibrary *portLibrary, J9PortVmemIdentifier *identif
 
 			if (NULL != result) {
 				/* the commit succeeded so we just need to touch the memory with a thread on the correct node */
-				J9AVLTree *boundExtents = &portLibrary->portGlobals->platformGlobals.bindingTree;
+				OMRAVLTree *boundExtents = &portLibrary->portGlobals->platformGlobals.bindingTree;
 				void *thisAddress = (void *)commitBase;
 				BindingNode *node = NULL;
 				uintptr_t pageSizeInBytes = identifier->pageSize;
@@ -1250,7 +1250,7 @@ touchOnNumaNode(struct OMRPortLibrary *portLibrary, uintptr_t pageSizeInBytes, v
  * @return The location where insertNode should be stored relative to walkNode (1 for after, -1 for before, 0 for match)
  */
 static intptr_t
-rangeInsertionComparator(J9AVLTree *tree, BindingNode *insertNode, BindingNode *walkNode)
+rangeInsertionComparator(OMRAVLTree *tree, BindingNode *insertNode, BindingNode *walkNode)
 {
 	uintptr_t insertBase = (uintptr_t)insertNode->baseAddress;
 	uintptr_t walkBase = (uintptr_t)walkNode->baseAddress;
@@ -1271,7 +1271,7 @@ rangeInsertionComparator(J9AVLTree *tree, BindingNode *insertNode, BindingNode *
  * @return The location where we would find the appropriate node relative to searchNode (1 for after, -1 for before, 0 for match)
  */
 static intptr_t
-rangeSearchComparator(J9AVLTree *tree, uintptr_t value, BindingNode *searchNode)
+rangeSearchComparator(OMRAVLTree *tree, uintptr_t value, BindingNode *searchNode)
 {
 	uintptr_t numericalBaseAddress = (uintptr_t) searchNode->baseAddress;
 	uintptr_t numericalTopAddress = numericalBaseAddress + searchNode->extentOfRangeInBytes;

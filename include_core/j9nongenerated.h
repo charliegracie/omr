@@ -29,24 +29,35 @@
 
 /* NOTE: Use j9generated.h unless you receive different guidance */
 
-typedef struct J9AVLTreeNode {
+typedef struct OMRAVLTreeNode {
 	J9WSRP leftChild;
 	J9WSRP rightChild;
-} J9AVLTreeNode;
+} OMRAVLTreeNode;
 
-typedef struct J9AVLTree {
-	intptr_t (*insertionComparator)(struct J9AVLTree *tree, struct J9AVLTreeNode *insertNode, struct J9AVLTreeNode *walkNode) ;
-	intptr_t (*searchComparator)(struct J9AVLTree *tree, uintptr_t searchValue, struct J9AVLTreeNode *node) ;
-	void (*genericActionHook)(struct J9AVLTree *tree, struct J9AVLTreeNode *node, uintptr_t action) ;
-	uintptr_t (*performNodeAction)(struct J9AVLTree *tree, struct J9AVLTreeNode *node, uintptr_t action, void *userData) ;
+typedef struct OMRAVLTree {
+	intptr_t (*insertionComparator)(struct OMRAVLTree *tree, struct OMRAVLTreeNode *insertNode, struct OMRAVLTreeNode *walkNode) ;
+	intptr_t (*searchComparator)(struct OMRAVLTree *tree, uintptr_t searchValue, struct OMRAVLTreeNode *node) ;
+	void (*genericActionHook)(struct OMRAVLTree *tree, struct OMRAVLTreeNode *node, uintptr_t action) ; /* TODO Remove this as soon as all downstream projects stop setting it */
+	uintptr_t (*performNodeAction)(struct OMRAVLTree *tree, struct OMRAVLTreeNode *node, uintptr_t action, void *userData) ;
 	uintptr_t flags;
-	struct J9AVLTreeNode *rootNode;
+	struct OMRAVLTreeNode *rootNode;
 	struct OMRPortLibrary *portLibrary;
 	void *userData;
-} J9AVLTree;
+} OMRAVLTree;
 
-#define J9AVLTREENODE_LEFTCHILD(base) AVL_SRP_GETNODE((base)->leftChild)
-#define J9AVLTREENODE_RIGHTCHILD(base) AVL_SRP_GETNODE((base)->rightChild)
+#define OMRAVLTREENODE_LEFTCHILD(base) AVL_SRP_GETNODE((base)->leftChild)
+#define OMRAVLTREENODE_RIGHTCHILD(base) AVL_SRP_GETNODE((base)->rightChild)
+
+/* TODO Remove AVL typedefs once downstream project use OMR namespace */
+#define J9AVLTreeNode OMRAVLTreeNode
+#define J9AVLTree OMRAVLTree
+#define J9AVLTREENODE_LEFTCHILD OMRAVLTREENODE_LEFTCHILD
+#define J9AVLTREENODE_RIGHTCHILD OMRAVLTREENODE_RIGHTCHILD
+#define J9AVLTREE_IS_SHARED_TREE OMRAVLTREE_IS_SHARED_TREE
+#define J9AVLTREE_SHARED_TREE_INITIALIZED OMRAVLTREE_SHARED_TREE_INITIALIZED
+#define J9AVLTREE_DISABLE_SHARED_TREE_UPDATES OMRAVLTREE_DISABLE_SHARED_TREE_UPDATES
+#define J9AVLTREE_TEST_INTERNAVL OMRAVLTREE_TEST_INTERNAVL
+#define J9AVLTREE_DO_VERIFY_TREE_STRUCT_AND_ACCESS OMRAVLTREE_DO_VERIFY_TREE_STRUCT_AND_ACCESS
 
 /*
  * @ddr_namespace: map_to_type=J9JITHashTable
@@ -54,7 +65,7 @@ typedef struct J9AVLTree {
 
 /* NOTE: JIT HashTable (and walk state) likely need to be pushed into the JIT side of jvm/jit compilation */
 typedef struct J9JITHashTable {
-	J9AVLTreeNode parentAVLTreeNode;
+	OMRAVLTreeNode parentAVLTreeNode;
 	uintptr_t *buckets;
 	uintptr_t start;
 	uintptr_t end;
@@ -77,7 +88,7 @@ typedef struct J9JITHashTableWalkState {
 
 /* NOTE: J9MEMAVLTreeNode should be pushed into a memcheck specific definition */
 typedef struct J9MEMAVLTreeNode {
-	J9AVLTreeNode parentAVLTreeNode;
+	OMRAVLTreeNode parentAVLTreeNode;
 	const char *callSite;
 	struct J9MemoryCheckStats *stats;
 	struct J9MemoryCheckStats *prevStats;
@@ -145,7 +156,7 @@ typedef struct J9MemorySpaceDescription {
  */
 
 typedef struct J9MemorySegment {
-	J9AVLTreeNode parentAVLTreeNode;
+	OMRAVLTreeNode parentAVLTreeNode;
 	uintptr_t type;
 	uintptr_t size;
 	uint8_t *baseAddress;
@@ -208,7 +219,7 @@ typedef struct J9MemorySegmentList {
 	struct J9MemorySegment *nextSegment;
 	uintptr_t totalSegmentSize;
 	omrthread_monitor_t segmentMutex;
-	struct J9AVLTree avlTreeData;
+	struct OMRAVLTree avlTreeData;
 	uintptr_t flags;
 } J9MemorySegmentList;
 

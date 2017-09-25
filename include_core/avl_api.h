@@ -46,30 +46,30 @@ extern "C" {
 * @brief
 * @param *tree
 * @param *nodeToDelete
-* @return J9AVLTreeNode *
+* @return OMRAVLTreeNode *
 */
-J9AVLTreeNode *
-avl_delete(J9AVLTree *tree, J9AVLTreeNode *nodeToDelete);
+OMRAVLTreeNode *
+avl_delete(OMRAVLTree *tree, OMRAVLTreeNode *nodeToDelete);
 
 
 /**
 * @brief
 * @param *tree
 * @param *nodeToInsert
-* @return J9AVLTreeNode *
+* @return OMRAVLTreeNode *
 */
-J9AVLTreeNode *
-avl_insert(J9AVLTree *tree, J9AVLTreeNode *nodeToInsert);
+OMRAVLTreeNode *
+avl_insert(OMRAVLTree *tree, OMRAVLTreeNode *nodeToInsert);
 
 
 /**
 * @brief
 * @param *tree
 * @param searchValue
-* @return J9AVLTreeNode *
+* @return OMRAVLTreeNode *
 */
-J9AVLTreeNode *
-avl_search(J9AVLTree *tree, uintptr_t searchValue);
+OMRAVLTreeNode *
+avl_search(OMRAVLTree *tree, uintptr_t searchValue);
 
 
 #ifdef __cplusplus

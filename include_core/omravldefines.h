@@ -35,8 +35,14 @@
 #define AVL_LEFTHEAVY 1
 #define AVL_RIGHTHEAVY 2
 
-#define AVL_GETNODE(x) ((J9AVLTreeNode *)((uintptr_t)(x) & (~(uintptr_t)AVL_BALANCEMASK)))
-#define AVL_SETNODE(x, node) ((x) = (J9AVLTreeNode *)(((uintptr_t)(x) & AVL_BALANCEMASK) | (uintptr_t)(node)))
+#define OMRAVLTREE_IS_SHARED_TREE  1
+#define OMRAVLTREE_SHARED_TREE_INITIALIZED  2
+#define OMRAVLTREE_DISABLE_SHARED_TREE_UPDATES  4
+#define OMRAVLTREE_TEST_INTERNAVL  8
+#define OMRAVLTREE_DO_VERIFY_TREE_STRUCT_AND_ACCESS  16
+
+#define AVL_GETNODE(x) ((OMRAVLTreeNode *)((uintptr_t)(x) & (~(uintptr_t)AVL_BALANCEMASK)))
+#define AVL_SETNODE(x, node) ((x) = (OMRAVLTreeNode *)(((uintptr_t)(x) & AVL_BALANCEMASK) | (uintptr_t)(node)))
 
 #define AVL_GETBALANCE(x) ((uintptr_t)((x)->leftChild) & (AVL_BALANCEMASK))
 #define AVL_SETBALANCE(x, bal) (((x)->leftChild) = (J9WSRP)(((uintptr_t)((x)->leftChild) & (~(uintptr_t)AVL_BALANCEMASK)) | (bal)))
@@ -49,21 +55,7 @@
 #define AVL_SRP_PTR_SETNODE(ptr, value) AVL_SRP_SETNODE(*((J9WSRP *) (ptr)), (value))
 #define AVL_NNSRP_PTR_SETNODE(ptr, value) AVL_NNSRP_SETNODE(*((J9WSRP *) (ptr)), (value))
 
-#define AVL_SRP_GETNODE(node) ((J9AVLTreeNode *)(AVL_GETNODE(node) ? ((((uint8_t *) &(node)) + (J9WSRP)(AVL_GETNODE(node)))) : NULL))
-#define AVL_NNSRP_GETNODE(node) ((J9AVLTreeNode *) (((uint8_t *) &(node)) + (J9WSRP)(AVL_GETNODE(node))))
-
-#define J9AVLTREE_ACTION_INSERT  1
-#define J9AVLTREE_ACTION_INSERT_EXISTS  2
-#define J9AVLTREE_ACTION_REMOVE  3
-#define J9AVLTREE_ACTION_REMOVE_NOT_IN_TREE  4
-#define J9AVLTREE_ACTION_SINGLE_ROTATE  5
-#define J9AVLTREE_ACTION_DOUBLE_ROTATE  6
-#define J9AVLTREE_ACTION_REPLACE_REMOVED_PARENT  7
-
-#define J9AVLTREE_IS_SHARED_TREE  1
-#define J9AVLTREE_SHARED_TREE_INITIALIZED  2
-#define J9AVLTREE_DISABLE_SHARED_TREE_UPDATES  4
-#define J9AVLTREE_TEST_INTERNAVL  8
-#define J9AVLTREE_DO_VERIFY_TREE_STRUCT_AND_ACCESS  16
+#define AVL_SRP_GETNODE(node) ((OMRAVLTreeNode *)(AVL_GETNODE(node) ? ((((uint8_t *) &(node)) + (J9WSRP)(AVL_GETNODE(node)))) : NULL))
+#define AVL_NNSRP_GETNODE(node) ((OMRAVLTreeNode *) (((uint8_t *) &(node)) + (J9WSRP)(AVL_GETNODE(node))))
 
 #endif /* omravldefines_h */

@@ -64,8 +64,8 @@
 
 #define AVL_TREE_TAG_BIT ((uintptr_t)0x00000001)
 #define AVL_TREE_TAGGED(p) (((uintptr_t)(p)) & AVL_TREE_TAG_BIT)
-#define AVL_TREE_TAG(p) ((J9AVLTree *)(((uintptr_t)(p)) | AVL_TREE_TAG_BIT))
-#define AVL_TREE_UNTAG(p) ((J9AVLTree *)(((uintptr_t)(p)) & (~AVL_TREE_TAG_BIT)))
+#define AVL_TREE_TAG(p) ((OMRAVLTree *)(((uintptr_t)(p)) | AVL_TREE_TAG_BIT))
+#define AVL_TREE_UNTAG(p) ((OMRAVLTree *)(((uintptr_t)(p)) & (~AVL_TREE_TAG_BIT)))
 
 /**
  * Stolen from gc_base/gcutils.h
@@ -130,10 +130,10 @@ static const uint32_t primesTableSize = sizeof(primesTable) / sizeof(uint32_t);
 static uintptr_t
 comparatorToEqualFn(void *leftKey, void *rightKey, void *userData)
 {
-	J9AVLTree *tree = userData;
+	OMRAVLTree *tree = userData;
 	OMRHashTableComparatorFn comparatorFn = tree->insertionComparator;
-	J9AVLTreeNode *leftNode = AVL_DATA_TO_NODE(leftKey);
-	J9AVLTreeNode *rightNode = AVL_DATA_TO_NODE(rightKey);
+	OMRAVLTreeNode *leftNode = AVL_DATA_TO_NODE(leftKey);
+	OMRAVLTreeNode *rightNode = AVL_DATA_TO_NODE(rightKey);
 	/* Note, swapping rightKey and leftKey here to make things consistent. avl_insert() has the search key
 	 * as the second node argument. The hash table implementation on the other hand has the search key as
 	 * the first node argument.
@@ -304,10 +304,10 @@ hashTableNewImpl(
 	/* listNodeSize is sizeof user-data + a next-pointer */
 	if (entryAlignment) {
 		hashTable->listNodeSize = (((ROUND_TO_SIZEOF_UDATA(entrySize) + sizeof(uintptr_t)) + entryAlignment - 1) / entryAlignment) * entryAlignment;
-		hashTable->treeNodeSize = (((ROUND_TO_SIZEOF_UDATA(entrySize) + sizeof(J9AVLTreeNode)) + entryAlignment - 1) / entryAlignment) * entryAlignment;
+		hashTable->treeNodeSize = (((ROUND_TO_SIZEOF_UDATA(entrySize) + sizeof(OMRAVLTreeNode)) + entryAlignment - 1) / entryAlignment) * entryAlignment;
 	} else {
 		hashTable->listNodeSize = ROUND_TO_SIZEOF_UDATA(entrySize) + sizeof(uintptr_t);
-		hashTable->treeNodeSize = ROUND_TO_SIZEOF_UDATA(entrySize) + sizeof(J9AVLTreeNode);
+		hashTable->treeNodeSize = ROUND_TO_SIZEOF_UDATA(entrySize) + sizeof(OMRAVLTreeNode);
 	}
 	hashTable->nodeAlignment = entryAlignment;
 
@@ -342,18 +342,18 @@ hashTableNewImpl(
 
 	if (OMRHASH_TABLE_COLLISION_RESILIENT == (flags & OMRHASH_TABLE_COLLISION_RESILIENT)) {
 		/* Additional initialization for capability to turn lists to trees */
-		hashTable->treePool = pool_new(sizeof(J9AVLTree), 0, sizeof(uintptr_t), 0, tableName, memoryCategory, POOL_FOR_PORT(portLibrary));
+		hashTable->treePool = pool_new(sizeof(OMRAVLTree), 0, sizeof(uintptr_t), 0, tableName, memoryCategory, POOL_FOR_PORT(portLibrary));
 		if (NULL == hashTable->treePool) {
 			goto error;
 		}
 		/* Create an AVLTree template we need for comparatorToEqualFn.  Malloc the memory instead of using the pool, as we clear the pool on growing */
-		hashTable->avlTreeTemplate = portLibrary->mem_allocate_memory(portLibrary, sizeof(J9AVLTree), tableName, memoryCategory);
+		hashTable->avlTreeTemplate = portLibrary->mem_allocate_memory(portLibrary, sizeof(OMRAVLTree), tableName, memoryCategory);
 		if (NULL == hashTable->avlTreeTemplate) {
 			goto error;
 		}
-		memset(hashTable->avlTreeTemplate, 0, sizeof(J9AVLTree));
+		memset(hashTable->avlTreeTemplate, 0, sizeof(OMRAVLTree));
 		hashTable->avlTreeTemplate->insertionComparator = comparatorFn;
-		hashTable->avlTreeTemplate->searchComparator = (intptr_t (*)(struct J9AVLTree *, uintptr_t, J9AVLTreeNode *))comparatorFn;
+		hashTable->avlTreeTemplate->searchComparator = (intptr_t (*)(struct OMRAVLTree *, uintptr_t, OMRAVLTreeNode *))comparatorFn;
 		hashTable->avlTreeTemplate->portLibrary = portLibrary;
 		hashTable->avlTreeTemplate->userData = functionUserData;
 		hashTable->avlTreeTemplate->rootNode = NULL;
@@ -490,9 +490,9 @@ static void *
 hashTableFindNodeInTree(OMRHashTable *table, void *entry, void **head)
 {
 	/* Fake a tree node from an entry by just moving the pointer to where the start of a tree node would be */
-	J9AVLTreeNode *treeEntry = AVL_DATA_TO_NODE(entry);
-	J9AVLTree *tree = AVL_TREE_UNTAG(*head);
-	J9AVLTreeNode *treeNode = avl_search(tree, (uintptr_t)treeEntry);
+	OMRAVLTreeNode *treeEntry = AVL_DATA_TO_NODE(entry);
+	OMRAVLTree *tree = AVL_TREE_UNTAG(*head);
+	OMRAVLTreeNode *treeNode = avl_search(tree, (uintptr_t)treeEntry);
 
 	if (NULL != treeNode) {
 		return AVL_NODE_TO_DATA(treeNode);
@@ -610,11 +610,11 @@ static void *
 hashTableAddNodeInTree(OMRHashTable *table, void *entry, void **head)
 {
 	void *nodeData = NULL;
-	J9AVLTree *tree = AVL_TREE_UNTAG(*head);
-	J9AVLTreeNode *newNode = pool_newElement(table->treeNodePool);
+	OMRAVLTree *tree = AVL_TREE_UNTAG(*head);
+	OMRAVLTreeNode *newNode = pool_newElement(table->treeNodePool);
 
 	if (NULL != newNode) {
-		J9AVLTreeNode *insertNode = NULL;
+		OMRAVLTreeNode *insertNode = NULL;
 
 		memcpy(AVL_NODE_TO_DATA(newNode), entry, table->entrySize);
 		insertNode = avl_insert(tree, newNode);
@@ -646,7 +646,7 @@ static uintptr_t
 listToTree(OMRHashTable *table, void **head, uintptr_t listLength)
 {
 	uintptr_t rc = 1;
-	J9AVLTree *tree = pool_newElement(table->treePool);
+	OMRAVLTree *tree = pool_newElement(table->treePool);
 	Trc_hashTable_listToTree_Entry(table->tableName, table, head, listLength);
 
 	if ((0 != hashTableCanRehash(table)) && (NULL != tree)) {
@@ -658,9 +658,9 @@ listToTree(OMRHashTable *table, void **head, uintptr_t listLength)
 			void *nodeToCopy = *head;
 
 			while (NULL != nodeToCopy) {
-				J9AVLTreeNode *newTreeNode = (J9AVLTreeNode *) pool_newElement(table->treeNodePool);
-				J9AVLTreeNode *insertNode = NULL;
-				J9AVLTreeNode *nextListNode = NEXT(nodeToCopy);
+				OMRAVLTreeNode *newTreeNode = (OMRAVLTreeNode *) pool_newElement(table->treeNodePool);
+				OMRAVLTreeNode *insertNode = NULL;
+				OMRAVLTreeNode *nextListNode = NEXT(nodeToCopy);
 				/* We ensured capacity so this can't fail */
 				HASHTABLE_ASSERT(NULL != newTreeNode);
 
@@ -786,8 +786,8 @@ static uint32_t
 hashTableRemoveNodeInTree(OMRHashTable *table, void *entry, void **head)
 {
 	uint32_t rc = 1;
-	J9AVLTree *tree = AVL_TREE_UNTAG(*head);
-	J9AVLTreeNode *removedNode = avl_delete(tree, AVL_DATA_TO_NODE(entry));
+	OMRAVLTree *tree = AVL_TREE_UNTAG(*head);
+	OMRAVLTreeNode *removedNode = avl_delete(tree, AVL_DATA_TO_NODE(entry));
 
 	if (NULL != removedNode) {
 		pool_removeElement(table->treeNodePool, removedNode);
@@ -927,7 +927,7 @@ rebuildFromPools(OMRHashTable *table, uint32_t newSize, void **newNodes)
 	uint32_t treeNodeCount = 0;
 	pool_state state = {0};
 	void *listNode = NULL;
-	J9AVLTreeNode *treeNode = NULL;
+	OMRAVLTreeNode *treeNode = NULL;
 	uintptr_t i = 0;
 
 	/* re-add all entries into the newNodes as listNodes */
@@ -962,7 +962,7 @@ rebuildFromPools(OMRHashTable *table, uint32_t newSize, void **newNodes)
 	HASHTABLE_ASSERT(treeNodeCount == table->numberOfTreeNodes);
 
 	/* Have to check if we should turn chains into trees.  Reset numberOfTreeNodes and clear all trees. ListToTree() will increment
-	 * numberOfTreeNodes to the correct value as well as allocate new J9AVLTrees.
+	 * numberOfTreeNodes to the correct value as well as allocate new OMRAVLTrees.
 	 */
 	pool_clear(table->treePool);
 	table->numberOfTreeNodes = 0;

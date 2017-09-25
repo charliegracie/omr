@@ -62,7 +62,7 @@ hashFn(void *key, void *userData)
 }
 
 static intptr_t
-hashComparatorFn(struct J9AVLTree *tree, struct J9AVLTreeNode *leftNode, struct J9AVLTreeNode *rightNode)
+hashComparatorFn(struct OMRAVLTree *tree, struct OMRAVLTreeNode *leftNode, struct OMRAVLTreeNode *rightNode)
 {
 	uintptr_t leftKey = *((uintptr_t *)(leftNode + 1));
 	uintptr_t rightKey = *((uintptr_t *)(rightNode + 1));

@@ -40,7 +40,7 @@ namespace OMR { typedef OMR::MetaDataHashTable MetaDataHashTableConnector; }
 #include <stdint.h>               // for uintptr_t, intptr_t
 #include "env/TRMemory.hpp"       // for TR_Memory, etc
 #include "infra/Annotations.hpp"  // for OMR_EXTENSIBLE
-#include "j9nongenerated.h"       // for J9AVLTree (ptr only), etc
+#include "j9nongenerated.h"       // for OMRAVLTree (ptr only), etc
 
 namespace TR { class CodeCache; }
 namespace TR { class CodeMetaDataManager; }
@@ -230,13 +230,13 @@ class OMR_EXTENSIBLE CodeMetaDataManager
       uintptr_t start,
       uintptr_t end);
 
-   J9AVLTree *allocateMetaDataAVL();
+   OMRAVLTree *allocateMetaDataAVL();
 
    // Singleton: Protected to allow manipulation of singleton pointer 
    // in test cases. 
    static TR::CodeMetaDataManager *_codeMetaDataManager;
 
-   J9AVLTree *_metaDataAVL;
+   OMRAVLTree *_metaDataAVL;
 
    private:
 
@@ -250,7 +250,7 @@ class OMR_EXTENSIBLE CodeMetaDataManager
 
 struct OMR_EXTENSIBLE MetaDataHashTable
    {
-   J9AVLTreeNode parentAVLTreeNode;
+   OMRAVLTreeNode parentAVLTreeNode;
    uintptr_t *buckets;
    uintptr_t start;
    uintptr_t end;
@@ -263,9 +263,9 @@ struct OMR_EXTENSIBLE MetaDataHashTable
 
 extern "C"
 {
-intptr_t avl_jit_metadata_insertionCompare(J9AVLTree *tree, TR::MetaDataHashTable *insertNode, TR::MetaDataHashTable *walkNode);
+intptr_t avl_jit_metadata_insertionCompare(OMRAVLTree *tree, TR::MetaDataHashTable *insertNode, TR::MetaDataHashTable *walkNode);
 
-intptr_t avl_jit_metadata_searchCompare(J9AVLTree *tree, uintptr_t searchValue, TR::MetaDataHashTable *walkNode);
+intptr_t avl_jit_metadata_searchCompare(OMRAVLTree *tree, uintptr_t searchValue, TR::MetaDataHashTable *walkNode);
 }
 
 

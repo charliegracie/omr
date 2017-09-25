@@ -24,13 +24,13 @@
 #include "avl_internal.h"
 #include "ut_avl.h"
 
-static J9AVLTreeNode *deleteNode(J9AVLTree *tree, J9AVLTreeNode **walkPtr, J9WSRP *walkSRPPtr, J9AVLTreeNode *node, intptr_t *heightChange);
-static J9AVLTreeNode *rotate(J9AVLTree *tree, J9AVLTreeNode *walk, intptr_t direction, intptr_t *heightChange);
-static J9AVLTreeNode *doubleRotate(J9AVLTree *tree, J9AVLTreeNode *walk, intptr_t direction, intptr_t *heightChange);
-static void rebalance(J9AVLTree *tree, J9AVLTreeNode **walkPtr, J9WSRP *walkSRPPtr, intptr_t direction, intptr_t *heightChange);
-static J9AVLTreeNode *findRightMostLeaf(J9AVLTree *tree, J9WSRP *walkSRPPtr, intptr_t *heightChange);
-static J9AVLTreeNode *findNode(J9AVLTree *tree, J9AVLTreeNode *walk, uintptr_t search);
-static J9AVLTreeNode *insertNode(J9AVLTree *tree, J9AVLTreeNode **walkPtr, J9WSRP *walkSRPPtr, J9AVLTreeNode *node, intptr_t *heightChange);
+static OMRAVLTreeNode *deleteNode(OMRAVLTree *tree, OMRAVLTreeNode **walkPtr, J9WSRP *walkSRPPtr, OMRAVLTreeNode *node, intptr_t *heightChange);
+static OMRAVLTreeNode *rotate(OMRAVLTree *tree, OMRAVLTreeNode *walk, intptr_t direction, intptr_t *heightChange);
+static OMRAVLTreeNode *doubleRotate(OMRAVLTree *tree, OMRAVLTreeNode *walk, intptr_t direction, intptr_t *heightChange);
+static void rebalance(OMRAVLTree *tree, OMRAVLTreeNode **walkPtr, J9WSRP *walkSRPPtr, intptr_t direction, intptr_t *heightChange);
+static OMRAVLTreeNode *findRightMostLeaf(OMRAVLTree *tree, J9WSRP *walkSRPPtr, intptr_t *heightChange);
+static OMRAVLTreeNode *findNode(OMRAVLTree *tree, OMRAVLTreeNode *walk, uintptr_t search);
+static OMRAVLTreeNode *insertNode(OMRAVLTree *tree, OMRAVLTreeNode **walkPtr, J9WSRP *walkSRPPtr, OMRAVLTreeNode *node, intptr_t *heightChange);
 
 /**
  * Insert a node into an AVL tree
@@ -40,8 +40,8 @@ static J9AVLTreeNode *insertNode(J9AVLTree *tree, J9AVLTreeNode **walkPtr, J9WSR
  *
  * @return  The node inserted or NULL in the case of error
  */
-J9AVLTreeNode *
-avl_insert(J9AVLTree *tree, J9AVLTreeNode *nodeToInsert)
+OMRAVLTreeNode *
+avl_insert(OMRAVLTree *tree, OMRAVLTreeNode *nodeToInsert)
 {
 	intptr_t heightChange;
 
@@ -56,8 +56,8 @@ avl_insert(J9AVLTree *tree, J9AVLTreeNode *nodeToInsert)
  *
  * @return  The node deleted or NULL in the case of error
  */
-J9AVLTreeNode *
-avl_delete(J9AVLTree *tree, J9AVLTreeNode *nodeToDelete)
+OMRAVLTreeNode *
+avl_delete(OMRAVLTree *tree, OMRAVLTreeNode *nodeToDelete)
 {
 	intptr_t heightChange;
 
@@ -72,8 +72,8 @@ avl_delete(J9AVLTree *tree, J9AVLTreeNode *nodeToDelete)
  *
  * @return  The found node or NULL
  */
-J9AVLTreeNode *
-avl_search(J9AVLTree *tree, uintptr_t searchValue)
+OMRAVLTreeNode *
+avl_search(OMRAVLTree *tree, uintptr_t searchValue)
 {
 	return findNode(tree, tree->rootNode, searchValue);
 }
@@ -87,11 +87,11 @@ avl_search(J9AVLTree *tree, uintptr_t searchValue)
  *
  * @return  The found leaf or null in the case of an error
  */
-static J9AVLTreeNode *
-findRightMostLeaf(J9AVLTree *tree, J9WSRP *walkSRPPtr, intptr_t *heightChange)
+static OMRAVLTreeNode *
+findRightMostLeaf(OMRAVLTree *tree, J9WSRP *walkSRPPtr, intptr_t *heightChange)
 {
-	J9AVLTreeNode *find;
-	J9AVLTreeNode *walk = NULL;
+	OMRAVLTreeNode *find;
+	OMRAVLTreeNode *walk = NULL;
 
 	Trc_AVL_findRightMostLeaf_Entry(tree, walkSRPPtr, heightChange);
 
@@ -109,9 +109,6 @@ findRightMostLeaf(J9AVLTree *tree, J9WSRP *walkSRPPtr, intptr_t *heightChange)
 		AVL_SRP_PTR_SETNODE(walkSRPPtr, AVL_SRP_GETNODE(find->leftChild));
 		AVL_SRP_SET_TO_NULL(find->leftChild);
 		*heightChange = -1;
-		if (tree->genericActionHook) {
-			tree->genericActionHook(tree, walk, J9AVLTREE_ACTION_REPLACE_REMOVED_PARENT);
-		}
 	} else {
 		rebalance(tree, NULL, walkSRPPtr, 1, heightChange);
 	}
@@ -131,18 +128,14 @@ findRightMostLeaf(J9AVLTree *tree, J9WSRP *walkSRPPtr, intptr_t *heightChange)
  *
  * @return  The heavy node
  */
-static J9AVLTreeNode *
-rotate(J9AVLTree *tree, J9AVLTreeNode *walk, intptr_t direction, intptr_t *heightChange)
+static OMRAVLTreeNode *
+rotate(OMRAVLTree *tree, OMRAVLTreeNode *walk, intptr_t direction, intptr_t *heightChange)
 {
 	J9WSRP *heavyNodePtr;
 	J9WSRP *graftNodePtr;
-	J9AVLTreeNode *heavyNode;
+	OMRAVLTreeNode *heavyNode;
 
 	Trc_AVL_rotate_Entry(tree, walk, direction, heightChange);
-
-	if (tree->genericActionHook) {
-		tree->genericActionHook(tree, (J9AVLTreeNode *)walk, J9AVLTREE_ACTION_SINGLE_ROTATE);
-	}
 
 	if (direction < 0) {
 		heavyNodePtr = &walk->rightChild;
@@ -196,21 +189,17 @@ rotate(J9AVLTree *tree, J9AVLTreeNode *walk, intptr_t direction, intptr_t *heigh
  *
  * @return  The new root node
  */
-static J9AVLTreeNode *
-doubleRotate(J9AVLTree *tree, J9AVLTreeNode *walk, intptr_t direction, intptr_t *heightChange)
+static OMRAVLTreeNode *
+doubleRotate(OMRAVLTree *tree, OMRAVLTreeNode *walk, intptr_t direction, intptr_t *heightChange)
 {
 	J9WSRP *heavyNodePtr;
 	J9WSRP *graft1NodePtr;
 	J9WSRP *graft2NodePtr;
 	J9WSRP *newrootNodePtr;
-	J9AVLTreeNode *heavyNode;
-	J9AVLTreeNode *newrootNode;
+	OMRAVLTreeNode *heavyNode;
+	OMRAVLTreeNode *newrootNode;
 
 	Trc_AVL_doubleRotate_Entry(tree, walk, direction, heightChange);
-
-	if (tree->genericActionHook) {
-		tree->genericActionHook(tree, (J9AVLTreeNode *)walk, J9AVLTREE_ACTION_DOUBLE_ROTATE);
-	}
 
 	if (direction < 0) {
 		heavyNodePtr   = &walk->rightChild;
@@ -280,9 +269,9 @@ doubleRotate(J9AVLTree *tree, J9AVLTreeNode *walk, intptr_t direction, intptr_t 
  * @param[in|out] heightChange  The height change
  */
 static void
-rebalance(J9AVLTree *tree, J9AVLTreeNode **walkPtr, J9WSRP *walkSRPPtr, intptr_t direction, intptr_t *heightChange)
+rebalance(OMRAVLTree *tree, OMRAVLTreeNode **walkPtr, J9WSRP *walkSRPPtr, intptr_t direction, intptr_t *heightChange)
 {
-	J9AVLTreeNode *walk = NULL;
+	OMRAVLTreeNode *walk = NULL;
 	uintptr_t walkBalance;
 
 	if (!(*heightChange)) {
@@ -312,18 +301,18 @@ rebalance(J9AVLTree *tree, J9AVLTreeNode **walkPtr, J9WSRP *walkSRPPtr, intptr_t
 			*heightChange = 0;
 		}
 	} else if ((walkBalance == AVL_LEFTHEAVY) == (direction < 0)) {
-		J9AVLTreeNode *rotateResult = NULL;
+		OMRAVLTreeNode *rotateResult = NULL;
 
 		/* left heavy adding to the left or right heavy adding to the right */
 		if ((direction < 0) && (AVL_GETBALANCE(AVL_NNSRP_GETNODE(walk->leftChild)) == AVL_RIGHTHEAVY)) {
 			/* doubleRotate */
-			rotateResult = (J9AVLTreeNode *)doubleRotate(tree, walk, -direction, heightChange);
+			rotateResult = (OMRAVLTreeNode *)doubleRotate(tree, walk, -direction, heightChange);
 		} else if ((direction > 0) && (AVL_GETBALANCE(AVL_NNSRP_GETNODE(walk->rightChild)) == AVL_LEFTHEAVY)) {
 			/* doubleRotate */
-			rotateResult = (J9AVLTreeNode *)doubleRotate(tree, walk, -direction, heightChange);
+			rotateResult = (OMRAVLTreeNode *)doubleRotate(tree, walk, -direction, heightChange);
 		} else {
 			/* single rotate */
-			rotateResult = (J9AVLTreeNode *)rotate(tree, walk, -direction, heightChange);
+			rotateResult = (OMRAVLTreeNode *)rotate(tree, walk, -direction, heightChange);
 		}
 
 		/* Assumption is that if walkSRPPtr is NULL, walkPtr is not */
@@ -359,11 +348,11 @@ rebalance(J9AVLTree *tree, J9AVLTreeNode **walkPtr, J9WSRP *walkSRPPtr, intptr_t
  *
  * @return  The node inserted
  */
-static J9AVLTreeNode *
-insertNode(J9AVLTree *tree, J9AVLTreeNode **walkPtr, J9WSRP *walkSRPPtr, J9AVLTreeNode *node, intptr_t *heightChange)
+static OMRAVLTreeNode *
+insertNode(OMRAVLTree *tree, OMRAVLTreeNode **walkPtr, J9WSRP *walkSRPPtr, OMRAVLTreeNode *node, intptr_t *heightChange)
 {
-	J9AVLTreeNode *find = NULL;
-	J9AVLTreeNode *walk;
+	OMRAVLTreeNode *find = NULL;
+	OMRAVLTreeNode *walk;
 	intptr_t dir;
 
 	Trc_AVL_insertNode_Entry(tree, walkPtr, walkSRPPtr, node, heightChange);
@@ -385,9 +374,6 @@ insertNode(J9AVLTree *tree, J9AVLTreeNode **walkPtr, J9WSRP *walkSRPPtr, J9AVLTr
 			AVL_NNSRP_PTR_SETNODE(walkSRPPtr, node);
 		}
 		*heightChange = 1; /* height of this tree increased one */
-		if (tree->genericActionHook) {
-			tree->genericActionHook(tree, node, J9AVLTREE_ACTION_INSERT);
-		}
 		Trc_AVL_insertNode_Trivial(node);
 		return node;
 	}
@@ -396,9 +382,6 @@ insertNode(J9AVLTree *tree, J9AVLTreeNode **walkPtr, J9WSRP *walkSRPPtr, J9AVLTr
 	if (!dir) {
 		/* node is already in the tree */
 		*heightChange = 0; /* no change in tree structure */
-		if (tree->genericActionHook) {
-			tree->genericActionHook(tree, walk, J9AVLTREE_ACTION_INSERT_EXISTS);
-		}
 		Trc_AVL_insertNode_Exists(walk);
 		return walk;
 	}
@@ -428,11 +411,11 @@ _done :
  *
  * @return  The node found or NULL
  */
-static J9AVLTreeNode *
-findNode(J9AVLTree *tree, J9AVLTreeNode *node, uintptr_t search)
+static OMRAVLTreeNode *
+findNode(OMRAVLTree *tree, OMRAVLTreeNode *node, uintptr_t search)
 {
 	intptr_t dir;
-	J9AVLTreeNode *walk = node;
+	OMRAVLTreeNode *walk = node;
 
 	Trc_AVL_findNode_Entry(tree, walk, search);
 
@@ -466,11 +449,11 @@ findNode(J9AVLTree *tree, J9AVLTreeNode *node, uintptr_t search)
  *
  * @return  The node deleted or NULL
  */
-static J9AVLTreeNode *
-deleteNode(J9AVLTree *tree, J9AVLTreeNode **walkPtr, J9WSRP *walkSRPPtr, J9AVLTreeNode *node, intptr_t *heightChange)
+static OMRAVLTreeNode *
+deleteNode(OMRAVLTree *tree, OMRAVLTreeNode **walkPtr, J9WSRP *walkSRPPtr, OMRAVLTreeNode *node, intptr_t *heightChange)
 {
-	J9AVLTreeNode *find;
-	J9AVLTreeNode *walk;
+	OMRAVLTreeNode *find;
+	OMRAVLTreeNode *walk;
 	intptr_t dir;
 
 	Trc_AVL_deleteNode_Entry(tree, walkPtr, walkSRPPtr, node, heightChange);
@@ -482,16 +465,13 @@ deleteNode(J9AVLTree *tree, J9AVLTreeNode **walkPtr, J9WSRP *walkSRPPtr, J9AVLTr
 		walk = AVL_SRP_GETNODE(*walkSRPPtr);
 	}
 	if (!walk) {
-		if (tree->genericActionHook) {
-			tree->genericActionHook(tree, walk, J9AVLTREE_ACTION_REMOVE_NOT_IN_TREE);
-		}
 		Trc_AVL_deleteNode_NotInTree();
 		return NULL;
 	}
 
 	dir = tree->insertionComparator(tree, node, walk);
 	if (!dir) {
-		J9AVLTreeNode *walkLeftChild, *walkRightChild;
+		OMRAVLTreeNode *walkLeftChild, *walkRightChild;
 
 		walkLeftChild = AVL_SRP_GETNODE(walk->leftChild);
 		walkRightChild = AVL_SRP_GETNODE(walk->rightChild);
@@ -513,7 +493,7 @@ deleteNode(J9AVLTree *tree, J9AVLTreeNode **walkPtr, J9WSRP *walkSRPPtr, J9AVLTr
 			AVL_SRP_SET_TO_NULL(walk->leftChild);
 			*heightChange = -1;
 		} else {
-			J9AVLTreeNode *leaf;
+			OMRAVLTreeNode *leaf;
 
 			leaf = findRightMostLeaf(tree, &(walk->leftChild), heightChange);
 
@@ -534,9 +514,6 @@ deleteNode(J9AVLTree *tree, J9AVLTreeNode **walkPtr, J9WSRP *walkSRPPtr, J9AVLTr
 
 		AVL_SETBALANCE(walk, AVL_BALANCED);
 
-		if (tree->genericActionHook) {
-			tree->genericActionHook(tree, walk, J9AVLTREE_ACTION_REMOVE);
-		}
 		Trc_AVL_deleteNode_Removed(walk);
 		return walk;
 	}

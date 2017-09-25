@@ -62,8 +62,8 @@ extern "C" {
 /**
  * Macros for getting at data directly from AVLTreeNodes
  */
-#define AVL_NODE_TO_DATA(p) ((void *)((uint8_t *)(p) + sizeof(J9AVLTreeNode)))
-#define AVL_DATA_TO_NODE(p) (((J9AVLTreeNode *)((uint8_t *)(p) - sizeof(J9AVLTreeNode))))
+#define AVL_NODE_TO_DATA(p) ((void *)((uint8_t *)(p) + sizeof(OMRAVLTreeNode)))
+#define AVL_DATA_TO_NODE(p) (((OMRAVLTreeNode *)((uint8_t *)(p) - sizeof(OMRAVLTreeNode))))
 
 /**
  * Hash table flag macros
@@ -80,10 +80,10 @@ extern "C" {
 
 
 struct OMRHashTable; /* Forward struct declaration */
-struct J9AVLTreeNode; /* Forward struct declaration */
+struct OMRAVLTreeNode; /* Forward struct declaration */
 typedef uintptr_t (*OMRHashTableHashFn)(void *entry, void *userData);  /* Forward struct declaration */
 typedef uintptr_t (*OMRHashTableEqualFn)(void *leftEntry, void *rightEntry, void *userData);  /* Forward struct declaration */
-typedef intptr_t (*OMRHashTableComparatorFn)(struct J9AVLTree *tree, struct J9AVLTreeNode *leftNode, struct J9AVLTreeNode *rightNode);  /* Forward struct declaration */
+typedef intptr_t (*OMRHashTableComparatorFn)(struct OMRAVLTree *tree, struct OMRAVLTreeNode *leftNode, struct OMRAVLTreeNode *rightNode);  /* Forward struct declaration */
 typedef void (*OMRHashTablePrintFn)(OMRPortLibrary *portLibrary, void *entry, void *userData);  /* Forward struct declaration */
 typedef uintptr_t (*OMRHashTableDoFn)(void *entry, void *userData);  /* Forward struct declaration */
 typedef struct OMRHashTable {
@@ -102,7 +102,7 @@ typedef struct OMRHashTable {
 	struct J9Pool *listNodePool;
 	struct J9Pool *treeNodePool;
 	struct J9Pool *treePool;
-	struct J9AVLTree *avlTreeTemplate;
+	struct OMRAVLTree *avlTreeTemplate;
 	uintptr_t (*hashFn)(void *key, void *userData) ;
 	uintptr_t (*hashEqualFn)(void *leftKey, void *rightKey, void *userData) ;
 	void (*printFn)(OMRPortLibrary *portLibrary, void *key, void *userData) ;
