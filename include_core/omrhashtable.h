@@ -99,9 +99,9 @@ typedef struct OMRHashTable {
 	uint32_t memoryCategory;
 	uint32_t listToTreeThreshold;
 	void **nodes;
-	struct J9Pool *listNodePool;
-	struct J9Pool *treeNodePool;
-	struct J9Pool *treePool;
+	struct OMRPool *listNodePool;
+	struct OMRPool *treeNodePool;
+	struct OMRPool *treePool;
 	struct OMRAVLTree *avlTreeTemplate;
 	uintptr_t (*hashFn)(void *key, void *userData) ;
 	uintptr_t (*hashEqualFn)(void *leftKey, void *rightKey, void *userData) ;
@@ -118,7 +118,7 @@ typedef struct OMRHashTableState {
 	uint32_t didDeleteCurrentNode;
 	void **pointerToCurrentNode;
 	uintptr_t iterateState;
-	struct J9PoolState poolState;
+	struct OMRPoolState poolState;
 } OMRHashTableState;
 
 //TODO Remove once all downstream project use OMR namespace instead of J9

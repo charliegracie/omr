@@ -289,7 +289,7 @@ postForkCleanupBuffers(OMR_TraceThread *thr)
 void
 postForkCleanupThreads(OMR_TraceThread *thr)
 {
-	J9PoolState threadPoolState;
+	OMRPoolState threadPoolState;
 	OMRPORT_ACCESS_FROM_OMRPORT(OMR_TRACEGLOBAL(portLibrary));
 
 	/* Cleanup and free the name and OMR_TraceThread for all threads which do not exist after fork. */

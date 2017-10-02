@@ -344,7 +344,7 @@ omrthread_rwmutex_reset(omrthread_rwmutex_t rwmutex, omrthread_t self)
 	}
 }
 
-J9Pool *
+OMRPool *
 omrthread_rwmutex_init_pool(omrthread_library_t library)
 {
 	return pool_new(sizeof(RWMutex), 0, 0, 0, OMR_GET_CALLSITE(), OMRMEM_CATEGORY_THREADS, omrthread_mallocWrapper, omrthread_freeWrapper, library);

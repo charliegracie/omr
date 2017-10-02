@@ -70,7 +70,7 @@ void *
 omrgc_walkLWNRLockTracePool(void *omrVM, pool_state *state)
 {
 	MM_GCExtensionsBase* gcExtensions = MM_GCExtensionsBase::getExtensions((OMR_VM *)omrVM);
-	J9Pool* tracingPool = gcExtensions->_lightweightNonReentrantLockPool;
+	OMRPool* tracingPool = gcExtensions->_lightweightNonReentrantLockPool;
 	J9ThreadMonitorTracing *lnrl_lock = NULL;
 
 	if (NULL != tracingPool) {

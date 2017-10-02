@@ -247,9 +247,9 @@ struct OMR_TraceGlobal {
 	volatile uint32_t allocatedTraceBuffers;	/* The number of allocated trace buffers ????*/
 	int fatalassert;				/* Whether assertion type trace points are fatal or not. */
 	OMR_TraceLanguageInterface languageIntf;				 /* Language interface */
-	J9Pool *bufferPool;				/* Pool for allocating all UtTraceBuffers */
+	OMRPool *bufferPool;				/* Pool for allocating all UtTraceBuffers */
 	omrthread_monitor_t bufferPoolLock;	/* Lock for buffer pool. Do not allow tracepoints while locking, holding, or releasing this monitor. */
-	J9Pool *threadPool;				/* Pool for allocating all UtThreadData */
+	OMRPool *threadPool;				/* Pool for allocating all UtThreadData */
 	omrthread_monitor_t threadPoolLock;	/* Lock for thread pool. Do not allow tracepoints while locking, holding, or releasing this monitor. */
 };
 

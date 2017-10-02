@@ -38,13 +38,13 @@
 #define LINK_TO_FREE_LIST(prev, toAdd) SRP_PTR_SET((uintptr_t *)prev, toAdd)
 #define LINK_TO_NULL(prev) SRP_PTR_SET_TO_NULL(prev)
 
-#define PUDDLE_BITS(puddle) ((uint32_t *) ((J9PoolPuddle *) (puddle) + 1))
+#define PUDDLE_BITS(puddle) ((uint32_t *) ((OMRPoolPuddle *) (puddle) + 1))
 #define POOL_PUDDLE_BITS_LEN(pool) (((pool)->elementsPerPuddle+31) / 32)
 #define PUDDLE_SLOT_FREE(puddle, sindex) (*(PUDDLE_BITS(puddle) + (((uint32_t)(sindex)) >> 5)) & (1 << (31 - (((uint32_t)(sindex)) & 31))))
 #define MARK_SLOT_FREE(puddle, sindex) do { *(PUDDLE_BITS(puddle) + (((uint32_t)(sindex)) >> 5)) |=  (1 << (31 - (((uint32_t)(sindex)) & 31))); } while (0)
 #define MARK_SLOT_USED(puddle, sindex) do { *(PUDDLE_BITS(puddle) + (((uint32_t)(sindex)) >> 5)) &= ~(1 << (31 - (((uint32_t)(sindex)) & 31))); } while (0)
 
-#define COMPUTE_FIRST_ELEMENT(align, puddle, bitlength) (ROUND_TO((align), ((uintptr_t) (puddle)) + sizeof(J9PoolPuddle) + ((bitlength)*sizeof(uint32_t))))
+#define COMPUTE_FIRST_ELEMENT(align, puddle, bitlength) (ROUND_TO((align), ((uintptr_t) (puddle)) + sizeof(OMRPoolPuddle) + ((bitlength)*sizeof(uint32_t))))
 
 /* HOLE_FREQUENCY defines how often a hole appears - there is a hole every HOLE_FREQUENCY elements. Must be power of two. */
 #define HOLE_FREQUENCY	16
@@ -59,7 +59,7 @@
  * @return A pointer to the SRP to the puddle containing the specified element.
  */
 static J9SRP *
-pool_getElementPuddleSRP(J9Pool *pool, void *element)
+pool_getElementPuddleSRP(OMRPool *pool, void *element)
 {
 	J9SRP *puddleSRP;
 
@@ -84,10 +84,10 @@ pool_getElementPuddleSRP(J9Pool *pool, void *element)
  * @return The element's index in the puddle, or -1 if the element is not in the puddle.
  */
 static int32_t
-pool_getElementPuddleSlot(J9Pool *pool, J9PoolPuddle *puddle, void *element)
+pool_getElementPuddleSlot(OMRPool *pool, OMRPoolPuddle *puddle, void *element)
 {
 	int32_t returnValue = -1;
-	uintptr_t firstElementAddress = (uintptr_t) J9POOLPUDDLE_FIRSTELEMENTADDRESS(puddle);
+	uintptr_t firstElementAddress = (uintptr_t) OMRPOOLPUDDLE_FIRSTELEMENTADDRESS(puddle);
 	uintptr_t diff = ((uintptr_t) element - firstElementAddress);
 
 	if ((diff % pool->elementSize) == 0) {
@@ -114,7 +114,7 @@ pool_getElementPuddleSlot(J9Pool *pool, J9PoolPuddle *puddle, void *element)
  * @return none
  */
 static void
-poolPuddle_init(J9Pool *pool, J9PoolPuddle *puddle)
+poolPuddle_init(OMRPool *pool, OMRPoolPuddle *puddle)
 {
 	uintptr_t *nextLocation;
 	uintptr_t *freeLocation;
@@ -137,9 +137,9 @@ poolPuddle_init(J9Pool *pool, J9PoolPuddle *puddle)
 
 	/* Build the free list, containing all element slots. */
 	if (pool->flags & POOL_USES_HOLES) {
-		freeLocation = (uintptr_t *)((uintptr_t)J9POOLPUDDLE_FIRSTELEMENTADDRESS(puddle) + pool->elementSize);
+		freeLocation = (uintptr_t *)((uintptr_t)OMRPOOLPUDDLE_FIRSTELEMENTADDRESS(puddle) + pool->elementSize);
 	} else {
-		freeLocation = (uintptr_t *) J9POOLPUDDLE_FIRSTELEMENTADDRESS(puddle);
+		freeLocation = (uintptr_t *) OMRPOOLPUDDLE_FIRSTELEMENTADDRESS(puddle);
 	}
 	NNSRP_SET(puddle->firstFreeSlot, freeLocation);
 	nextLocation = freeLocation;
@@ -155,18 +155,18 @@ poolPuddle_init(J9Pool *pool, J9PoolPuddle *puddle)
 }
 
 /**
- * Allocate a new J9PoolPuddle to be used with the specified pool.
+ * Allocate a new OMRPoolPuddle to be used with the specified pool.
  *
  * This does not link the puddle into the pool, but simply allocates and initializes it.
  *
  * @param[in] pool  The pool containing the parameters to use for the puddle.
  *
- * @return pointer to a new J9PoolPuddle or NULL in the case of an error.
+ * @return pointer to a new OMRPoolPuddle or NULL in the case of an error.
  */
-J9PoolPuddle *
-poolPuddle_new(J9Pool *pool)
+OMRPoolPuddle *
+poolPuddle_new(OMRPool *pool)
 {
-	J9PoolPuddle *puddle;
+	OMRPoolPuddle *puddle;
 	uint32_t doInit = 1;
 
 	Trc_poolPuddle_new_Entry(pool);
@@ -192,7 +192,7 @@ poolPuddle_new(J9Pool *pool)
 }
 
 /**
- * Delete the given J9PoolPuddle from the specified pool.
+ * Delete the given OMRPoolPuddle from the specified pool.
  *
  * It is assumed that this puddle is empty of any elements.
  *
@@ -205,11 +205,11 @@ poolPuddle_new(J9Pool *pool)
  * @return none
  */
 static void
-poolPuddle_delete(J9Pool *pool, J9PoolPuddle *puddle)
+poolPuddle_delete(OMRPool *pool, OMRPoolPuddle *puddle)
 {
-	J9PoolPuddleList *puddleList = J9POOL_PUDDLELIST(pool);
-	J9PoolPuddle *next = J9POOLPUDDLE_NEXTPUDDLE(puddle);
-	J9PoolPuddle *prev = J9POOLPUDDLE_PREVPUDDLE(puddle);
+	OMRPoolPuddleList *puddleList = OMRPOOL_PUDDLELIST(pool);
+	OMRPoolPuddle *next = OMRPOOLPUDDLE_NEXTPUDDLE(puddle);
+	OMRPoolPuddle *prev = OMRPOOLPUDDLE_PREVPUDDLE(puddle);
 
 	if (NULL != prev) {
 		WSRP_SET(prev->nextPuddle, next);
@@ -227,10 +227,10 @@ poolPuddle_delete(J9Pool *pool, J9PoolPuddle *puddle)
 
 	if (NULL != puddle) {
 		/* Remove it from the available puddles list also, if it is in it. */
-		J9PoolPuddle *poolNext = J9POOLPUDDLELIST_NEXTAVAILABLEPUDDLE(puddleList);
+		OMRPoolPuddle *poolNext = OMRPOOLPUDDLELIST_NEXTAVAILABLEPUDDLE(puddleList);
 
-		next = J9POOLPUDDLE_NEXTAVAILABLEPUDDLE(puddle);
-		prev = J9POOLPUDDLE_PREVAVAILABLEPUDDLE(puddle);
+		next = OMRPOOLPUDDLE_NEXTAVAILABLEPUDDLE(puddle);
+		prev = OMRPOOLPUDDLE_PREVAVAILABLEPUDDLE(puddle);
 
 		if (poolNext == puddle) {
 			WSRP_SET(puddleList->nextAvailablePuddle, next);
@@ -258,14 +258,14 @@ poolPuddle_delete(J9Pool *pool, J9PoolPuddle *puddle)
  * @param[in] poolFlags
  * @param[in] creatorCallSite location of the function creating the pool
  * @param[in] memoryCategory Memory category for the function creating the pool
- * @param[in] memAlloc Allocate function pointer for J9Pools
- * @param[in] memFree  Free function pointer for J9Pools
+ * @param[in] memAlloc Allocate function pointer for OMRPools
+ * @param[in] memFree  Free function pointer for OMRPools
  * @param[in] userData Passed as first parameter into allocation and free calls
  *
  * @return pointer to a new pool, or NULL if the pool could not be created.
  *
  */
-J9Pool *
+OMRPool *
 pool_new(uintptr_t structSizeArg,
 		 uintptr_t numberElementsArg,
 		 uintptr_t elementAlignmentArg,
@@ -280,7 +280,7 @@ pool_new(uintptr_t structSizeArg,
 	uint64_t tempAllocSize, puddleAllocSize;
 	uint32_t finalNumberOfElements, minNumberElements;
 	uint32_t roundedStructSize, puddleHeaderAllocSize, puddleBitsSize, newPuddleBitsSize;
-	J9Pool *pool;
+	OMRPool *pool;
 	uint32_t firstElementAlignment;
 	uint32_t structSize = (uint32_t)structSizeArg;
 	uint32_t numberElements = (uint32_t)numberElementsArg;
@@ -342,7 +342,7 @@ pool_new(uintptr_t structSizeArg,
 	/* Header size is as follows (if not using holes):
 	 *
 	 * +--------------+-------------+--------------------+   +-------------+------------+-------------+------------+-----+
-	 * | J9PoolPuddle | puddle bits | alignment overhead |   | 1st element | puddle SRP | 2nd element | puddle SRP | ... |
+	 * | OMRPoolPuddle | puddle bits | alignment overhead |   | 1st element | puddle SRP | 2nd element | puddle SRP | ... |
 	 * +--------------+-------------+--------------------+   +-------------+------------+-------------+------------+-----+
 	 *
 	 * Note: With POOL_USES_HOLES, puddleSRPs are instead stored once in every HOLE_FREQUENCY slots.
@@ -350,7 +350,7 @@ pool_new(uintptr_t structSizeArg,
 	newPuddleBitsSize = ((minNumberElements + 31) >> 3);
 	do {
 		puddleBitsSize = newPuddleBitsSize;
-		puddleHeaderAllocSize = ROUND_TO(elementAlignment, sizeof(J9PoolPuddle) + puddleBitsSize) + (firstElementAlignment - MALLOC_ALIGNMENT);
+		puddleHeaderAllocSize = ROUND_TO(elementAlignment, sizeof(OMRPoolPuddle) + puddleBitsSize) + (firstElementAlignment - MALLOC_ALIGNMENT);
 		if (poolFlags & POOL_USES_HOLES) {
 			/* Every sector has HOLE_FREQUENCY (16) slots (one of which is the "hole"). */
 			uint32_t sectorSize = roundedStructSize * HOLE_FREQUENCY;
@@ -377,10 +377,10 @@ pool_new(uintptr_t structSizeArg,
 		return NULL;
 	}
 
-	pool = memAlloc(userData, sizeof(J9Pool), poolCreatorCallsite, memoryCategory, POOL_ALLOC_TYPE_POOL, &doInit);
+	pool = memAlloc(userData, sizeof(OMRPool), poolCreatorCallsite, memoryCategory, POOL_ALLOC_TYPE_POOL, &doInit);
 
 	if (NULL != pool) {
-		J9PoolPuddleList *puddleList;
+		OMRPoolPuddleList *puddleList;
 
 		pool->elementSize = (uintptr_t)roundedStructSize;
 		pool->alignment = (uint16_t)elementAlignment;	/* we assume no alignment is > 64k */
@@ -394,13 +394,13 @@ pool_new(uintptr_t structSizeArg,
 		pool->memoryCategory = memoryCategory;
 
 		doInit = 1;
-		puddleList = memAlloc(userData, sizeof(J9PoolPuddleList), poolCreatorCallsite, memoryCategory, POOL_ALLOC_TYPE_PUDDLE_LIST, &doInit);
+		puddleList = memAlloc(userData, sizeof(OMRPoolPuddleList), poolCreatorCallsite, memoryCategory, POOL_ALLOC_TYPE_PUDDLE_LIST, &doInit);
 
 		if (NULL != puddleList) {
 			NNWSRP_SET(pool->puddleList, puddleList);
 
 			if (doInit) {
-				J9PoolPuddle *firstPuddle = poolPuddle_new(pool);
+				OMRPoolPuddle *firstPuddle = poolPuddle_new(pool);
 				if (NULL != firstPuddle) {
 					puddleList->numElements = 0;
 					NNWSRP_SET(puddleList->nextPuddle, firstPuddle);
@@ -431,18 +431,18 @@ pool_new(uintptr_t structSizeArg,
  *
  */
 void
-pool_kill(J9Pool *pool)
+pool_kill(OMRPool *pool)
 {
 	Trc_pool_kill_Entry(pool);
 
 	if (NULL != pool) {
-		J9PoolPuddleList *puddleList = J9POOL_PUDDLELIST(pool);
-		J9PoolPuddle *walk = J9POOLPUDDLELIST_NEXTPUDDLE(puddleList);
-		J9PoolPuddle *puddle;
+		OMRPoolPuddleList *puddleList = OMRPOOL_PUDDLELIST(pool);
+		OMRPoolPuddle *walk = OMRPOOLPUDDLELIST_NEXTPUDDLE(puddleList);
+		OMRPoolPuddle *puddle;
 
 		while (NULL != walk) {
 			puddle = walk;
-			walk = J9POOLPUDDLE_NEXTPUDDLE(puddle);
+			walk = OMRPOOLPUDDLE_NEXTPUDDLE(puddle);
 			pool->memFree(pool->userData, puddle, POOL_ALLOC_TYPE_PUDDLE);
 		}
 
@@ -474,14 +474,14 @@ pool_kill(J9Pool *pool)
  *
  */
 void *
-pool_newElement(J9Pool *pool)
+pool_newElement(OMRPool *pool)
 {
 	int32_t slot;
 	void *newElement;
 	void *nextFreeElement;
 	J9SRP *puddleSRP;
-	J9PoolPuddle *puddle;
-	J9PoolPuddleList *puddleList;
+	OMRPoolPuddle *puddle;
+	OMRPoolPuddleList *puddleList;
 
 	Trc_pool_newElement_Entry(pool);
 
@@ -491,11 +491,11 @@ pool_newElement(J9Pool *pool)
 	}
 
 	/* Check if there is a puddle with free slots - if so use it. */
-	puddleList = J9POOL_PUDDLELIST(pool);
+	puddleList = OMRPOOL_PUDDLELIST(pool);
 
-	puddle = J9POOLPUDDLELIST_NEXTAVAILABLEPUDDLE(puddleList);
+	puddle = OMRPOOLPUDDLELIST_NEXTAVAILABLEPUDDLE(puddleList);
 	if (NULL == puddle) {
-		J9PoolPuddle *head;
+		OMRPoolPuddle *head;
 
 		/* No available puddles. Allocate a new one. */
 		puddle = poolPuddle_new(pool);
@@ -505,7 +505,7 @@ pool_newElement(J9Pool *pool)
 		}
 
 		/* Stick it at the top of the list. */
-		head = J9POOLPUDDLELIST_NEXTPUDDLE(puddleList);
+		head = OMRPOOLPUDDLELIST_NEXTPUDDLE(puddleList);
 		NNWSRP_SET(puddleList->nextPuddle, puddle);
 		NNWSRP_SET(puddle->nextPuddle, head);
 		NNWSRP_SET(head->prevPuddle, puddle);
@@ -513,7 +513,7 @@ pool_newElement(J9Pool *pool)
 		NNWSRP_SET(puddleList->nextAvailablePuddle, puddle);
 	}
 
-	newElement = J9POOLPUDDLE_FIRSTFREESLOT(puddle);
+	newElement = OMRPOOLPUDDLE_FIRSTFREESLOT(puddle);
 	nextFreeElement = NEXT_FREE_SLOT(newElement);
 
 	SRP_SET(puddle->firstFreeSlot, nextFreeElement);
@@ -529,8 +529,8 @@ pool_newElement(J9Pool *pool)
 
 	/* If the puddle is full, remove it from the list of available puddles. */
 	if (NULL == nextFreeElement) {
-		J9PoolPuddle *next = J9POOLPUDDLE_NEXTAVAILABLEPUDDLE(puddle);
-		J9PoolPuddle *prev = J9POOLPUDDLE_PREVAVAILABLEPUDDLE(puddle);
+		OMRPoolPuddle *next = OMRPOOLPUDDLE_NEXTAVAILABLEPUDDLE(puddle);
+		OMRPoolPuddle *prev = OMRPOOLPUDDLE_PREVAVAILABLEPUDDLE(puddle);
 
 		if (NULL != prev) {
 			WSRP_SET(prev->nextAvailablePuddle, next);
@@ -566,12 +566,12 @@ pool_newElement(J9Pool *pool)
  *
  */
 void
-pool_removeElement(J9Pool *pool, void *anElement)
+pool_removeElement(OMRPool *pool, void *anElement)
 {
 	J9SRP *puddleSRP;
 	int32_t slot;
-	J9PoolPuddle *puddle;
-	J9PoolPuddleList *puddleList;
+	OMRPoolPuddle *puddle;
+	OMRPoolPuddleList *puddleList;
 	void *freeLocation;
 
 	Trc_pool_removeElement_Entry(pool, anElement);
@@ -581,12 +581,12 @@ pool_removeElement(J9Pool *pool, void *anElement)
 		return;
 	}
 
-	puddleList = J9POOL_PUDDLELIST(pool);
+	puddleList = OMRPOOL_PUDDLELIST(pool);
 	puddleSRP = pool_getElementPuddleSRP(pool, anElement);
-	puddle = NNSRP_GET(*puddleSRP, J9PoolPuddle *);
+	puddle = NNSRP_GET(*puddleSRP, OMRPoolPuddle *);
 	slot = pool_getElementPuddleSlot(pool, puddle, anElement);
 	if (slot < 0) {
-		Trc_pool_removeElement_NotFound(anElement, J9POOLPUDDLELIST_NEXTPUDDLE(puddleList));
+		Trc_pool_removeElement_NotFound(anElement, OMRPOOLPUDDLELIST_NEXTPUDDLE(puddleList));
 		Trc_pool_removeElement_Exit();
 		return;		/* this is an error...  we were passed a bogus data pointer. */
 	}
@@ -600,7 +600,7 @@ pool_removeElement(J9Pool *pool, void *anElement)
 	MARK_SLOT_FREE(puddle, slot);
 	puddle->usedElements--;
 	puddleList->numElements--;
-	freeLocation = (void *) J9POOLPUDDLE_FIRSTFREESLOT(puddle);
+	freeLocation = (void *) OMRPOOLPUDDLE_FIRSTFREESLOT(puddle);
 	SRP_SET(puddle->firstFreeSlot, anElement);
 	LINK_TO_FREE_LIST(anElement, freeLocation);
 
@@ -609,7 +609,7 @@ pool_removeElement(J9Pool *pool, void *anElement)
 		poolPuddle_delete(pool, puddle);
 	} else if (NULL == freeLocation) {
 		/* It was full before - but not anymore - add it to the top of the available puddles list. */
-		J9PoolPuddle *next = J9POOLPUDDLELIST_NEXTAVAILABLEPUDDLE(puddleList);
+		OMRPoolPuddle *next = OMRPOOLPUDDLELIST_NEXTAVAILABLEPUDDLE(puddleList);
 
 		WSRP_SET(puddleList->nextAvailablePuddle, puddle);
 		WSRP_SET(puddle->prevAvailablePuddle, NULL);
@@ -635,7 +635,7 @@ pool_removeElement(J9Pool *pool, void *anElement)
  *
  */
 void
-pool_do(J9Pool *pool, void (*doFunction)(void *anElement, void *userData), void *userData)
+pool_do(OMRPool *pool, void (*doFunction)(void *anElement, void *userData), void *userData)
 {
 	void *anElement;
 	pool_state aState;
@@ -662,14 +662,14 @@ pool_do(J9Pool *pool, void (*doFunction)(void *anElement, void *userData), void 
  *
  */
 uintptr_t
-pool_numElements(J9Pool *pool)
+pool_numElements(OMRPool *pool)
 {
 	uintptr_t numElements;
-	J9PoolPuddleList *puddleList;
+	OMRPoolPuddleList *puddleList;
 
 	Trc_pool_numElements_Entry(pool);
 
-	puddleList = J9POOL_PUDDLELIST(pool);
+	puddleList = OMRPOOL_PUDDLELIST(pool);
 	numElements = puddleList->numElements;
 
 	Trc_pool_numElements_Exit(numElements);
@@ -695,7 +695,7 @@ pool_numElements(J9Pool *pool)
  *
  */
 void *
-poolPuddle_startDo(J9Pool *pool, J9PoolPuddle *currentPuddle, pool_state *state, uintptr_t followNextPointers)
+poolPuddle_startDo(OMRPool *pool, OMRPoolPuddle *currentPuddle, pool_state *state, uintptr_t followNextPointers)
 {
 	int32_t slot = 0;
 	uintptr_t *currAddr;
@@ -710,7 +710,7 @@ poolPuddle_startDo(J9Pool *pool, J9PoolPuddle *currentPuddle, pool_state *state,
 	if (0 == currentPuddle->usedElements) {	/* this puddle is empty */
 		Trc_poolPuddle_startDo_EmptyExit();
 		if ((currentPuddle->nextPuddle != 0) && (followNextPointers != 0)) {
-			return poolPuddle_startDo(pool, J9POOLPUDDLE_NEXTPUDDLE(currentPuddle), state, followNextPointers);
+			return poolPuddle_startDo(pool, OMRPOOLPUDDLE_NEXTPUDDLE(currentPuddle), state, followNextPointers);
 		} else {
 			return NULL;		/* totally empty */
 		}
@@ -720,7 +720,7 @@ poolPuddle_startDo(J9Pool *pool, J9PoolPuddle *currentPuddle, pool_state *state,
 	while (PUDDLE_SLOT_FREE(currentPuddle, slot)) {
 		slot++;
 	}
-	currAddr = (uintptr_t *)((uintptr_t) J9POOLPUDDLE_FIRSTELEMENTADDRESS(currentPuddle) + pool->elementSize * slot);
+	currAddr = (uintptr_t *)((uintptr_t) OMRPOOLPUDDLE_FIRSTELEMENTADDRESS(currentPuddle) + pool->elementSize * slot);
 
 	state->thePool = pool;
 	state->currentPuddle = currentPuddle;
@@ -734,7 +734,7 @@ poolPuddle_startDo(J9Pool *pool, J9PoolPuddle *currentPuddle, pool_state *state,
 	if (state->leftToDo == 0) {
 		/* Pre-fetch the next puddle in case this element is deleted and the puddle is freed. */
 		if (followNextPointers) {
-			state->currentPuddle = J9POOLPUDDLE_NEXTPUDDLE(state->currentPuddle);
+			state->currentPuddle = OMRPOOLPUDDLE_NEXTPUDDLE(state->currentPuddle);
 			state->lastSlot = -1; /* In order to start at slot 0 on the next puddle. */
 		} else {
 			/* If not following next pointers, we are done with this pool. */
@@ -762,15 +762,15 @@ poolPuddle_startDo(J9Pool *pool, J9PoolPuddle *currentPuddle, pool_state *state,
  *
  */
 void *
-pool_startDo(J9Pool *pool, pool_state *state)
+pool_startDo(OMRPool *pool, pool_state *state)
 {
 	void *result = NULL;
 
 	Trc_pool_startDo_Entry(pool, state);
 
 	if (pool) {
-		J9PoolPuddleList *puddleList = J9POOL_PUDDLELIST(pool);
-		result = poolPuddle_startDo(pool, J9POOLPUDDLELIST_NEXTPUDDLE(puddleList), state, TRUE);
+		OMRPoolPuddleList *puddleList = OMRPOOL_PUDDLELIST(pool);
+		result = poolPuddle_startDo(pool, OMRPOOLPUDDLELIST_NEXTPUDDLE(puddleList), state, TRUE);
 	}
 
 	Trc_pool_startDo_Exit(result);
@@ -815,7 +815,7 @@ pool_nextDo(pool_state *state)
 	while (PUDDLE_SLOT_FREE(state->currentPuddle, slot)) {
 		slot++;
 	}
-	currAddr = (uintptr_t *)((uintptr_t) J9POOLPUDDLE_FIRSTELEMENTADDRESS(state->currentPuddle)
+	currAddr = (uintptr_t *)((uintptr_t) OMRPOOLPUDDLE_FIRSTELEMENTADDRESS(state->currentPuddle)
 							 + state->thePool->elementSize * slot);
 	state->lastSlot = slot;
 	state->leftToDo--;
@@ -824,7 +824,7 @@ pool_nextDo(pool_state *state)
 	if (state->leftToDo == 0) {
 		if (state->flags & POOLSTATE_FOLLOW_NEXT_POINTERS) {
 			/* Pre-fetch the next puddle in case this element is deleted and the puddle is freed. */
-			state->currentPuddle = J9POOLPUDDLE_NEXTPUDDLE(state->currentPuddle);
+			state->currentPuddle = OMRPOOLPUDDLE_NEXTPUDDLE(state->currentPuddle);
 			state->lastSlot = -1; /* In order to start at slot 0 on the next puddle. */
 		} else {
 			/* If not following next pointers, we are done with this pool. */
@@ -848,20 +848,20 @@ pool_nextDo(pool_state *state)
  *
  */
 void
-pool_clear(J9Pool *pool)
+pool_clear(OMRPool *pool)
 {
 	Trc_pool_clear_Entry(pool);
 
 	if (pool) {
-		J9PoolPuddleList *puddleList = J9POOL_PUDDLELIST(pool);
-		J9PoolPuddle *walk = J9POOLPUDDLELIST_NEXTPUDDLE(puddleList);
+		OMRPoolPuddleList *puddleList = OMRPOOL_PUDDLELIST(pool);
+		OMRPoolPuddle *walk = OMRPOOLPUDDLELIST_NEXTPUDDLE(puddleList);
 
 		NNWSRP_SET(puddleList->nextAvailablePuddle, walk);
 		while (walk) {
-			J9PoolPuddle *next, *prev;
+			OMRPoolPuddle *next, *prev;
 			poolPuddle_init(pool, walk);
-			prev = J9POOLPUDDLE_PREVPUDDLE(walk);
-			next = J9POOLPUDDLE_NEXTPUDDLE(walk);
+			prev = OMRPOOLPUDDLE_PREVPUDDLE(walk);
+			next = OMRPOOLPUDDLE_NEXTPUDDLE(walk);
 			WSRP_SET(walk->prevAvailablePuddle, prev);
 			WSRP_SET(walk->nextAvailablePuddle, next);
 			walk = next;
@@ -883,10 +883,10 @@ pool_clear(J9Pool *pool)
  *
  */
 uintptr_t
-pool_includesElement(J9Pool *pool, void *anElement)
+pool_includesElement(OMRPool *pool, void *anElement)
 {
-	J9PoolPuddleList *puddleList;
-	J9PoolPuddle *walk;
+	OMRPoolPuddleList *puddleList;
+	OMRPoolPuddle *walk;
 
 	Trc_pool_includesElement_Entry(pool, anElement);
 
@@ -895,8 +895,8 @@ pool_includesElement(J9Pool *pool, void *anElement)
 		return FALSE;
 	}
 
-	puddleList = J9POOL_PUDDLELIST(pool);
-	walk = J9POOLPUDDLELIST_NEXTPUDDLE(puddleList);
+	puddleList = OMRPOOL_PUDDLELIST(pool);
+	walk = OMRPOOLPUDDLELIST_NEXTPUDDLE(puddleList);
 
 	while (walk != NULL) {
 		/* Conveniently, -1 is returned if the element is not a slot in the puddle. */
@@ -910,7 +910,7 @@ pool_includesElement(J9Pool *pool, void *anElement)
 				return TRUE;
 			}
 		}
-		walk = J9POOLPUDDLE_NEXTPUDDLE(walk);
+		walk = OMRPOOLPUDDLE_NEXTPUDDLE(walk);
 	}
 
 	Trc_pool_includesElement_ExitOutOfScope();
@@ -921,7 +921,7 @@ pool_includesElement(J9Pool *pool, void *anElement)
 /* Temporary hack to resolve ZOS linking problems.
  * Functions in pool_cap.c are not getting short-names properly without this fix.  */
 void
-refToPoolCap(J9Pool *aPool)
+refToPoolCap(OMRPool *aPool)
 {
 	pool_ensureCapacity(aPool, 0);
 }

@@ -279,9 +279,9 @@ omrthread_rwmutex_reset(omrthread_rwmutex_t rwmutex, omrthread_t self);
 
 /**
  * @param omrthread_library_t Thread library
- * @return J9Pool*
+ * @return OMRPool*
  */
-J9Pool *
+OMRPool *
 omrthread_rwmutex_init_pool(omrthread_library_t library);
 #endif /* defined(OMR_THR_FORK_SUPPORT) */
 

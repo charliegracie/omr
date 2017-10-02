@@ -40,7 +40,7 @@ MM_SweepPoolState::create(MM_EnvironmentBase *env, void *memPtr, MM_MemoryPool *
 }
 
 void 
-MM_SweepPoolState::kill(MM_EnvironmentBase *env, J9Pool *pool, omrthread_monitor_t mutex)
+MM_SweepPoolState::kill(MM_EnvironmentBase *env, OMRPool *pool, omrthread_monitor_t mutex)
 {
 	tearDown(env);
 
@@ -50,7 +50,7 @@ MM_SweepPoolState::kill(MM_EnvironmentBase *env, J9Pool *pool, omrthread_monitor
 }
 
 MM_SweepPoolState *
-MM_SweepPoolState::newInstance(MM_EnvironmentBase *env, J9Pool *pool, omrthread_monitor_t mutex, MM_MemoryPool *memoryPool)
+MM_SweepPoolState::newInstance(MM_EnvironmentBase *env, OMRPool *pool, omrthread_monitor_t mutex, MM_MemoryPool *memoryPool)
 {
 	MM_SweepPoolState *sweepPoolState;
 	

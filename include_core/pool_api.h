@@ -60,7 +60,7 @@ extern "C" {
 * @return void
 */
 void
-pool_clear(J9Pool *aPool);
+pool_clear(OMRPool *aPool);
 
 
 /**
@@ -71,7 +71,7 @@ pool_clear(J9Pool *aPool);
 * @return void
 */
 void
-pool_do(J9Pool *aPool, void (*aFunction)(void *anElement, void *userData), void *userData);
+pool_do(OMRPool *aPool, void (*aFunction)(void *anElement, void *userData), void *userData);
 
 /**
 * @brief
@@ -79,7 +79,7 @@ pool_do(J9Pool *aPool, void (*aFunction)(void *anElement, void *userData), void 
 * @return void
 */
 void
-pool_kill(J9Pool *aPool);
+pool_kill(OMRPool *aPool);
 
 /**
 * @brief
@@ -92,9 +92,9 @@ pool_kill(J9Pool *aPool);
 * @param void*(*memAlloc)(void*,uint32_t)
 * @param void(*memFree)(void*,void*)
 * @param userData
-* @return J9Pool*
+* @return OMRPool*
 */
-J9Pool *
+OMRPool *
 pool_new(uintptr_t structSize,
 		 uintptr_t minNumberElements,
 		 uintptr_t elementAlignment,
@@ -111,7 +111,7 @@ pool_new(uintptr_t structSize,
 * @return void *
 */
 void *
-pool_newElement(J9Pool *aPool);
+pool_newElement(OMRPool *aPool);
 
 
 /**
@@ -129,7 +129,7 @@ pool_nextDo(pool_state *lastHandle);
 * @return uintptr_t
 */
 uintptr_t
-pool_numElements(J9Pool *aPool);
+pool_numElements(OMRPool *aPool);
 
 
 /**
@@ -139,16 +139,16 @@ pool_numElements(J9Pool *aPool);
 * @return void
 */
 void
-pool_removeElement(J9Pool *aPool, void *anElement);
+pool_removeElement(OMRPool *aPool, void *anElement);
 
 
 /**
 * @brief
 * @param *aPool
-* @return J9PoolPuddle
+* @return OMRPoolPuddle
 */
-J9PoolPuddle *
-poolPuddle_new(J9Pool *aPool);
+OMRPoolPuddle *
+poolPuddle_new(OMRPool *aPool);
 
 /**
 * @brief
@@ -157,7 +157,7 @@ poolPuddle_new(J9Pool *aPool);
 * @return void*
 */
 void *
-pool_startDo(J9Pool *aPool, pool_state *lastHandle);
+pool_startDo(OMRPool *aPool, pool_state *lastHandle);
 
 /**
 * @brief
@@ -168,7 +168,7 @@ pool_startDo(J9Pool *aPool, pool_state *lastHandle);
 * @return void*
 */
 void *
-poolPuddle_startDo(J9Pool *aPool, J9PoolPuddle *currentPuddle, pool_state *lastHandle, uintptr_t followNextPointers);
+poolPuddle_startDo(OMRPool *aPool, OMRPoolPuddle *currentPuddle, pool_state *lastHandle, uintptr_t followNextPointers);
 
 /* ---------------- pool_cap.c ---------------- */
 
@@ -178,7 +178,7 @@ poolPuddle_startDo(J9Pool *aPool, J9PoolPuddle *currentPuddle, pool_state *lastH
 * @return uintptr_t
 */
 uintptr_t
-pool_capacity(J9Pool *aPool);
+pool_capacity(OMRPool *aPool);
 
 
 /**
@@ -188,7 +188,7 @@ pool_capacity(J9Pool *aPool);
 * @return uintptr_t
 */
 uintptr_t
-pool_ensureCapacity(J9Pool *aPool, uintptr_t newCapacity);
+pool_ensureCapacity(OMRPool *aPool, uintptr_t newCapacity);
 
 
 /**
@@ -197,7 +197,7 @@ pool_ensureCapacity(J9Pool *aPool, uintptr_t newCapacity);
 * @return uintptr_t
 */
 uintptr_t
-pool_includesElement(J9Pool *aPool, void *anElement);
+pool_includesElement(OMRPool *aPool, void *anElement);
 
 #ifdef __cplusplus
 }

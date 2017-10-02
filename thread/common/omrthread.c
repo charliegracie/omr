@@ -846,7 +846,7 @@ postForkResetThreads(omrthread_t self)
 {
 	omrthread_library_t lib = self->library;
 	omrthread_t threadIterator = NULL;
-	J9PoolState threadPoolState;
+	OMRPoolState threadPoolState;
 
 	threadIterator = (omrthread_t)pool_startDo(lib->thread_pool, &threadPoolState);
 	while (NULL != threadIterator) {
@@ -974,7 +974,7 @@ postForkResetRWMutexes(omrthread_t self)
 {
 	omrthread_library_t lib = self->library;
 	omrthread_rwmutex_t rwmutexIterator = NULL;
-	J9PoolState rwmutexPoolState;
+	OMRPoolState rwmutexPoolState;
 
 	rwmutexIterator = (omrthread_rwmutex_t)pool_startDo(lib->rwmutexPool, &rwmutexPoolState);
 	while (NULL != rwmutexIterator) {

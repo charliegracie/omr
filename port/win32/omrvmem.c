@@ -231,7 +231,7 @@ omrvmem_free_memory(struct OMRPortLibrary *portLibrary, void *address, uintptr_t
 			 */
 			omrthread_monitor_enter(PPG_bindingAccessMonitor);
 			if (NULL != (BindingNode *)avl_search(boundExtents, (uintptr_t)nextBaseToLookup)) {
-				J9Pool *extentPool = portLibrary->portGlobals->platformGlobals.bindingPool;
+				OMRPool *extentPool = portLibrary->portGlobals->platformGlobals.bindingPool;
 				void *topOfExtent = (void *)((uintptr_t)address + byteAmount);
 
 				while (nextBaseToLookup < topOfExtent) {
@@ -942,7 +942,7 @@ omrvmem_numa_set_affinity(struct OMRPortLibrary *portLibrary, uintptr_t numaNode
 	intptr_t returnValue = 0;
 	void *topAddress = (void *)((uintptr_t)address + byteAmount);
 	OMRAVLTree *boundExtents = &portLibrary->portGlobals->platformGlobals.bindingTree;
-	J9Pool *extentPool = portLibrary->portGlobals->platformGlobals.bindingPool;
+	OMRPool *extentPool = portLibrary->portGlobals->platformGlobals.bindingPool;
 	BindingNode *before = NULL;
 	BindingNode *after = NULL;
 	BindingNode *match = NULL;

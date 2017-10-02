@@ -28,7 +28,7 @@
 #define ROUND_TO(granularity, number) ( (((number) % (granularity)) ? ((number) + (granularity) - ((number) % (granularity))) : (number)))
 
 /* Puddle list that will be shared by multiple pools in testPuddleListSharing(). */
-static J9PoolPuddleList *sharedPuddleList = NULL;
+static OMRPoolPuddleList *sharedPuddleList = NULL;
 static int32_t sharedPuddleListReferenceCount = 0;
 
 #define NUM_POOLS_TO_SHARE_PUDDLE_LIST 16
@@ -37,11 +37,11 @@ static int32_t sharedPuddleListReferenceCount = 0;
 #define BYTE_MARKER 2
 #define LAST_BYTE_MARKER 4
 
-static J9Pool* createNewPool(OMRPortLibrary *portLib, PoolInputData *input);
-static int32_t testPoolNewElement(OMRPortLibrary *portLib, PoolInputData *inputData, J9Pool *currentPool);
-static int32_t testPoolWalkFunctions(OMRPortLibrary *portLib, PoolInputData *inputData, J9Pool *currentPool, uint32_t elementsAllocated);
-static int32_t testPoolClear(OMRPortLibrary *portLib, J9Pool *currentPool);
-static int32_t testPoolRemoveElement(OMRPortLibrary *portLib, J9Pool *currentPool);
+static OMRPool* createNewPool(OMRPortLibrary *portLib, PoolInputData *input);
+static int32_t testPoolNewElement(OMRPortLibrary *portLib, PoolInputData *inputData, OMRPool *currentPool);
+static int32_t testPoolWalkFunctions(OMRPortLibrary *portLib, PoolInputData *inputData, OMRPool *currentPool, uint32_t elementsAllocated);
+static int32_t testPoolClear(OMRPortLibrary *portLib, OMRPool *currentPool);
+static int32_t testPoolRemoveElement(OMRPortLibrary *portLib, OMRPool *currentPool);
 
 static void *sharedPuddleListAlloc(OMRPortLibrary *portLib, uint32_t size, const char *callSite, uint32_t memoryCategory, uint32_t type, uint32_t *doInit);
 static void sharedPuddleListFree(OMRPortLibrary *portLib, void *address, uint32_t type);
@@ -49,7 +49,7 @@ static void sharedPuddleListFree(OMRPortLibrary *portLib, void *address, uint32_
 int32_t
 createAndVerifyPool(OMRPortLibrary *portLib, PoolInputData *input)
 {
-	J9Pool *pool = createNewPool(portLib, input);
+	OMRPool *pool = createNewPool(portLib, input);
 	int32_t elementCount = 0;
 	int32_t rc = 0;
 
@@ -123,13 +123,13 @@ sharedPuddleListFree(OMRPortLibrary *portLib, void *address, uint32_t type)
 	}
 }
 
-static J9Pool *
+static OMRPool *
 createNewPool(OMRPortLibrary *portLib, PoolInputData *input)
 {
 	uint32_t expectedNumElems = (input->numberElements == 0) ? 1 : input->numberElements;
 	uint32_t expectedAlignment = (input->elementAlignment == 0) ? MIN_GRANULARITY : input->elementAlignment;
 
-	J9Pool *pool = pool_new(
+	OMRPool *pool = pool_new(
 					input->structSize,
 					input->numberElements,
 					input->elementAlignment,
@@ -143,7 +143,7 @@ createNewPool(OMRPortLibrary *portLib, PoolInputData *input)
 		return NULL;
 	}
 
-	if (pool->puddleAllocSize < ((expectedNumElems * ROUND_TO(expectedAlignment, input->structSize)) + ROUND_TO(expectedAlignment, sizeof(J9PoolPuddle)))) {
+	if (pool->puddleAllocSize < ((expectedNumElems * ROUND_TO(expectedAlignment, input->structSize)) + ROUND_TO(expectedAlignment, sizeof(OMRPoolPuddle)))) {
 		pool_kill(pool);
 		return NULL;
 	}
@@ -155,7 +155,7 @@ createNewPool(OMRPortLibrary *portLib, PoolInputData *input)
 }
 
 static int32_t
-testPoolNewElement(OMRPortLibrary *portLib, PoolInputData *inputData, J9Pool *currentPool)
+testPoolNewElement(OMRPortLibrary *portLib, PoolInputData *inputData, OMRPool *currentPool)
 {
 	void *element = NULL;
 	uint8_t *walkBytes;
@@ -164,9 +164,9 @@ testPoolNewElement(OMRPortLibrary *portLib, PoolInputData *inputData, J9Pool *cu
 	uint32_t expectedAlignment = (inputData->elementAlignment == 0) ? MIN_GRANULARITY : inputData->elementAlignment;
 
 
-	J9PoolPuddleList* puddleList = J9POOL_PUDDLELIST(currentPool);
-	J9PoolPuddle* initialPuddle = J9POOLPUDDLELIST_NEXTAVAILABLEPUDDLE(puddleList);
-	J9PoolPuddle* currentPuddle = initialPuddle;
+	OMRPoolPuddleList* puddleList = OMRPOOL_PUDDLELIST(currentPool);
+	OMRPoolPuddle* initialPuddle = OMRPOOLPUDDLELIST_NEXTAVAILABLEPUDDLE(puddleList);
+	OMRPoolPuddle* currentPuddle = initialPuddle;
 
 	/* Call pool_newElement until a new puddle is allocated... and then allocate a couple of new elements into the new puddle */
 	while (initialPuddle == currentPuddle) {
@@ -207,7 +207,7 @@ testPoolNewElement(OMRPortLibrary *portLib, PoolInputData *inputData, J9Pool *cu
 		/* currentPuddle will become NULL when the puddle being used becomes FULL if there has been no deletions */
 		elementsInPuddle++;
 
-		currentPuddle = J9POOLPUDDLELIST_NEXTAVAILABLEPUDDLE(puddleList);
+		currentPuddle = OMRPOOLPUDDLELIST_NEXTAVAILABLEPUDDLE(puddleList);
 	}
 	if (elementsInPuddle < expectedNumElems) {
 		return -4;
@@ -216,7 +216,7 @@ testPoolNewElement(OMRPortLibrary *portLib, PoolInputData *inputData, J9Pool *cu
 }
 
 static int32_t
-testPoolWalkFunctions(OMRPortLibrary *portLib, PoolInputData *inputData, J9Pool *currentPool, uint32_t elementsAllocated)
+testPoolWalkFunctions(OMRPortLibrary *portLib, PoolInputData *inputData, OMRPool *currentPool, uint32_t elementsAllocated)
 {
 	pool_state state;
 	uint8_t *element = NULL;
@@ -247,7 +247,7 @@ testPoolWalkFunctions(OMRPortLibrary *portLib, PoolInputData *inputData, J9Pool 
 }
 
 static int32_t
-testPoolClear(OMRPortLibrary *portLib, J9Pool *currentPool)
+testPoolClear(OMRPortLibrary *portLib, OMRPool *currentPool)
 {
 	uintptr_t expectedCapacityAfterClear = pool_capacity(currentPool);
 
@@ -262,7 +262,7 @@ testPoolClear(OMRPortLibrary *portLib, J9Pool *currentPool)
 }
 
 static int32_t
-testPoolRemoveElement(OMRPortLibrary *portLib, J9Pool *currentPool)
+testPoolRemoveElement(OMRPortLibrary *portLib, OMRPool *currentPool)
 {
 	uintptr_t expectedNumElements = pool_numElements(currentPool);
 	pool_state state;
@@ -313,7 +313,7 @@ testPoolPuddleListSharing(OMRPortLibrary *portLib)
 	uint32_t index = 0;
 	uintptr_t numElements = 0;
 	void *element = NULL;
-	J9Pool *pool[NUM_POOLS_TO_SHARE_PUDDLE_LIST];
+	OMRPool *pool[NUM_POOLS_TO_SHARE_PUDDLE_LIST];
 	pool_state state[NUM_POOLS_TO_SHARE_PUDDLE_LIST];
 	int32_t result = 0;
 

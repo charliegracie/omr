@@ -53,7 +53,7 @@ MM_LightweightNonReentrantLock::initialize(MM_EnvironmentBase *env, ModronLnrlOp
 	_extensions = env->getExtensions();
 
 	if (NULL != _extensions) {
-		J9Pool* tracingPool = _extensions->_lightweightNonReentrantLockPool;
+		OMRPool* tracingPool = _extensions->_lightweightNonReentrantLockPool;
 		if (NULL != tracingPool) {
 			omrthread_monitor_enter(_extensions->_lightweightNonReentrantLockPoolMutex);
 			_tracing = (J9ThreadMonitorTracing *)pool_newElement(tracingPool);
@@ -118,7 +118,7 @@ MM_LightweightNonReentrantLock::tearDown()
 				_tracing->monitor_name = NULL;
 			}
 
-			J9Pool* tracingPool = _extensions->_lightweightNonReentrantLockPool;
+			OMRPool* tracingPool = _extensions->_lightweightNonReentrantLockPool;
 			if(NULL != tracingPool) {
 				omrthread_monitor_enter(_extensions->_lightweightNonReentrantLockPoolMutex);
 				pool_removeElement(tracingPool, _tracing);

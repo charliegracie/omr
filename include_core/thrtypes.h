@@ -92,7 +92,7 @@ typedef struct J9ThreadGlobal {
 typedef struct J9ThreadLibrary {
 	uintptr_t spinlock;
 	struct J9ThreadMonitorPool *monitor_pool;
-	struct J9Pool *thread_pool;
+	struct OMRPool *thread_pool;
 	uintptr_t threadCount;
 #if defined(WIN32)
 	uintptr_t stack_usage;
@@ -100,7 +100,7 @@ typedef struct J9ThreadLibrary {
 	intptr_t initStatus;
 	uintptr_t flags;
 	struct J9ThreadGlobal *globals;
-	struct J9Pool *global_pool;
+	struct OMRPool *global_pool;
 	J9OSMutex global_mutex;
 	TLSKEY self_ptr;
 	J9OSMutex monitor_mutex;
@@ -108,8 +108,8 @@ typedef struct J9ThreadLibrary {
 	omrthread_tls_finalizer_t tls_finalizers[J9THREAD_MAX_TLS_KEYS];
 	char *thread_weight;
 #if defined(OMR_THR_JLM)
-	struct J9Pool *monitor_tracing_pool;
-	struct J9Pool *thread_tracing_pool;
+	struct OMRPool *monitor_tracing_pool;
+	struct OMRPool *thread_tracing_pool;
 	struct J9ThreadMonitorTracing *gc_lock_tracing;
 	uint64_t clock_skew;
 #endif /* OMR_THR_JLM */
@@ -145,7 +145,7 @@ typedef struct J9ThreadLibrary {
 	J9OSMutex resourceUsageMutex;
 	uintptr_t threadWalkMutexesHeld;
 #if defined(OMR_THR_FORK_SUPPORT)
-	struct J9Pool *rwmutexPool;
+	struct OMRPool *rwmutexPool;
 #endif /* defined(OMR_THR_FORK_SUPPORT) */
 	omrthread_attr_t systemThreadAttr;
 #if defined(OSX)

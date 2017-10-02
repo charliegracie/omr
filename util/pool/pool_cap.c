@@ -48,7 +48,7 @@
  *
  */
 uintptr_t
-pool_ensureCapacity(J9Pool *aPool, uintptr_t newCapacity)
+pool_ensureCapacity(OMRPool *aPool, uintptr_t newCapacity)
 {
 	uintptr_t numElements;
 	uintptr_t result = 0;
@@ -61,20 +61,20 @@ pool_ensureCapacity(J9Pool *aPool, uintptr_t newCapacity)
 	aPool->flags |= POOL_NEVER_FREE_PUDDLES;
 
 	if (newCapacity > numElements) {
-		J9PoolPuddleList *puddleList;
-		J9PoolPuddle *newPuddle, *lastPuddle;
+		OMRPoolPuddleList *puddleList;
+		OMRPoolPuddle *newPuddle, *lastPuddle;
 		uintptr_t newSize = newCapacity - numElements;
 
-		puddleList = J9POOL_PUDDLELIST(aPool);
-		lastPuddle = J9POOLPUDDLELIST_NEXTPUDDLE(puddleList);
+		puddleList = OMRPOOL_PUDDLELIST(aPool);
+		lastPuddle = OMRPOOLPUDDLELIST_NEXTPUDDLE(puddleList);
 		for (;;) {
 			if (lastPuddle->nextPuddle == 0) {
 				break;
 			}
-			lastPuddle = J9POOLPUDDLE_NEXTPUDDLE(lastPuddle);
+			lastPuddle = OMRPOOLPUDDLE_NEXTPUDDLE(lastPuddle);
 		}
 		while (newSize > 0) {
-			J9PoolPuddle *puddle;
+			OMRPoolPuddle *puddle;
 
 			if (newSize < aPool->elementsPerPuddle) {
 				newSize = aPool->elementsPerPuddle;
@@ -90,7 +90,7 @@ pool_ensureCapacity(J9Pool *aPool, uintptr_t newCapacity)
 			NNWSRP_SET(lastPuddle->nextPuddle, newPuddle);
 			NNWSRP_SET(newPuddle->prevPuddle, lastPuddle);
 			/* And also at the top of the available puddle list. */
-			puddle = WSRP_GET(puddleList->nextAvailablePuddle, J9PoolPuddle *);
+			puddle = WSRP_GET(puddleList->nextAvailablePuddle, OMRPoolPuddle *);
 			if (puddle) {
 				NNWSRP_SET(newPuddle->nextAvailablePuddle, puddle);
 			}
@@ -116,19 +116,19 @@ pool_ensureCapacity(J9Pool *aPool, uintptr_t newCapacity)
  *
  */
 uintptr_t
-pool_capacity(J9Pool *aPool)
+pool_capacity(OMRPool *aPool)
 {
 	uintptr_t numElements = 0;
 
 	Trc_pool_capacity_Entry(aPool);
 
 	if (aPool) {
-		J9PoolPuddleList *puddleList = J9POOL_PUDDLELIST(aPool);
-		J9PoolPuddle *walk = J9POOLPUDDLELIST_NEXTPUDDLE(puddleList);
+		OMRPoolPuddleList *puddleList = OMRPOOL_PUDDLELIST(aPool);
+		OMRPoolPuddle *walk = OMRPOOLPUDDLELIST_NEXTPUDDLE(puddleList);
 
 		while (walk) {
 			numElements += aPool->elementsPerPuddle;
-			walk = J9POOLPUDDLE_NEXTPUDDLE(walk);
+			walk = OMRPOOLPUDDLE_NEXTPUDDLE(walk);
 		}
 	}
 

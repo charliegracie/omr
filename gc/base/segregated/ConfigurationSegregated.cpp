@@ -175,7 +175,7 @@ MM_ConfigurationSegregated::allocateNewEnvironment(MM_GCExtensionsBase *extensio
 	return MM_EnvironmentBase::newInstance(extensions, omrVMThread);
 }
 
-J9Pool *
+OMRPool *
 MM_ConfigurationSegregated::createEnvironmentPool(MM_EnvironmentBase *env)
 {
 	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());

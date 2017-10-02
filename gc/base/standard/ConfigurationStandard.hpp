@@ -63,7 +63,7 @@ public:
 	virtual MM_GlobalCollector* createGlobalCollector(MM_EnvironmentBase* env);
 	virtual MM_Heap* createHeapWithManager(MM_EnvironmentBase* env, uintptr_t heapBytesRequested, MM_HeapRegionManager* regionManager);
 	virtual MM_HeapRegionManager* createHeapRegionManager(MM_EnvironmentBase* env);
-	virtual J9Pool* createEnvironmentPool(MM_EnvironmentBase* env);
+	virtual OMRPool* createEnvironmentPool(MM_EnvironmentBase* env);
 
 	MM_ConfigurationStandard(MM_EnvironmentBase* env, MM_GCPolicy gcPolicy, uintptr_t regionSize)
 		: MM_Configuration(env, gcPolicy, mm_regionAlignment, regionSize, STANDARD_ARRAYLET_LEAF_SIZE_BYTES, getWriteBarrierType(env), gc_modron_allocation_type_tlh)

@@ -110,10 +110,10 @@ protected:
 public:
 	/**
 	 * Free the receiver and all associated resources.
-	 * @param pool J9Pool used for allocation 
-	 * @param mutex mutex to protect J9Pool operations
+	 * @param pool OMRPool used for allocation 
+	 * @param mutex mutex to protect OMRPool operations
 	 */
-	void kill(MM_EnvironmentBase *env,  J9Pool *pool, omrthread_monitor_t mutex)
+	void kill(MM_EnvironmentBase *env,  OMRPool *pool, omrthread_monitor_t mutex)
 	{
 		tearDown(env);
 
@@ -124,12 +124,12 @@ public:
 
 	/**
 	 * Allocate and initialize a new instance of the receiver.
-	 * @param pool J9Pool should be used for allocation
-	 * @param mutex mutex to protect J9Pool operations
+	 * @param pool OMRPool should be used for allocation
+	 * @param mutex mutex to protect OMRPool operations
 	 * @param memoryPool memory pool this sweepPoolState should be associated with
 	 * @return a new instance of the receiver, or NULL on failure.
 	 */
-	static MM_ConcurrentSweepPoolState *newInstance(MM_EnvironmentBase *env, J9Pool *pool, omrthread_monitor_t mutex, MM_MemoryPool *memoryPool)
+	static MM_ConcurrentSweepPoolState *newInstance(MM_EnvironmentBase *env, OMRPool *pool, omrthread_monitor_t mutex, MM_MemoryPool *memoryPool)
 	{
 		MM_ConcurrentSweepPoolState *sweepPoolState;
 		

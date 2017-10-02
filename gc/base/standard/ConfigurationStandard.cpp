@@ -235,7 +235,7 @@ MM_ConfigurationStandard::allocateNewEnvironment(MM_GCExtensionsBase* extensions
 	return MM_EnvironmentStandard::newInstance(extensions, omrVMThread);
 }
 
-J9Pool*
+OMRPool*
 MM_ConfigurationStandard::createEnvironmentPool(MM_EnvironmentBase* env)
 {
 	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());

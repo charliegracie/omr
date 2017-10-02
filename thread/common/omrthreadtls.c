@@ -108,7 +108,7 @@ omrthread_tls_alloc_with_finalizer(omrthread_tls_key_t *handle, omrthread_tls_fi
 intptr_t
 omrthread_tls_free(omrthread_tls_key_t key)
 {
-	J9PoolState state;
+	OMRPoolState state;
 	omrthread_t each;
 	omrthread_library_t lib = GLOBAL_DATA(default_library);
 	ASSERT(lib);

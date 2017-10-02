@@ -102,7 +102,7 @@ typedef struct J9CommonHookInterface {
 	struct J9HookInterface *hookInterface;
 	uintptr_t size;
 	omrthread_monitor_t lock;
-	struct J9Pool *pool;
+	struct OMRPool *pool;
 	uintptr_t nextAgentID;
 	struct OMRPortLibrary *portLib;		/* for accessing PortLibrary  */
 	uint64_t threshold4Trace;			/* the threshold for triggering tracepoint */

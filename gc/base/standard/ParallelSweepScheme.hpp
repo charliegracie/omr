@@ -107,7 +107,7 @@ protected:
 
 	MM_SweepHeapSectioning *_sweepHeapSectioning;	/**< pointer to Sweep Heap Sectioning */
 
-	J9Pool *_poolSweepPoolState;				/**< Memory pools for SweepPoolState*/ 
+	OMRPool *_poolSweepPoolState;				/**< Memory pools for SweepPoolState*/ 
 	omrthread_monitor_t _mutexSweepPoolState;	/**< Monitor to protect memory pool operations for sweepPoolState*/
 
 public:

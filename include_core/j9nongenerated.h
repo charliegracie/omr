@@ -215,7 +215,7 @@ typedef struct J9MemorySegment {
 #define J9MEMORYSEGMENT_RIGHTCHILD(base) AVL_SRP_GETNODE((base)->parentAVLTreeNode.rightChild)
 
 typedef struct J9MemorySegmentList {
-	struct J9Pool *segmentPool;
+	struct OMRPool *segmentPool;
 	struct J9MemorySegment *nextSegment;
 	uintptr_t totalSegmentSize;
 	omrthread_monitor_t segmentMutex;

@@ -74,11 +74,11 @@ static const int32_t outputInterval = 10;
 
 static void walkHeap(struct OMRPortLibrary *portLibrary, J9Heap *heapBase, const char *testName);
 static void verifySubAllocMem(struct OMRPortLibrary *portLibrary, void *subAllocMem, uintptr_t allocSize, J9Heap *heapBase, const char *testName);
-static void iteratePool(struct OMRPortLibrary *portLibrary, J9Pool *allocPool);
-static void *removeItemFromPool(struct OMRPortLibrary *portLibrary, J9Pool *allocPool, uintptr_t removeIndex);
-static AllocListElement *getElementFromPool(struct OMRPortLibrary *portLibrary, J9Pool *allocPool, uintptr_t index);
+static void iteratePool(struct OMRPortLibrary *portLibrary, OMRPool *allocPool);
+static void *removeItemFromPool(struct OMRPortLibrary *portLibrary, OMRPool *allocPool, uintptr_t removeIndex);
+static AllocListElement *getElementFromPool(struct OMRPortLibrary *portLibrary, OMRPool *allocPool, uintptr_t index);
 static uintptr_t allocLargestChunkPossible(struct OMRPortLibrary *portLibrary, J9Heap *heapBase, uintptr_t heapSize);
-static void freeRemainingElementsInPool(struct OMRPortLibrary *portLibrary, J9Heap *heapBase, J9Pool *allocPool);
+static void freeRemainingElementsInPool(struct OMRPortLibrary *portLibrary, J9Heap *heapBase, OMRPool *allocPool);
 static void verifyHeapOutofRegionWrite(struct OMRPortLibrary *portLibrary, uint8_t *memAllocStart, uint8_t *heapEnd, uintptr_t heapStartOffset, const char *testName);
 
 /**
@@ -197,7 +197,7 @@ exit:
  *
  * This is a more exhaustive test that performs random allocations and frees in a fairly large heap.
  * We go into a loop of heap_allocate and heap_free, the size of alloc is based on the random value (i.e. [0, allocSizeBoundary]).
- * We store the returned address, request size, etc in a sub-allocated memory identifier, which is stored in a J9Pool.
+ * We store the returned address, request size, etc in a sub-allocated memory identifier, which is stored in a OMRPool.
  * When we do a heap_free, we randomly pick an element from the pool and free the memory based on the values stored in the identifier.
  * We keep a separate counter for number of heap_allocate and heap_free calls, and we terminate the loop when heap_free count reaches a certain value e.g. 500,000.
  *
@@ -225,7 +225,7 @@ omrheap_test2(struct OMRPortLibrary *portLibrary, int randomSeed)
 	J9Heap *allocHeapPtr = NULL;
 	J9Heap *heapBase = NULL;
 	void *subAllocMem;
-	J9Pool *allocPool;
+	OMRPool *allocPool;
 
 	reportTestEntry(OMRPORTLIB, testName);
 
@@ -1129,7 +1129,7 @@ exit:
  * Helper function that iterates all used elements in the pool and call heap_free to free each memory blocks, whose information is stored in a pool element.
  */
 static void
-freeRemainingElementsInPool(struct OMRPortLibrary *portLibrary, J9Heap *heapBase, J9Pool *allocPool)
+freeRemainingElementsInPool(struct OMRPortLibrary *portLibrary, J9Heap *heapBase, OMRPool *allocPool)
 {
 	OMRPORT_ACCESS_FROM_OMRPORT(portLibrary);
 	pool_state state;
@@ -1170,7 +1170,7 @@ allocLargestChunkPossible(struct OMRPortLibrary *portLibrary, J9Heap *heapBase, 
  * Returns the AllocListElement->allocPtr stored in the pool element.
  */
 static void *
-removeItemFromPool(struct OMRPortLibrary *portLibrary, J9Pool *allocPool, uintptr_t removeIndex)
+removeItemFromPool(struct OMRPortLibrary *portLibrary, OMRPool *allocPool, uintptr_t removeIndex)
 {
 	uintptr_t i = 0;
 	pool_state state;
@@ -1190,7 +1190,7 @@ removeItemFromPool(struct OMRPortLibrary *portLibrary, J9Pool *allocPool, uintpt
  * Helper function that gets a specific element from the pool.
  */
 static AllocListElement *
-getElementFromPool(struct OMRPortLibrary *portLibrary, J9Pool *allocPool, uintptr_t index)
+getElementFromPool(struct OMRPortLibrary *portLibrary, OMRPool *allocPool, uintptr_t index)
 {
 	uintptr_t i = 0;
 	pool_state state;
@@ -1255,7 +1255,7 @@ verifySubAllocMem(struct OMRPortLibrary *portLibrary, void *subAllocMem, uintptr
  * helper function that iterates the used elements in a Pool and produces some verbose output of the information stored in AllocListElement.
  */
 static void
-iteratePool(struct OMRPortLibrary *portLibrary, J9Pool *allocPool)
+iteratePool(struct OMRPortLibrary *portLibrary, OMRPool *allocPool)
 {
 	pool_state state;
 	AllocListElement *element;

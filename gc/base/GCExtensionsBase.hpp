@@ -88,7 +88,7 @@ class MM_SweepPoolManagerAddressOrderedList;
 class MM_SweepPoolManagerAddressOrderedListBase;
 class MM_RealtimeGC;
 class MM_VerboseManagerBase;
-struct J9Pool;
+struct OMRPool;
 
 #if defined(OMR_ENV_DATA64)
 #define MINIMUM_TLH_SIZE 768
@@ -223,7 +223,7 @@ public:
 	MM_Scavenger *scavenger;
 #endif /* OMR_GC_MODRON_SCAVENGER */
 
-	J9Pool* environments;
+	OMRPool* environments;
 	MM_ExcessiveGCStats excessiveGCStats;
 #if defined(OMR_GC_MODRON_STANDARD) || defined(OMR_GC_REALTIME)
 	MM_GlobalGCStats globalGCStats;
@@ -284,7 +284,7 @@ public:
 	volatile OMR_VMThread* gcExclusiveAccessThreadId; /**< thread token that represents the current "winning" thread for performing garbage collection */
 	omrthread_monitor_t gcExclusiveAccessMutex; /**< Mutex used for acquiring gc priviledges as well as for signalling waiting threads that GC has been completed */
 
-	J9Pool* _lightweightNonReentrantLockPool;
+	OMRPool* _lightweightNonReentrantLockPool;
 	omrthread_monitor_t _lightweightNonReentrantLockPoolMutex;
 
 #if defined(OMR_GC_COMBINATION_SPEC)

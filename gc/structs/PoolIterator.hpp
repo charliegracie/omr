@@ -35,12 +35,12 @@
 #include "pool_api.h"
 
 /**
- * Iterate over the contents of a J9Pool.
+ * Iterate over the contents of a OMRPool.
  * @ingroup GC_Structs
  */
 class GC_PoolIterator
 {
-	J9Pool *_pool;
+	OMRPool *_pool;
 	pool_state _state;
 	void **_nextValue;	
 
@@ -49,7 +49,7 @@ public:
 	/**
 	 * Initialize an existing iterator with a new pool.
 	 */
-	MMINLINE void init(J9Pool *aPool)
+	MMINLINE void init(OMRPool *aPool)
 	{
 		_pool = aPool;
 		if(NULL != _pool) {
@@ -62,7 +62,7 @@ public:
 	/**
 	 * @note This constructor will accept NULL (needed by GC_VMThreadJNISlotIterator) but behaviour of nextSlot() is undefined after that. 
 	 */
-	GC_PoolIterator(J9Pool *aPool) :
+	GC_PoolIterator(OMRPool *aPool) :
 		_pool(aPool),
 		_nextValue(NULL)
 	{
