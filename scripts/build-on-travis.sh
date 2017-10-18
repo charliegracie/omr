@@ -37,7 +37,12 @@ if test "x$BUILD_WITH_CMAKE" = "xyes"; then
   if test "x$RUN_BUILD" != "xno"; then
     time cmake --build . -- -j $BUILD_JOBS
     if test "x$RUN_TESTS" != "xno"; then
-      time ctest -V
+      if test "x$TRAVIS_OS_NAME" = "xosx"; then
+         fvtest/compilertriltest/comptest &
+         sample comptest 180
+      else
+         time ctest -V
+      fi
     fi
   fi
 else

@@ -34,7 +34,7 @@ TEST_P(IllformedTrees, FailCompilation) {
 
     Tril::JitBuilderCompiler compiler{trees};
 
-    ASSERT_DEATH(compiler.compile(), "VALIDATION ERROR")
+    ASSERT_EXIT(compiler.compile(), ::testing::KilledBySignal(6), "VALIDATION ERROR")
             << "Compilation did not fail due to ill-formed input trees";
 }
 
@@ -162,6 +162,6 @@ TEST_F(CommoningDeathTest, CommoningAcrossBlock)
    ASSERT_NOTNULL(ast) << "Parsing failed unexpectedly";
 
    Tril::JitBuilderCompiler compiler{ast};
-   ASSERT_DEATH(compiler.compile(), "VALIDATION ERROR")
+   ASSERT_EXIT(compiler.compile(), ::testing::KilledBySignal(6), "VALIDATION ERROR")
       << "Compilation did not fail due to ill-formed input trees";
    }
