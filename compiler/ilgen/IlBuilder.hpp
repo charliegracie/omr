@@ -211,6 +211,7 @@ public:
    void StoreIndirect(const char *type, const char *field, TR::IlValue *object, TR::IlValue *value);
    TR::IlValue *IndexAt(TR::IlType *dt, TR::IlValue *base, TR::IlValue *index);
    TR::IlValue *AtomicAdd(TR::IlValue *baseAddress, TR::IlValue * value);
+   TR::IlValue *AtomicAddWithOffset(TR::IlValue *baseAddress, TR::IlValue * offset, TR::IlValue * value);
    void Transaction(TR::IlBuilder **persistentFailureBuilder, TR::IlBuilder **transientFailureBuilder, TR::IlBuilder **fallThroughBuilder);
    void TransactionAbort();
 
@@ -366,6 +367,7 @@ public:
                uint32_t numCases,
                ...);
 
+   void defineSymbol(const char *name, TR::SymbolReference *v);
 protected:
 
    /**
@@ -420,7 +422,6 @@ protected:
    TR_HeapMemory trHeapMemory();
 
    TR::SymbolReference *lookupSymbol(const char *name);
-   void defineSymbol(const char *name, TR::SymbolReference *v);
    TR::IlValue *newValue(TR::IlType *dt, TR::Node *n=NULL);
    TR::IlValue *newValue(TR::DataType dt, TR::Node *n=NULL);
    void closeValue(TR::IlValue *v, TR::IlType *dt, TR::Node *n);

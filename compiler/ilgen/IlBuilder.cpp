@@ -164,12 +164,6 @@ OMR::IlBuilder::setupForBuildIL()
    _exitBlock = emptyBlock();
    }
 
-char *
-OMR::IlBuilder::getName()
-   {
-   return "";;
-   }
-
 void
 OMR::IlBuilder::print(const char *title, bool recurse)
    {
@@ -1077,7 +1071,7 @@ OMR::IlBuilder::doVectorConversions(TR::Node **leftPtr, TR::Node **rightPtr)
    }
 
 TR::IlValue *
-IlBuilder::widenIntegerTo32Bits(TR::IlValue *v)
+OMR::IlBuilder::widenIntegerTo32Bits(TR::IlValue *v)
    {
    if (v->getDataType() == TR::Int8 || v->getDataType() == TR::Int16)
       return ConvertTo(Int32, v);
@@ -1474,7 +1468,7 @@ OMR::IlBuilder::Div(TR::IlValue *left, TR::IlValue *right)
    }
 
 TR::IlValue *
-IlBuilder::Rem(TR::IlValue *left, TR::IlValue *right)
+OMR::IlBuilder::Rem(TR::IlValue *left, TR::IlValue *right)
    {
    TR::DataType returnType = left->getDataType();
 
@@ -1519,7 +1513,7 @@ OMR::IlBuilder::Xor(TR::IlValue *left, TR::IlValue *right)
    }
 
 TR::Node*
-IlBuilder::shiftOpNodeFromNodes(TR::ILOpCodes op,
+OMR::IlBuilder::shiftOpNodeFromNodes(TR::ILOpCodes op,
                                 TR::Node *leftNode,
                                 TR::Node *rightNode) 
    {
@@ -1531,7 +1525,7 @@ IlBuilder::shiftOpNodeFromNodes(TR::ILOpCodes op,
    }
 
 TR::IlValue *
-IlBuilder::shiftOpFromNodes(TR::ILOpCodes op,
+OMR::IlBuilder::shiftOpFromNodes(TR::ILOpCodes op,
                             TR::Node *leftNode,
                             TR::Node *rightNode) 
    {
@@ -1541,7 +1535,7 @@ IlBuilder::shiftOpFromNodes(TR::ILOpCodes op,
    } 
 
 TR::IlValue *
-IlBuilder::shiftOpFromOpMap(OpCodeMapper mapOp,
+OMR::IlBuilder::shiftOpFromOpMap(OpCodeMapper mapOp,
                             TR::IlValue *left,
                             TR::IlValue *right)
    {
