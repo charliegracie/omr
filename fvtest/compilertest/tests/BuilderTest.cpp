@@ -945,6 +945,7 @@ DoWhileFibonnaciMethod::buildIL()
    return true;
    }
 
+#if 0
 DoWhileWithBreakMethod::DoWhileWithBreakMethod(TR::TypeDictionary *types, BuilderTest *test)
    : TR::MethodBuilder(types, test)
    {
@@ -1051,6 +1052,7 @@ DoWhileWithContinueMethod::buildIL()
 
    return true;
    }
+#endif
 
 DoWhileWithBreakAndContinueMethod::DoWhileWithBreakAndContinueMethod(TR::TypeDictionary *types, BuilderTest *test)
    : TR::MethodBuilder(types, test)
@@ -1180,6 +1182,7 @@ WhileDoFibonnaciMethod::buildIL()
    return true;
    }
 
+#if 0
 WhileDoWithBreakMethod::WhileDoWithBreakMethod(TR::TypeDictionary *types, BuilderTest *test)
    : TR::MethodBuilder(types, test)
    {
@@ -1294,6 +1297,7 @@ WhileDoWithContinueMethod::buildIL()
 
    return true;
    }
+#endif
 
 WhileDoWithBreakAndContinueMethod::WhileDoWithBreakAndContinueMethod(TR::TypeDictionary *types, BuilderTest *test)
    : TR::MethodBuilder(types, test)
