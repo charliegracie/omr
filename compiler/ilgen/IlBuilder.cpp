@@ -651,13 +651,15 @@ void
 OMR::IlBuilder::Store(const char *varName, TR::IlValue *value)
    {
    TR::IlBuilderRecorder::Store(varName, value);
+   if (shouldCompile())
+      {
+      if (!_methodBuilder->symbolDefined(varName))
+         _methodBuilder->defineValue(varName, _types->PrimitiveType(value->getDataType()));
+      TR::SymbolReference *symRef = lookupSymbol(varName);
 
-   if (!_methodBuilder->symbolDefined(varName))
-      _methodBuilder->defineValue(varName, _types->PrimitiveType(value->getDataType()));
-   TR::SymbolReference *symRef = lookupSymbol(varName);
-
-   TraceIL("IlBuilder[ %p ]::Store %s %d gets %d\n", this, varName, symRef->getCPIndex(), value->getID());
-   storeNode(symRef, loadValue(value));
+      TraceIL("IlBuilder[ %p ]::Store %s %d gets %d\n", this, varName, symRef->getCPIndex(), value->getID());
+      storeNode(symRef, loadValue(value));
+      }
    }
 
 /**
@@ -1275,19 +1277,22 @@ OMR::IlBuilder::Return(TR::IlValue *value)
 TR::IlValue *
 OMR::IlBuilder::Sub(TR::IlValue *left, TR::IlValue *right)
    {
-   TR::IlValue *returnValue = TR::IlBuilderRecorder::Sub(left, right);;
-   if (left->getDataType() == TR::Address)
+   TR::IlValue *returnValue = TR::IlBuilderRecorder::Sub(left, right);
+   if (shouldCompile())
       {
-      if (right->getDataType() == TR::Int32)
-         binaryOpFromNodes(TR::aiadd, returnValue, loadValue(left), loadValue(Sub(ConstInt32(0), right)));
-      else if (right->getDataType() == TR::Int64)
-         binaryOpFromNodes(TR::aladd, returnValue, loadValue(left), loadValue(Sub(ConstInt64(0), right)));
+      if (left->getDataType() == TR::Address)
+         {
+         if (right->getDataType() == TR::Int32)
+            binaryOpFromNodes(TR::aiadd, returnValue, loadValue(left), loadValue(Sub(ConstInt32(0), right)));
+         else if (right->getDataType() == TR::Int64)
+            binaryOpFromNodes(TR::aladd, returnValue, loadValue(left), loadValue(Sub(ConstInt64(0), right)));
+         else
+            binaryOpFromOpMap(TR::ILOpCode::subtractOpCode, returnValue, left, right);
+         }
       else
          binaryOpFromOpMap(TR::ILOpCode::subtractOpCode, returnValue, left, right);
+      TraceIL("IlBuilder[ %p ]::%d is Sub %d - %d\n", this, returnValue->getID(), left->getID(), right->getID());
       }
-   else
-      binaryOpFromOpMap(TR::ILOpCode::subtractOpCode, returnValue, left, right);
-   TraceIL("IlBuilder[ %p ]::%d is Sub %d - %d\n", this, returnValue->getID(), left->getID(), right->getID());
    return returnValue;
    }
 
@@ -1318,9 +1323,9 @@ OMR::IlBuilder::Add(TR::IlValue *left, TR::IlValue *right)
          }
       else
          binaryOpFromOpMap(addOpCode, returnValue, left, right);
+      TraceIL("IlBuilder[ %p ]::%d is Add %d + %d\n", this, returnValue->getID(), left->getID(), right->getID());
       }
 
-   TraceIL("IlBuilder[ %p ]::%d is Add %d + %d\n", this, returnValue->getID(), left->getID(), right->getID());
    return returnValue;
    }
 
@@ -1864,31 +1869,54 @@ OMR::IlBuilder::ComputedCall(const char *functionName, int32_t numArgs, TR::IlVa
 TR::IlValue *
 OMR::IlBuilder::Call(const char *functionName, int32_t numArgs, ...)
    {
-   TraceIL("IlBuilder[ %p ]::Call %s\n", this, functionName);
    va_list args;
    va_start(args, numArgs);
    TR::IlValue **argValues = processCallArgs(_comp, numArgs, args);
    va_end(args);
-   TR::ResolvedMethod *resolvedMethod = _methodBuilder->lookupFunction(functionName);
-   if (resolvedMethod == NULL && _methodBuilder->RequestFunction(functionName))
-      resolvedMethod = _methodBuilder->lookupFunction(functionName);
-   TR_ASSERT(resolvedMethod, "Could not identify function %s\n", functionName);
-
-   TR::SymbolReference *methodSymRef = symRefTab()->findOrCreateStaticMethodSymbol(JITTED_METHOD_INDEX, -1, resolvedMethod);
-   return genCall(methodSymRef, numArgs, argValues);
+   return Call(functionName, numArgs, argValues);
    }
 
 TR::IlValue *
 OMR::IlBuilder::Call(const char *functionName, int32_t numArgs, TR::IlValue ** argValues)
    {
-   TraceIL("IlBuilder[ %p ]::Call %s\n", this, functionName);
    TR::ResolvedMethod *resolvedMethod = _methodBuilder->lookupFunction(functionName);
    if (resolvedMethod == NULL && _methodBuilder->RequestFunction(functionName))
       resolvedMethod = _methodBuilder->lookupFunction(functionName);
    TR_ASSERT(resolvedMethod, "Could not identify function %s\n", functionName);
 
-   TR::SymbolReference *methodSymRef = symRefTab()->findOrCreateStaticMethodSymbol(JITTED_METHOD_INDEX, -1, resolvedMethod);
-   return genCall(methodSymRef, numArgs, argValues);
+   TR::IlValue *returnValue = TR::IlBuilderRecorder::Call(functionName, resolvedMethod->returnType(), numArgs, argValues);
+   if (shouldCompile())
+      {
+      TraceIL("IlBuilder[ %p ]::Call %s\n", this, functionName);
+      TR::SymbolReference *methodSymRef = symRefTab()->findOrCreateStaticMethodSymbol(JITTED_METHOD_INDEX, -1, resolvedMethod);
+      genCall(methodSymRef, numArgs, argValues, returnValue);
+      }
+   return returnValue;
+   }
+
+void
+OMR::IlBuilder::genCall(TR::SymbolReference *methodSymRef, int32_t numArgs, TR::IlValue ** argValues, TR::IlValue *returnValue, bool isDirectCall /* true by default*/)
+   {
+   TR::DataType returnType = methodSymRef->getSymbol()->castToMethodSymbol()->getMethod()->returnType();
+   TR::Node *callNode = TR::Node::createWithSymRef(isDirectCall? TR::ILOpCode::getDirectCall(returnType): TR::ILOpCode::getIndirectCall(returnType), numArgs, methodSymRef);
+
+   // TODO: should really verify argument types here
+   int32_t childIndex = 0;
+   for (int32_t a=0;a < numArgs;a++)
+      {
+      TR::IlValue *arg = argValues[a];
+      if (arg->getDataType() == TR::Int8 || arg->getDataType() == TR::Int16 || (Word == Int64 && arg->getDataType() == TR::Int32))
+         arg = ConvertTo(Word, arg);
+      callNode->setAndIncChild(childIndex++, loadValue(arg));
+      }
+
+   // callNode must be anchored by itself
+   genTreeTop(callNode);
+
+   if (returnType != TR::NoType)
+      {
+      closeValue(returnValue, callNode->getDataType(), callNode);
+      }
    }
 
 TR::IlValue *
@@ -2361,52 +2389,54 @@ OMR::IlBuilder::IfThenElse(TR::IlBuilder **thenPath, TR::IlBuilder **elsePath, T
       elseEntry = (*elsePath)->getEntry();
 
    TR::JitBuilderRecorder *savedRecorder = clearRecorder();
+   if (shouldCompile())
+      {
+      TR::Block *mergeBlock = emptyBlock();
 
-   TR::Block *mergeBlock = emptyBlock();
-
-   TraceIL("IlBuilder[ %p ]::IfThenElse %d", this, condition->getID());
-   if (thenEntry)
+      TraceIL("IlBuilder[ %p ]::IfThenElse %d", this, condition->getID());
+      if (thenEntry)
       TraceIL(" then B%d", thenEntry->getNumber());
-   if (elseEntry)
-      TraceIL(" else B%d", elseEntry->getNumber());
-   TraceIL(" merge B%d\n", mergeBlock->getNumber());
+      if (elseEntry)
+         TraceIL(" else B%d", elseEntry->getNumber());
+      TraceIL(" merge B%d\n", mergeBlock->getNumber());
 
-   if (thenPath == NULL) // case #3
-      {
-      ifCmpNotEqualZero(condition, mergeBlock);
-      if ((*elsePath)->_partOfSequence)
-         gotoBlock(elseEntry);
-      else
-         self()->AppendBuilder(*elsePath);
-      }
-   else if (elsePath == NULL) // case #2
-      {
-      ifCmpEqualZero(condition, mergeBlock);
-      if ((*thenPath)->_partOfSequence)
-         gotoBlock(thenEntry);
-      else
-         self()->AppendBuilder(*thenPath);
-      }
-   else // case #1
-      {
-      ifCmpNotEqualZero(condition, thenEntry);
-      if ((*elsePath)->_partOfSequence)
+      if (thenPath == NULL) // case #3
          {
-         gotoBlock(elseEntry);
+         ifCmpNotEqualZero(condition, mergeBlock);
+         if ((*elsePath)->_partOfSequence)
+            gotoBlock(elseEntry);
+         else
+            self()->AppendBuilder(*elsePath);
          }
-      else
+      else if (elsePath == NULL) // case #2
          {
-         self()->AppendBuilder(*elsePath);
-         appendGoto(mergeBlock);
+         ifCmpEqualZero(condition, mergeBlock);
+         if ((*thenPath)->_partOfSequence)
+            gotoBlock(thenEntry);
+         else
+            self()->AppendBuilder(*thenPath);
          }
-      if (!(*thenPath)->_partOfSequence)
-         self()->AppendBuilder(*thenPath);
-      // if then path exists elsewhere already,
-      //  then IfCmpNotEqual above already brances to it
-      }
+      else // case #1
+         {
+         ifCmpNotEqualZero(condition, thenEntry);
+         if ((*elsePath)->_partOfSequence)
+            {
+            gotoBlock(elseEntry);
+            }
+         else
+            {
+            self()->AppendBuilder(*elsePath);
+            appendGoto(mergeBlock);
+            }
+         if (!(*thenPath)->_partOfSequence)
+            self()->AppendBuilder(*thenPath);
+         // if then path exists elsewhere already,
+         //  then IfCmpNotEqual above already brances to it
+         }
 
-   // all paths possibly merge back here
-   appendBlock(mergeBlock);
+      // all paths possibly merge back here
+      appendBlock(mergeBlock);
+      }
 
    restoreRecorder(savedRecorder);
    }

@@ -240,6 +240,7 @@ public:
    TR::IlValue *Call(const char *name, int32_t numArgs, TR::IlValue **argValues);
    TR::IlValue *ComputedCall(const char *name, int32_t numArgs, ...);
    TR::IlValue *ComputedCall(const char *name, int32_t numArgs, TR::IlValue **args);
+   void genCall(TR::SymbolReference *methodSymRef, int32_t numArgs, TR::IlValue ** paramValues, TR::IlValue *returnValue, bool isDirectCall = true);
    TR::IlValue *genCall(TR::SymbolReference *methodSymRef, int32_t numArgs, TR::IlValue ** paramValues, bool isDirectCall = true);
    void Goto(TR::IlBuilder **dest);
    void Goto(TR::IlBuilder *dest);

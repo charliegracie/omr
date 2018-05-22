@@ -150,8 +150,7 @@ public:
    void Transaction(TR::IlBuilder **persistentFailureBuilder, TR::IlBuilder **transientFailureBuilder, TR::IlBuilder **fallThroughBuilder);
    void TransactionAbort();
    void AppendBuilder(TR::IlBuilder *builder);
-   TR::IlValue *Call(const char *name, int32_t numArgs, ...);
-   TR::IlValue *Call(const char *name, int32_t numArgs, TR::IlValue **argValues);
+   TR::IlValue *Call(const char *name, TR::DataType returnType, int32_t numArgs, TR::IlValue **argValues);
    TR::IlValue *ComputedCall(const char *name, int32_t numArgs, ...);
    TR::IlValue *ComputedCall(const char *name, int32_t numArgs, TR::IlValue **args);
    void Goto(TR::IlBuilder **dest);

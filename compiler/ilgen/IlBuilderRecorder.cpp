@@ -1258,67 +1258,36 @@ OMR::IlBuilderRecorder::ComputedCall(const char *functionName, int32_t numArgs, 
    TR::SymbolReference *methodSymRef = symRefTab()->findOrCreateComputedStaticMethodSymbol(JITTED_METHOD_INDEX, -1, resolvedMethod);
    return genCall(methodSymRef, numArgs, argValues, false /*isDirectCall*/);
    }
+#endif
 
 TR::IlValue *
-OMR::IlBuilderRecorder::Call(const char *functionName, int32_t numArgs, ...)
+OMR::IlBuilderRecorder::Call(const char *name, TR::DataType returnType, int32_t numArgs, TR::IlValue **argValues)
    {
-   // TODO: figure out Call REPLAY
-   TraceIL("IlBuilder[ %p ]::Call %s\n", this, functionName);
-   va_list args;
-   va_start(args, numArgs);
-   TR::IlValue **argValues = processCallArgs(_comp, numArgs, args);
-   va_end(args);
-   TR::ResolvedMethod *resolvedMethod = _methodBuilder->lookupFunction(functionName);
-   if (resolvedMethod == NULL && _methodBuilder->RequestFunction(functionName))
-      resolvedMethod = _methodBuilder->lookupFunction(functionName);
-   TR_ASSERT(resolvedMethod, "Could not identify function %s\n", functionName);
-
-   TR::SymbolReference *methodSymRef = symRefTab()->findOrCreateStaticMethodSymbol(JITTED_METHOD_INDEX, -1, resolvedMethod);
-   return genCall(methodSymRef, numArgs, argValues);
-   }
-
-TR::IlValue *
-OMR::IlBuilderRecorder::Call(const char *functionName, int32_t numArgs, TR::IlValue ** argValues)
-   {
-   // TODO: figure out Call REPLAY
-   TraceIL("IlBuilder[ %p ]::Call %s\n", this, functionName);
-   TR::ResolvedMethod *resolvedMethod = _methodBuilder->lookupFunction(functionName);
-   if (resolvedMethod == NULL && _methodBuilder->RequestFunction(functionName))
-      resolvedMethod = _methodBuilder->lookupFunction(functionName);
-   TR_ASSERT(resolvedMethod, "Could not identify function %s\n", functionName);
-
-   TR::SymbolReference *methodSymRef = symRefTab()->findOrCreateStaticMethodSymbol(JITTED_METHOD_INDEX, -1, resolvedMethod);
-   return genCall(methodSymRef, numArgs, argValues);
-   }
-
-TR::IlValue *
-OMR::IlBuilderRecorder::genCall(TR::SymbolReference *methodSymRef, int32_t numArgs, TR::IlValue ** argValues, bool isDirectCall /* true by default*/)
-   {
-   TR::DataType returnType = methodSymRef->getSymbol()->castToMethodSymbol()->getMethod()->returnType();
-   TR::Node *callNode = TR::Node::createWithSymRef(isDirectCall? TR::ILOpCode::getDirectCall(returnType): TR::ILOpCode::getIndirectCall(returnType), numArgs, methodSymRef);
-
-   // TODO: should really verify argument types here
-   int32_t childIndex = 0;
-   for (int32_t a=0;a < numArgs;a++)
-      {
-      TR::IlValue *arg = argValues[a];
-      if (arg->getDataType() == TR::Int8 || arg->getDataType() == TR::Int16 || Word == Int64 && arg->getDataType() == TR::Int32)
-         arg = ConvertTo(Word, arg);
-      callNode->setAndIncChild(childIndex++, loadValue(arg));
-      }
-
-   // callNode must be anchored by itasIlBuilder
-   genTreeTop(callNode);
-
+   TR::IlValue *returnValue = NULL;
    if (returnType != TR::NoType)
       {
-      TR::IlValue *returnValue = newValue(callNode->getDataType(), callNode);
-      return returnValue;
+      returnValue = newValue();
       }
+   TR::JitBuilderRecorder *rec = recorder();
+   if (NULL != rec)
+      {
+      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_CALL);
+      rec->String(name);
+      rec->Number(numArgs);
+      for (int32_t v=0;v < numArgs;v++)
+         rec->Value(argValues[v]);
+      if (returnType != TR::NoType)
+         {
+         rec->StoreID(returnValue);
+         rec->Value(returnValue);
+         }
 
-   return NULL;
+      rec->EndStatement();
    }
+   return returnValue;
+}
 
+#if 0
 /** \brief
  *     The service is used to atomically increase memory location [\p baseAddress + \p offset] by amount of \p value. 
  *

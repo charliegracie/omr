@@ -141,6 +141,7 @@ class JitBuilderRecorder
    const char *STATEMENT_RETURNVALUE                = "ReturnValue";
    const char *STATEMENT_IFTHENELSE                 = "IfThenElse";
    const char *STATEMENT_FORLOOP                    = "ForLoop";
+   const char *STATEMENT_CALL                       = "Call";
 
    protected:
 

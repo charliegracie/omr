@@ -30,6 +30,7 @@
 #include "Jit.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/MethodBuilder.hpp"
+#include "ilgen/JitBuilderRecorderTextFile.hpp"
 #include "RecursiveFib.hpp"
 
 static void
@@ -47,8 +48,8 @@ printInt32(int32_t value)
    fprintf(stderr, "%d", value);
    }
 
-RecursiveFibonnaciMethod::RecursiveFibonnaciMethod(TR::TypeDictionary *types)
-   : MethodBuilder(types)
+RecursiveFibonnaciMethod::RecursiveFibonnaciMethod(TR::TypeDictionary *types, TR::JitBuilderRecorderTextFile *recorder)
+   : MethodBuilder(types, recorder)
    {
    DefineLine(LINETOSTR(__LINE__));
    DefineFile(__FILE__);
@@ -102,17 +103,6 @@ RecursiveFibonnaciMethod::buildIL()
    recursiveCase->            Load("n"),
    recursiveCase->            ConstInt32(2)))));
 
-   Call("printString", 1,
-      ConstInt64((int64_t)prefix));
-   Call("printInt32", 1,
-      Load("n"));
-   Call("printString", 1,
-      ConstInt64((int64_t)middle));
-   Call("printInt32", 1,
-      Load("result"));
-   Call("printString", 1,
-      ConstInt64((int64_t)suffix));
-
    Return(
       Load("result"));
 
@@ -132,9 +122,11 @@ main(int argc, char *argv[])
 
    printf("Step 2: define relevant types\n");
    TR::TypeDictionary types;
+   // Create a recorder so we can directly control the file for this particular test
+   TR::JitBuilderRecorderTextFile recorder(NULL, "recfib.out");
 
    printf("Step 3: compile method builder\n");
-   RecursiveFibonnaciMethod method(&types);
+   RecursiveFibonnaciMethod method(&types, &recorder);
    uint8_t *entry=0;
    int32_t rc = compileMethodBuilder(&method, &entry);
    if (rc != 0)
