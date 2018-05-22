@@ -152,22 +152,28 @@ OMR::IlBuilder::injectIL()
    if (!rc)
       return false;
 
-   rc = connectTrees();
-   if (TraceEnabled)
-      comp()->dumpMethodTrees("after connectTrees");
-   cfg()->removeUnreachableBlocks();
-   if (TraceEnabled)
-      comp()->dumpMethodTrees("after removing unreachable blocks");
+   if (shouldCompile())
+      {
+      rc = connectTrees();
+      if (TraceEnabled)
+         comp()->dumpMethodTrees("after connectTrees");
+      cfg()->removeUnreachableBlocks();
+      if (TraceEnabled)
+         comp()->dumpMethodTrees("after removing unreachable blocks");
+      }
    return rc;
    }
 
 void
 OMR::IlBuilder::setupForBuildIL()
    {
-   initSequence();
-   appendBlock(NULL, false);
-   _entryBlock = _currentBlock;
-   _exitBlock = emptyBlock();
+   if (shouldCompile())
+      {
+      initSequence();
+      appendBlock(NULL, false);
+      _entryBlock = _currentBlock;
+      _exitBlock = emptyBlock();
+      }
    }
 
 void
@@ -249,7 +255,10 @@ TR::IlValue *
 OMR::IlBuilder::newValue(TR::DataType dt, TR::Node *n)
    {
    TR::IlValue *value = TR::IlBuilderRecorder::newValue();
-   closeValue(value, dt, n);
+   if (shouldCompile())
+      {
+      closeValue(value, dt, n);
+      }
    return value;
    }
 
@@ -779,10 +788,12 @@ TR::IlValue *
 OMR::IlBuilder::Load(const char *name)
    {
    TR::IlValue *returnValue = IlBuilderRecorder::Load(name);
-
-   TR::SymbolReference *symRef = lookupSymbol(name);
-   TR::Node *valueNode = TR::Node::createLoad(symRef);
-   closeValue(returnValue, symRef->getSymbol()->getDataType(), valueNode);
+   if (shouldCompile())
+      {
+      TR::SymbolReference *symRef = lookupSymbol(name);
+      TR::Node *valueNode = TR::Node::createLoad(symRef);
+      closeValue(returnValue, symRef->getSymbol()->getDataType(), valueNode);
+      }
 
    return returnValue;
    }
@@ -941,7 +952,10 @@ TR::IlValue *
 OMR::IlBuilder::ConstInt32(int32_t value)
    {
    TR::IlValue *returnValue = TR::IlBuilderRecorder::ConstInt32(value);
-   closeValue(returnValue, Int32, TR::Node::iconst(value));
+   if (shouldCompile())
+      {
+      closeValue(returnValue, Int32, TR::Node::iconst(value));
+      }
    TraceIL("IlBuilder[ %p ]::%d is ConstInt32 %d\n", this, returnValue->getID(), value);
    return returnValue;
    }
@@ -1235,10 +1249,13 @@ void
 OMR::IlBuilder::Return()
    {
    TraceIL("IlBuilder[ %p ]::Return\n", this);
-   TR::Node *returnNode = TR::Node::create(TR::ILOpCode::returnOpCode(TR::NoType));
-   genTreeTop(returnNode);
-   cfg()->addEdge(_currentBlock, cfg()->getEnd());
-   setDoesNotComeBack();
+   if (shouldCompile())
+      {
+      TR::Node *returnNode = TR::Node::create(TR::ILOpCode::returnOpCode(TR::NoType));
+      genTreeTop(returnNode);
+      cfg()->addEdge(_currentBlock, cfg()->getEnd());
+      setDoesNotComeBack();
+      }
    }
 
 void
@@ -1246,10 +1263,13 @@ OMR::IlBuilder::Return(TR::IlValue *value)
    {
    TR::IlBuilderRecorder::Return(value);
    TraceIL("IlBuilder[ %p ]::Return %d\n", this, value->getID());
-   TR::Node *returnNode = TR::Node::create(TR::ILOpCode::returnOpCode(value->getDataType()), 1, loadValue(value));
-   genTreeTop(returnNode);
-   cfg()->addEdge(_currentBlock, cfg()->getEnd());
-   setDoesNotComeBack();
+   if (shouldCompile())
+      {
+      TR::Node *returnNode = TR::Node::create(TR::ILOpCode::returnOpCode(value->getDataType()), 1, loadValue(value));
+      genTreeTop(returnNode);
+      cfg()->addEdge(_currentBlock, cfg()->getEnd());
+      setDoesNotComeBack();
+      }
    }
 
 TR::IlValue *
@@ -1285,17 +1305,20 @@ TR::IlValue *
 OMR::IlBuilder::Add(TR::IlValue *left, TR::IlValue *right)
    {
    TR::IlValue *returnValue = TR::IlBuilderRecorder::Add(left, right);
-   if (left->getDataType() == TR::Address)
+   if (shouldCompile())
       {
-      if (right->getDataType() == TR::Int32)
-         binaryOpFromNodes(TR::aiadd, returnValue, loadValue(left), loadValue(right));
-      else if (right->getDataType() == TR::Int64)
-         binaryOpFromNodes(TR::aladd, returnValue, loadValue(left), loadValue(right));
-      else 
+      if (left->getDataType() == TR::Address)
+         {
+         if (right->getDataType() == TR::Int32)
+            binaryOpFromNodes(TR::aiadd, returnValue, loadValue(left), loadValue(right));
+         else if (right->getDataType() == TR::Int64)
+            binaryOpFromNodes(TR::aladd, returnValue, loadValue(left), loadValue(right));
+         else
+            binaryOpFromOpMap(addOpCode, returnValue, left, right);
+         }
+      else
          binaryOpFromOpMap(addOpCode, returnValue, left, right);
       }
-   else
-      binaryOpFromOpMap(addOpCode, returnValue, left, right);
 
    TraceIL("IlBuilder[ %p ]::%d is Add %d + %d\n", this, returnValue->getID(), left->getID(), right->getID());
    return returnValue;

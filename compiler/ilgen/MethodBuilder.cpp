@@ -427,21 +427,30 @@ void
 OMR::MethodBuilder::DefineLine(const char *line)
    {
    TR::MethodBuilderRecorder::DefineLine(line);
-   snprintf(_definingLine, MAX_LINE_NUM_LEN * sizeof(char), "%s", line);
+   if (isCompiling())
+      {
+      snprintf(_definingLine, MAX_LINE_NUM_LEN * sizeof(char), "%s", line);
+      }
    }
 
 void
 OMR::MethodBuilder::DefineLine(int32_t line)
    {
    TR::MethodBuilderRecorder::DefineLine(line);
-   snprintf(_definingLine, MAX_LINE_NUM_LEN * sizeof(char), "%d", line);
+   if (isCompiling())
+      {
+      snprintf(_definingLine, MAX_LINE_NUM_LEN * sizeof(char), "%d", line);
+      }
    }
 
 void
 OMR::MethodBuilder::DefineName(const char *name)
    {
    TR::MethodBuilderRecorder::DefineName(name);
-   _methodName = name;
+   if (isCompiling())
+      {
+      _methodName = name;
+      }
    }
 
 void
@@ -452,8 +461,12 @@ OMR::MethodBuilder::DefineParameter(const char *name, TR::IlType *dt)
    TR_ASSERT_FATAL(_parameterSlot->find(name) == _parameterSlot->end(), "Parameter '%s' already defined", name);
 
    _parameterSlot->insert(std::make_pair(name, _numParameters));
-   _symbolNameFromSlot->insert(std::make_pair(_numParameters, name));
-   _symbolTypes->insert(std::make_pair(name, dt));
+
+   //if (isCompiling())
+      //{
+      _symbolNameFromSlot->insert(std::make_pair(_numParameters, name));
+      _symbolTypes->insert(std::make_pair(name, dt));
+     // }
 
    _numParameters++;
    }
@@ -467,8 +480,10 @@ OMR::MethodBuilder::DefineArrayParameter(const char *name, TR::IlType *elementTy
    DefineParameter(name, elementType);
 
    restoreRecorder(savedRecorder);
-
-   _symbolIsArray->insert(name);
+   //if (isCompiling())
+      //{
+      _symbolIsArray->insert(name);
+      //}
    }
 
 void
@@ -482,7 +497,10 @@ void
 OMR::MethodBuilder::DefineLocal(const char *name, TR::IlType *dt)
    {
    TR::MethodBuilderRecorder::DefineLocal(name, dt);
-   _symbolIsArray->insert(name);
+   if (isCompiling())
+      {
+      _symbolIsArray->insert(name);
+      }
    }
 
 void
