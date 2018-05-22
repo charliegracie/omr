@@ -133,6 +133,12 @@ OMR::IlBuilder::initSequence()
    }
 
 bool
+OMR::IlBuilder::shouldCompile()
+   {
+   return _methodBuilder->isCompiling();
+   }
+
+bool
 OMR::IlBuilder::injectIL()
    {
    TraceIL("Inside injectIL()\n");

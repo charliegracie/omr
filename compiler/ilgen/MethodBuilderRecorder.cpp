@@ -69,6 +69,8 @@ OMR::MethodBuilderRecorder::MethodBuilderRecorder(TR::TypeDictionary *types, TR:
             setRecorder(new (types->trMemory()->trHeapMemory()) TR::JitBuilderRecorderBinaryFile(asMethodBuilder(), binaryFileName));
          }
       }
+   else
+	   _recorder->setMethodBuilderRecorder(asMethodBuilder());
 
    TR::JitBuilderRecorder *rec = _recorder;
    if (rec)

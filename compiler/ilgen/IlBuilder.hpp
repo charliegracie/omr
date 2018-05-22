@@ -119,6 +119,8 @@ public:
 
    virtual bool isBytecodeBuilder()             { return false; }
 
+   bool shouldCompile();
+
    //char *getName();
 
    void print(const char *title, bool recurse=false);

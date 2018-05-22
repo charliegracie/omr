@@ -71,7 +71,7 @@
 // into the builder.
 //
 
-OMR::MethodBuilder::MethodBuilder(TR::TypeDictionary *types, TR::JitBuilderRecorder  *recorder, OMR::VirtualMachineState *vmState)
+OMR::MethodBuilder::MethodBuilder(TR::TypeDictionary *types, TR::JitBuilderRecorder  *recorder, OMR::VirtualMachineState *vmState, bool isCompiling)
    : TR::MethodBuilderRecorder(types, recorder, vmState),
    // Note: _memoryRegion and the corresponding TR::SegmentProvider and TR::Memory instances are stored as pointers within MethodBuilder
    // in order to avoid increasing the number of header files needed to compile against the JitBuilder library. Because we are storing
@@ -98,7 +98,8 @@ OMR::MethodBuilder::MethodBuilder(TR::TypeDictionary *types, TR::JitBuilderRecor
    _allBytecodeBuilders(NULL),
    _numBlocksBeforeWorklist(0),
    _countBlocksWorklist(0),
-   _connectTreesWorklist(0)
+   _connectTreesWorklist(0),
+   _isCompiling(isCompiling)
    {
    _definingLine[0] = '\0';
    initMaps();

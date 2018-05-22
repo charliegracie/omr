@@ -42,6 +42,7 @@
 
 extern TR_RuntimeHelperTable runtimeHelpers;
 extern void setupCodeCacheParameters(int32_t *, OMR::CodeCacheCodeGenCallbacks *callBacks, int32_t *numHelpers, int32_t *CCPreLoadedCodeSize);
+extern bool jitBuilderShouldCompile = true;
 
 static void
 initHelper(void *helper, TR_RuntimeHelper id)

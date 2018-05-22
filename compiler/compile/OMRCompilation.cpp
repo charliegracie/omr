@@ -135,6 +135,8 @@ namespace TR { class Options; }
 namespace TR { class CodeCache; }
 namespace TR { class RegisterMappedSymbol; }
 
+extern bool jitBuilderShouldCompile;
+
 
 namespace OMR
 {
@@ -1004,7 +1006,7 @@ int32_t OMR::Compilation::compile()
    // Force a crash during compilation if the crashDuringCompile option is set
    TR_ASSERT_FATAL(!self()->getOption(TR_CrashDuringCompilation), "crashDuringCompile option is set");
 
-   {
+   if (jitBuilderShouldCompile){
    LexicalTimer t("compile", self()->signature(), self()->phaseTimer());
    TR::LexicalMemProfiler mp("compile", self()->signature(), self()->phaseMemProfiler());
 

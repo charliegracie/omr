@@ -54,6 +54,8 @@ class JitBuilderRecorder
    JitBuilderRecorder(const TR::MethodBuilderRecorder *mb);
    virtual ~JitBuilderRecorder();
 
+   void setMethodBuilderRecorder(TR::MethodBuilderRecorder *mb) {_mb = mb;}
+
    /**
     * @brief Subclasses override these functions to record to different output formats
     */

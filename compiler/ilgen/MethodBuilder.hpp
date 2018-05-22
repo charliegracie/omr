@@ -58,7 +58,7 @@ class MethodBuilder : public TR::MethodBuilderRecorder
    public:
    TR_ALLOC(TR_Memory::IlGenerator)
 
-   MethodBuilder(TR::TypeDictionary *types, TR::JitBuilderRecorder *recorder=NULL, OMR::VirtualMachineState *vmState=NULL);
+   MethodBuilder(TR::TypeDictionary *types, TR::JitBuilderRecorder *recorder=NULL, OMR::VirtualMachineState *vmState=NULL, bool isCompiling=true);
    MethodBuilder(const MethodBuilder &src);
    virtual ~MethodBuilder();
 
@@ -137,6 +137,8 @@ class MethodBuilder : public TR::MethodBuilderRecorder
 
    void addToAllBytecodeBuildersList(TR::BytecodeBuilder* bcBuilder);
 
+   bool isCompiling() {return _isCompiling;}
+
    protected:
    void initMaps();
    virtual uint32_t countBlocks();
@@ -199,6 +201,8 @@ class MethodBuilder : public TR::MethodBuilderRecorder
    uint32_t                    _numBlocksBeforeWorklist;
    List<TR::BytecodeBuilder> * _countBlocksWorklist;
    List<TR::BytecodeBuilder> * _connectTreesWorklist;
+
+   bool                        _isCompiling;
    };
 
 } // namespace OMR
@@ -211,8 +215,8 @@ namespace TR
    class MethodBuilder : public OMR::MethodBuilder
       {
       public:
-         MethodBuilder(TR::TypeDictionary *types, TR::JitBuilderRecorder *recorder=NULL, OMR::VirtualMachineState *vmState=NULL)
-            : OMR::MethodBuilder(types, recorder, vmState)
+         MethodBuilder(TR::TypeDictionary *types, TR::JitBuilderRecorder *recorder=NULL, OMR::VirtualMachineState *vmState=NULL, bool isCompiling=true)
+            : OMR::MethodBuilder(types, recorder, vmState, isCompiling)
             { }
       };
 

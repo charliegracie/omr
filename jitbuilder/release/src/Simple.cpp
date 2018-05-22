@@ -30,10 +30,12 @@
 #include "Jit.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/MethodBuilder.hpp"
+#include "ilgen/JitBuilderRecorderTextFile.hpp"
 #include "Simple.hpp"
 
 using std::cout;
 using std::cerr;
+extern bool jitBuilderShouldCompile;
 
 
 int
@@ -49,9 +51,15 @@ main(int argc, char *argv[])
 
    cout << "Step 2: define type dictionary\n";
    TR::TypeDictionary types;
-
+   // Create a recorder so we can directly control the file for this particular test
+   TR::JitBuilderRecorderTextFile recorder(NULL, "simple.out");
+   
    cout << "Step 3: compile method builder\n";
-   SimpleMethod method(&types);
+   SimpleMethod method(&types, &recorder);
+   
+   //TODO Hack to be able to turn compiling off a global level
+   jitBuilderShouldCompile = false;
+   
    uint8_t *entry = 0;
    int32_t rc = compileMethodBuilder(&method, &entry);
    if (rc != 0)
@@ -59,16 +67,26 @@ main(int argc, char *argv[])
       cerr << "FAIL: compilation error " << rc << "\n";
       exit(-2);
       }
+      
+   // If compiling test the compiled code
+   if (jitBuilderShouldCompile)
+      {
+      cout << "Step 4: invoke compiled code and print results\n";
+      typedef int32_t (SimpleMethodFunction)(int32_t);
+      SimpleMethodFunction *increment = (SimpleMethodFunction *) entry;
 
-   cout << "Step 4: invoke compiled code and print results\n";
-   typedef int32_t (SimpleMethodFunction)(int32_t);
-   SimpleMethodFunction *increment = (SimpleMethodFunction *) entry;
-
-   int32_t v;
-   v=0;   cout << "increment(" << v << ") == " << increment(v) << "\n";
-   v=1;   cout << "increment(" << v << ") == " << increment(v) << "\n";
-   v=10;  cout << "increment(" << v << ") == " << increment(v) << "\n";
-   v=-15; cout << "increment(" << v << ") == " << increment(v) << "\n";
+      int32_t v;
+      v=0;   cout << "increment(" << v << ") == " << increment(v) << "\n";
+      v=1;   cout << "increment(" << v << ") == " << increment(v) << "\n";
+      v=10;  cout << "increment(" << v << ") == " << increment(v) << "\n";
+      v=-15; cout << "increment(" << v << ") == " << increment(v) << "\n";
+      }
+   //If not compiling verify the output file....
+   else
+      {
+	   cout << "Step 4: verify output file\n";
+	   //TODO do something with output file to verify :)
+      }
 
    cout << "Step 5: shutdown JIT\n";
    shutdownJit();
@@ -76,8 +94,8 @@ main(int argc, char *argv[])
 
 
 
-SimpleMethod::SimpleMethod(TR::TypeDictionary *d)
-   : MethodBuilder(d)
+SimpleMethod::SimpleMethod(TR::TypeDictionary *d, TR::JitBuilderRecorder *recorder)
+   : MethodBuilder(d, recorder)
    {
    DefineLine(LINETOSTR(__LINE__));
    DefineFile(__FILE__);
@@ -95,6 +113,5 @@ SimpleMethod::buildIL()
       Add(
          Load("value"),
          ConstInt32(1)));
-
    return true;
    }
