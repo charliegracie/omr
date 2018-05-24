@@ -59,6 +59,7 @@
 #define TraceEnabled    (comp()->getOption(TR_TraceILGen))
 #define TraceIL(m, ...) {if (TraceEnabled) {traceMsg(comp(), m, ##__VA_ARGS__);}}
 
+extern bool jitBuilderShouldCompile;
 
 // MethodBuilder is an IlBuilder object representing an entire method /
 // function, so it conceptually has an entry point (though multiple entry
@@ -99,7 +100,7 @@ OMR::MethodBuilder::MethodBuilder(TR::TypeDictionary *types, TR::JitBuilderRecor
    _numBlocksBeforeWorklist(0),
    _countBlocksWorklist(0),
    _connectTreesWorklist(0),
-   _isCompiling(isCompiling)
+   _isCompiling(true)
    {
    _definingLine[0] = '\0';
    initMaps();
@@ -166,6 +167,7 @@ OMR::MethodBuilder::setupForBuildIL()
 bool
 OMR::MethodBuilder::injectIL()
    {
+   TR::MethodBuilderRecorder::ILGenerationBeginning();
    bool rc = IlBuilder::injectIL();
    if (recorder())
       recorder()->Close();
@@ -315,7 +317,7 @@ OMR::MethodBuilder::symbolDefined(const char *name)
    // _symbols not good enough because symbol can be defined even if it has
    // never been stored to, but _symbolTypes will contain all symbols, even
    // if they have never been used. See ::DefineLocal, for example, which can
-   // be called in a MethodBuilder contructor. In contrast, ::DefineSymbol
+   // be called in a MethodBuilder constructor. In contrast, ::DefineSymbol
    // which inserts into _symbols, can only be called from within a MethodBuilder's
    // ::buildIL() method ).
    return _symbolTypes->find(name) != _symbolTypes->end();
@@ -420,7 +422,10 @@ void
 OMR::MethodBuilder::DefineFile(const char *file)
    {
    TR::MethodBuilderRecorder::DefineFile(file);
-   _definingFile = file;
+   if (isCompiling())
+      {
+      _definingFile = file;
+      }
    }
 
 void
@@ -458,12 +463,11 @@ OMR::MethodBuilder::DefineParameter(const char *name, TR::IlType *dt)
    {
    TR::MethodBuilderRecorder::DefineParameter(name, dt);
 
-   TR_ASSERT_FATAL(_parameterSlot->find(name) == _parameterSlot->end(), "Parameter '%s' already defined", name);
-
-   _parameterSlot->insert(std::make_pair(name, _numParameters));
-
    //if (isCompiling())
       //{
+      TR_ASSERT_FATAL(_parameterSlot->find(name) == _parameterSlot->end(), "Parameter '%s' already defined", name);
+      _parameterSlot->insert(std::make_pair(name, _numParameters));
+      
       _symbolNameFromSlot->insert(std::make_pair(_numParameters, name));
       _symbolTypes->insert(std::make_pair(name, dt));
      // }
@@ -497,10 +501,10 @@ void
 OMR::MethodBuilder::DefineLocal(const char *name, TR::IlType *dt)
    {
    TR::MethodBuilderRecorder::DefineLocal(name, dt);
-   if (isCompiling())
-      {
+//   if (isCompiling())
+//      {
       _symbolIsArray->insert(name);
-      }
+//      }
    }
 
 void
@@ -543,8 +547,8 @@ OMR::MethodBuilder::DefineFunction(const char* const name,
                               TR::IlType     ** parmTypes)
    {   
    TR::MethodBuilderRecorder::DefineFunction(name, fileName, lineNumber, entryPoint, returnType, numParms, parmTypes);
-   if (isCompiling())
-      {
+//   if (isCompiling())
+//      {
       TR::ResolvedMethod *method = new (PERSISTENT_NEW) TR::ResolvedMethod((char*)fileName,
                                                                            (char*)lineNumber,
                                                                            (char*)name,
@@ -555,7 +559,7 @@ OMR::MethodBuilder::DefineFunction(const char* const name,
                                                                            0);
 
       _functions->insert(std::make_pair(name, method));
-      }
+//      }
    }
 
 const char *

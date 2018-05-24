@@ -33,7 +33,7 @@ typedef int32_t (IterativeFibFunctionType)(int32_t);
 class IterativeFibonnaciMethod : public TR::MethodBuilder
    {
    public:
-   IterativeFibonnaciMethod(TR::TypeDictionary *types);
+   IterativeFibonnaciMethod(TR::TypeDictionary *types, TR::JitBuilderRecorderTextFile *recorder);
    virtual bool buildIL();
    };
 

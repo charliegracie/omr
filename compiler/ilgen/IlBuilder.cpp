@@ -589,7 +589,7 @@ OMR::IlBuilder::AppendBuilder(TR::IlBuilder *builder)
    TraceIL("IlBuilder[ %p ]::AppendBuilder %p\n", this, builder);
 
    // when trees are connected, exit block will swing down to become last trees in builder, so it can fall through to this block we're about to create
-   // need to add edge explicitly because of this exit block sleight of hand
+   // need to add edge explicitly because of this exit block slight of hand
    appendNoFallThroughBlock();
    cfg()->addEdge(builder->getExit(), _currentBlock);
    }
@@ -651,10 +651,11 @@ void
 OMR::IlBuilder::Store(const char *varName, TR::IlValue *value)
    {
    TR::IlBuilderRecorder::Store(varName, value);
+   if (!_methodBuilder->symbolDefined(varName)) {
+      _methodBuilder->defineValue(varName, _types->PrimitiveType(value->getDataType()));
+   }
    if (shouldCompile())
       {
-      if (!_methodBuilder->symbolDefined(varName))
-         _methodBuilder->defineValue(varName, _types->PrimitiveType(value->getDataType()));
       TR::SymbolReference *symRef = lookupSymbol(varName);
 
       TraceIL("IlBuilder[ %p ]::Store %s %d gets %d\n", this, varName, symRef->getCPIndex(), value->getID());
@@ -2431,7 +2432,7 @@ OMR::IlBuilder::IfThenElse(TR::IlBuilder **thenPath, TR::IlBuilder **elsePath, T
          if (!(*thenPath)->_partOfSequence)
             self()->AppendBuilder(*thenPath);
          // if then path exists elsewhere already,
-         //  then IfCmpNotEqual above already brances to it
+         //  then IfCmpNotEqual above already branches to it
          }
 
       // all paths possibly merge back here
@@ -2564,6 +2565,9 @@ OMR::IlBuilder::ForLoop(bool countsUp,
       bBreak = *breakBuilder = self()->OrphanBuilder();
       }
 
+   // Do not record the loopContinue builder being created.
+   TR::JitBuilderRecorder *savedRecorder = clearRecorder();
+
    TR::IlBuilder *loopContinue = self()->OrphanBuilder();
 
    TR::IlBuilder *bContinue = NULL;
@@ -2573,12 +2577,15 @@ OMR::IlBuilder::ForLoop(bool countsUp,
       bContinue = *continueBuilder = loopContinue;
       }
 
+   // Restore the recorder so we can record the forLoop.
+   restoreRecorder(savedRecorder);
+
    TR::IlBuilderRecorder::ForLoop(countsUp, indVar, *loopCode, bBreak, bContinue, initial, end, increment);
    
    methodSymbol()->setMayHaveLoops(true);
 
    // No services will be logged after this point; all objects must be created by now
-   TR::JitBuilderRecorder *savedRecorder = clearRecorder();
+   savedRecorder = clearRecorder();
 
    TraceIL("IlBuilder[ %p ]::ForLoop ind %s initial %d end %d increment %d loopCode %p countsUp %d\n", this, indVar, initial->getID(), end->getID(), increment->getID(), *loopCode, countsUp);
 

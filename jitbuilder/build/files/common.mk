@@ -225,12 +225,15 @@ JIT_PRODUCT_BACKEND_SOURCES+=\
     $(JIT_OMR_DIRTY_DIR)/ilgen/JitBuilderRecorderBinaryBuffer.cpp \
     $(JIT_OMR_DIRTY_DIR)/ilgen/JitBuilderRecorderBinaryFile.cpp \
     $(JIT_OMR_DIRTY_DIR)/ilgen/JitBuilderRecorderTextFile.cpp \
+    $(JIT_OMR_DIRTY_DIR)/ilgen/JitBuilderReplay.cpp \
+    $(JIT_OMR_DIRTY_DIR)/ilgen/JitBuilderReplayTextFile.cpp \
     $(JIT_OMR_DIRTY_DIR)/ilgen/IlValue.cpp \
     $(JIT_OMR_DIRTY_DIR)/ilgen/IlInjector.cpp \
     $(JIT_OMR_DIRTY_DIR)/ilgen/IlBuilder.cpp \
     $(JIT_OMR_DIRTY_DIR)/ilgen/IlBuilderRecorder.cpp \
     $(JIT_OMR_DIRTY_DIR)/ilgen/MethodBuilder.cpp \
     $(JIT_OMR_DIRTY_DIR)/ilgen/MethodBuilderRecorder.cpp \
+    $(JIT_OMR_DIRTY_DIR)/ilgen/MethodBuilderReplay.cpp \
     $(JIT_OMR_DIRTY_DIR)/ilgen/ThunkBuilder.cpp \
     $(JIT_OMR_DIRTY_DIR)/ilgen/BytecodeBuilder.cpp \
     $(JIT_OMR_DIRTY_DIR)/ilgen/BytecodeBuilderRecorder.cpp \

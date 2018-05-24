@@ -17,13 +17,13 @@
  ******************************************************************************/
 
 
-#ifndef OMR_JITBUILDERRECORDER_INCL
-#define OMR_JITBUILDERRECORDER_INCL
+#ifndef OMR_JITBUILDERREPLAY_INCL
+#define OMR_JITBUILDERREPLAY_INCL
 
 
-#ifndef TR_JITBUILDERRECORDER_DEFINED
-#define TR_JITBUILDERRECORDER_DEFINED
-#define PUT_OMR_JITBUILDERRECORDER_INTO_TR
+#ifndef TR_JITBUILDERREREPLAY_DEFINED
+#define TR_JITBUILDERREREPLAY_DEFINED
+#define PUT_OMR_JITBUILDERREPLAY_INTO_TR
 #endif
 
 
@@ -31,59 +31,53 @@
 #include <fstream>
 #include <map>
 
-namespace TR { class IlBuilderRecorder; }
-namespace TR { class MethodBuilderRecorder; }
+namespace TR { class IlBuilderReplay; }
+namespace TR { class MethodBuilder; }
 namespace TR { class IlType; }
 namespace TR { class IlValue; }
 
 namespace OMR
 {
 
-class JitBuilderRecorder
+class JitBuilderReplay
    {
-   public:
    const int16_t VERSION_MAJOR=0;
    const int16_t VERSION_MINOR=0;
    const int16_t VERSION_PATCH=0;
    const char *RECORDER_SIGNATURE = "JBIL";
    const char *JBIL_COMPLETE      = "Done";
 
+   public:
+
    typedef uint32_t                      TypeID;
-   typedef std::map<const void *,TypeID> TypeMapID;
+   typedef std::map<TypeID, const void *> TypeMapID;
 
-   JitBuilderRecorder(const TR::MethodBuilderRecorder *mb);
-   virtual ~JitBuilderRecorder();
+   JitBuilderReplay(const TR::MethodBuilder *mb);
+   virtual ~JitBuilderReplay();
 
-   void setMethodBuilderRecorder(TR::MethodBuilderRecorder *mb) {_mb = mb;}
+   void setMethodBuilderReplay(TR::MethodBuilder *mb) {_mb = mb;}
 
    /**
-    * @brief Subclasses override these functions to record to different output formats
+    * @brief Subclasses override these functions to replay to different output formats
     */
    virtual void Close()                                       { }
-   virtual void String(const char * const string)             { }
-   virtual void Number(int8_t num)                            { }
-   virtual void Number(int16_t num)                           { }
-   virtual void Number(int32_t num)                           { }
-   virtual void Number(int64_t num)                           { }
-   virtual void Number(float num)                             { }
-   virtual void Number(double num)                            { }
-   virtual void ID(TypeID id)                                 { }
-   virtual void Statement(const char *s)                      { }
-   virtual void Type(const TR::IlType *type)                  { }
-   virtual void Value(const TR::IlValue *v)                   { }
-   virtual void Builder(const TR::IlBuilderRecorder *b)       { }
-   virtual void Location(const void * location)               { }
+   virtual void VerifyRecordedType()                         = 0;
+   virtual void HandleMethodBuilderConstruction()            = 0;
+   virtual void HandleMethodBuilderBuildIL()                 = 0;
 
-   virtual void BeginStatement(const TR::IlBuilderRecorder *b, const char *s);
-   virtual void BeginStatement(const char *s);
-   virtual void EndStatement()                                { }
+   protected:
 
-   void StoreID(const void *ptr);
-   bool EnsureAvailableID(const void *ptr);
-
-   /**
-    * @brief constant strings used to define output format
+   /*
+    * @brief constant strings only used internally by recorders
     */
+   const char *STATEMENT_ID16BIT                    = "ID16BIT";
+   const char *STATEMENT_ID32BIT                    = "ID32BIT";
+
+   void start();
+   bool knownID(const void *ptr);
+   TypeID lookupID(const void *ptr);
+   void end();
+
    const char *STATEMENT_DEFINENAME                 = "DefineName";
    const char *STATEMENT_DEFINEFILE                 = "DefineFile";
    const char *STATEMENT_DEFINELINESTRING           = "DefineLineString";
@@ -144,24 +138,7 @@ class JitBuilderRecorder
    const char *STATEMENT_FORLOOP                    = "ForLoop";
    const char *STATEMENT_CALL                       = "Call";
 
-   protected:
-
-   /*
-    * @brief constant strings only used internally by recorders
-    */
-   const char *STATEMENT_ID16BIT                    = "ID16BIT";
-   const char *STATEMENT_ID32BIT                    = "ID32BIT";
-
-   void start();
-   bool knownID(const void *ptr);
-   TypeID lookupID(const void *ptr);
-   void ensureStatementDefined(const char *s);
-   void end();
-
-   TypeID getNewID();
-   TypeID myID();
-
-   const TR::MethodBuilderRecorder * _mb;
+   const TR::MethodBuilder *         _mb;
    TypeID                            _nextID;
    TypeMapID                         _idMap;
    uint8_t                           _idSize;
@@ -170,22 +147,22 @@ class JitBuilderRecorder
 } // namespace OMR
 
 
-#if defined(PUT_OMR_JITBUILDERRECORDER_INTO_TR)
+#if defined(PUT_OMR_JITBUILDERREPLAY_INTO_TR)
 
 namespace TR
 {
-   class JitBuilderRecorder : public OMR::JitBuilderRecorder
+   class JitBuilderReplay : public OMR::JitBuilderReplay
       {
       public:
-         JitBuilderRecorder(const TR::MethodBuilderRecorder *mb)
-            : OMR::JitBuilderRecorder(mb)
+         JitBuilderReplay(const TR::MethodBuilder *mb)
+            : OMR::JitBuilderReplay(mb)
             { }
-         virtual ~JitBuilderRecorder()
+         virtual ~JitBuilderReplay()
             { }
       };
 
 } // namespace TR
 
-#endif // defined(PUT_OMR_JITBUILDERRECORDER_INTO_TR)
+#endif // defined(PUT_OMR_JITBUILDERREPLAY_INTO_TR)
 
-#endif // !defined(OMR_JITBUILDERRECORDER_INCL)
+#endif // !defined(OMR_JITBUILDERREPLAY_INCL)

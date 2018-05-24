@@ -30,7 +30,9 @@
 #include "Jit.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/MethodBuilder.hpp"
+#include "ilgen/MethodBuilderReplay.hpp"
 #include "ilgen/JitBuilderRecorderTextFile.hpp"
+#include "ilgen/JitBuilderReplayTextFile.hpp"
 #include "Simple.hpp"
 
 using std::cout;
@@ -54,11 +56,11 @@ main(int argc, char *argv[])
    // Create a recorder so we can directly control the file for this particular test
    TR::JitBuilderRecorderTextFile recorder(NULL, "simple.out");
    
-   cout << "Step 3: compile method builder\n";
-   SimpleMethod method(&types, &recorder);
-   
    //TODO Hack to be able to turn compiling off a global level
    jitBuilderShouldCompile = false;
+
+   cout << "Step 3: compile method builder\n";
+   SimpleMethod method(&types, &recorder);
    
    uint8_t *entry = 0;
    int32_t rc = compileMethodBuilder(&method, &entry);
@@ -84,8 +86,25 @@ main(int argc, char *argv[])
    //If not compiling verify the output file....
    else
       {
-	   cout << "Step 4: verify output file\n";
-	   //TODO do something with output file to verify :)
+      cout << "Step 4: verify output file\n";
+      jitBuilderShouldCompile = true;
+      TR::JitBuilderReplayTextFile replay(NULL, "simple.out");
+      TR::MethodBuilderReplay mbr(&types, &replay);
+      entry = 0;
+      rc = compileMethodBuilder(&mbr, &entry);
+      if (rc != 0)
+         {
+         cerr << "FAIL: compilation error " << rc << "\n";
+         exit(-2);
+         }
+      typedef int32_t (SimpleMethodFunction)(int32_t);
+      SimpleMethodFunction *increment = (SimpleMethodFunction *) entry;
+
+      int32_t v;
+      v=0;   cout << "increment(" << v << ") == " << increment(v) << "\n";
+      v=1;   cout << "increment(" << v << ") == " << increment(v) << "\n";
+      v=10;  cout << "increment(" << v << ") == " << increment(v) << "\n";
+      v=-15; cout << "increment(" << v << ") == " << increment(v) << "\n";
       }
 
    cout << "Step 5: shutdown JIT\n";

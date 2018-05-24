@@ -1882,7 +1882,10 @@ OMR::IlBuilderRecorder::ForLoop(bool countsUp,
    if (rec)
       {
       rec->BeginStatement(asIlBuilder(), rec->STATEMENT_FORLOOP);
-      rec->Number((int8_t)countsUp);
+      if (countsUp)
+         rec->Number(1);
+      else
+         rec->Number(0);
       rec->String(indVar);
       rec->Builder(bLoop);
       rec->Builder(bBreak);

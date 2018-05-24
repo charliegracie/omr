@@ -30,10 +30,17 @@
 #include "Jit.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/MethodBuilder.hpp"
+#include "ilgen/MethodBuilderReplay.hpp"
+#include "ilgen/JitBuilderRecorderTextFile.hpp"
+#include "ilgen/JitBuilderReplayTextFile.hpp"
 #include "IterativeFib.hpp"
 
-IterativeFibonnaciMethod::IterativeFibonnaciMethod(TR::TypeDictionary *types)
-   : MethodBuilder(types)
+using std::cout;
+using std::cerr;
+extern bool jitBuilderShouldCompile;
+
+IterativeFibonnaciMethod::IterativeFibonnaciMethod(TR::TypeDictionary *types, TR::JitBuilderRecorderTextFile *recorder)
+   : MethodBuilder(types, recorder)
    {
    DefineLine(LINETOSTR(__LINE__));
    DefineFile(__FILE__);
@@ -98,12 +105,25 @@ main(int argc, char *argv[])
    TR::TypeDictionary types;
 
    printf("Step 3: compile method builder\n");
-   IterativeFibonnaciMethod iterFibMethodBuilder(&types);
+   jitBuilderShouldCompile = false;
+   TR::JitBuilderRecorderTextFile recorder(NULL, "iterfib.out");
+   IterativeFibonnaciMethod iterFibMethodBuilder(&types, &recorder);
    uint8_t *entry=0;
    int32_t rc = compileMethodBuilder(&iterFibMethodBuilder, &entry);
    if (rc != 0)
       {
       fprintf(stderr,"FAIL: compilation error %d\n", rc);
+      exit(-2);
+      }
+
+   jitBuilderShouldCompile = true;
+   TR::JitBuilderReplayTextFile replay(NULL, "iterfib.out");
+   TR::MethodBuilderReplay mbr(&types, &replay);
+   entry = 0;
+   rc = compileMethodBuilder(&mbr, &entry);
+   if (rc != 0)
+      {
+      cerr << "FAIL: compilation error " << rc << "\n";
       exit(-2);
       }
 

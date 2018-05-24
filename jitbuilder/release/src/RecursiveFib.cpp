@@ -30,8 +30,14 @@
 #include "Jit.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/MethodBuilder.hpp"
+#include "ilgen/MethodBuilderReplay.hpp"
 #include "ilgen/JitBuilderRecorderTextFile.hpp"
+#include "ilgen/JitBuilderReplayTextFile.hpp"
 #include "RecursiveFib.hpp"
+
+using std::cout;
+using std::cerr;
+extern bool jitBuilderShouldCompile;
 
 static void
 printString(int64_t stringPointer)
@@ -58,20 +64,20 @@ RecursiveFibonnaciMethod::RecursiveFibonnaciMethod(TR::TypeDictionary *types, TR
    DefineParameter("n", Int32);
    DefineReturnType(Int32);
 
-   DefineFunction((char *)"printString",
-                  (char *)__FILE__,
-                  (char *)PRINTSTRING_LINE,
-                  (void *)&printString,
-                  NoType,
-                  1,
-                  Int64);
-   DefineFunction((char *)"printInt32",
-                  (char *)__FILE__,
-                  (char *)PRINTINT32_LINE,
-                  (void *)&printInt32,
-                  NoType,
-                  1,
-                  Int32);
+//   DefineFunction((char *)"printString",
+//                  (char *)__FILE__,
+//                  (char *)PRINTSTRING_LINE,
+//                  (void *)&printString,
+//                  NoType,
+//                  1,
+//                  Int64);
+//   DefineFunction((char *)"printInt32",
+//                  (char *)__FILE__,
+//                  (char *)PRINTINT32_LINE,
+//                  (void *)&printInt32,
+//                  NoType,
+//                  1,
+//                  Int32);
    }
 
 static const char *prefix="fib(";
@@ -122,6 +128,7 @@ main(int argc, char *argv[])
 
    printf("Step 2: define relevant types\n");
    TR::TypeDictionary types;
+   jitBuilderShouldCompile = false;
    // Create a recorder so we can directly control the file for this particular test
    TR::JitBuilderRecorderTextFile recorder(NULL, "recfib.out");
 
@@ -132,6 +139,17 @@ main(int argc, char *argv[])
    if (rc != 0)
       {
       fprintf(stderr,"FAIL: compilation error %d\n", rc);
+      exit(-2);
+      }
+
+   jitBuilderShouldCompile = true;
+   TR::JitBuilderReplayTextFile replay(NULL, "recfib.out");
+   TR::MethodBuilderReplay mbr(&types, &replay);
+   entry = 0;
+   rc = compileMethodBuilder(&mbr, &entry);
+   if (rc != 0)
+      {
+      cerr << "FAIL: compilation error " << rc << "\n";
       exit(-2);
       }
 

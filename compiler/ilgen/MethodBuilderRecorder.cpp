@@ -285,6 +285,17 @@ OMR::MethodBuilderRecorder::DefineFunction(const char* const name,
    }
 
 void
+OMR::MethodBuilderRecorder::ILGenerationBeginning()
+   {
+   TR::JitBuilderRecorder *rec = recorder();
+   if (rec)
+      {
+      rec->BeginStatement(asMethodBuilder(), rec->STATEMENT_ILGENERATIONBEGINNING);
+      rec->EndStatement();
+      }
+   }
+
+void
 OMR::MethodBuilderRecorder::addBytecodeBuilderToWorklist(TR::BytecodeBuilder *builder)
    {
    if (_bytecodeWorklist == NULL)

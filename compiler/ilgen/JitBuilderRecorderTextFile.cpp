@@ -25,7 +25,7 @@
 
 
 OMR::JitBuilderRecorderTextFile::JitBuilderRecorderTextFile(const TR::MethodBuilderRecorder *mb, const char *fileName)
-   : TR::JitBuilderRecorder(mb), _file(fileName, std::fstream::out | std::fstream::app | std::fstream::trunc)
+   : TR::JitBuilderRecorder(mb), _file(fileName, std::fstream::out | std::fstream::trunc)
    {
    start();
    }

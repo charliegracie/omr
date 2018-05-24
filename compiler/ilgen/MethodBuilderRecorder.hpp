@@ -66,6 +66,8 @@ class MethodBuilderRecorder : public TR::IlBuilder
     */
    void AppendBuilder(TR::BytecodeBuilder *bb);
 
+   void ILGenerationBeginning();
+
    void DefineFile(const char *file);
    void DefineLine(const char *line);
    void DefineLine(int32_t line);
