@@ -35,6 +35,7 @@ endmacro(create_jitbuilder_test)
 
 # Basic Tests: These should run properly on all platforms.
 create_jitbuilder_test(conditionals    src/Conditionals.cpp)
+create_jitbuilder_test(interpreter     src/Interpreter.cpp)
 create_jitbuilder_test(isSupportedType src/IsSupportedType.cpp)
 create_jitbuilder_test(iterfib         src/IterativeFib.cpp)
 create_jitbuilder_test(nestedloop      src/NestedLoop.cpp)
