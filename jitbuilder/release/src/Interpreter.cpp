@@ -278,15 +278,15 @@ InterpreterMethod::buildIL()
 
    TR::IlBuilder *opcodeBuilders[interpreter_opcodes::COUNT] = {NULL};
    TR::IlBuilder *defaultBldr = NULL;
-   TR::IlBuilder *case0Bldr = NULL;
 
-   doWhileBody->Switch("opcode", &defaultBldr, interpreter_opcodes::COUNT,
+   doWhileBody->Switch("opcode", &opcodeBuilders[interpreter_opcodes::DEFAULT], interpreter_opcodes::COUNT - 1,
                    interpreter_opcodes::PUSH, &opcodeBuilders[interpreter_opcodes::PUSH], false,
                    interpreter_opcodes::ADD, &opcodeBuilders[interpreter_opcodes::ADD], false,
                    interpreter_opcodes::SUB, &opcodeBuilders[interpreter_opcodes::SUB], false,
                    interpreter_opcodes::MUL, &opcodeBuilders[interpreter_opcodes::MUL], false,
                    interpreter_opcodes::DIV, &opcodeBuilders[interpreter_opcodes::DIV], false,
-                   interpreter_opcodes::RET, &opcodeBuilders[interpreter_opcodes::RET], false);
+                   interpreter_opcodes::RET, &opcodeBuilders[interpreter_opcodes::RET], false
+                   );
 
    handlePush(opcodeBuilders[interpreter_opcodes::PUSH]);
    handleMath(opcodeBuilders[interpreter_opcodes::ADD], &InterpreterMethod::add);
@@ -295,7 +295,7 @@ InterpreterMethod::buildIL()
    handleMath(opcodeBuilders[interpreter_opcodes::DIV], &InterpreterMethod::div);
    handleReturn(opcodeBuilders[interpreter_opcodes::RET]);
 
-   defaultBldr->Goto(&breakBody);
+   opcodeBuilders[interpreter_opcodes::DEFAULT]->Goto(&breakBody);
 
    incrementPC(doWhileBody, 2);
 

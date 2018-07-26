@@ -27,6 +27,7 @@
 #include "ilgen/InterpreterBuilder.hpp"
 
 enum interpreter_opcodes {
+   DEFAULT,
    PUSH,
    ADD,
    SUB,
