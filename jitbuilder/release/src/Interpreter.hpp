@@ -37,6 +37,9 @@ enum interpreter_opcodes {
    COUNT
 };
 
+#define STACKILTYPE Int64
+#define STACKTYPE   int64_t
+
 typedef TR::IlValue * (*MathFuncType)(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
 typedef TR::IlValue * (*BooleanFuncType)(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
 
@@ -71,6 +74,7 @@ class InterpreterMethod : public TR::InterpreterBuilder
    private:
    TR::IlType *pInt8;
    TR::IlType *pInt64;
+   TR::VirtualMachineRegister *_stack;
 
    void handlePush(TR::IlBuilder *builder);
    void handleAdd(TR::IlBuilder *builder);

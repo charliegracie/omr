@@ -30,10 +30,17 @@
 #include "ilgen/InterpreterBuilder.hpp"
 #include "ilgen/MethodBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
+#include "ilgen/VirtualMachineState.hpp"
+#include "ilgen/VirtualMachineRegister.hpp"
+
 #include "Interpreter.hpp"
 
 using std::cout;
 using std::cerr;
+
+#define PRINTSTRING(builder, value) ((builder)->Call("printString", 1, (builder)->ConstInt64((int64_t)value)))
+#define PRINTINT64(builder, value) ((builder)->Call("printInt64", 1, (builder)->ConstInt64((int64_t)value))
+#define PRINTINT64VALUE(builder, value) ((builder)->Call("printInt64", 1, value))
 
 static void printString(int64_t ptr)
    {
@@ -86,9 +93,14 @@ main(int argc, char *argv[])
       }
 
    cout << "step 4: invoke compiled code and print results\n";
-   typedef int64_t (InterpreterMethodFunction)(int64_t*, int8_t *);
+   typedef int64_t (InterpreterMethodFunction)(int64_t **, int8_t *);
    InterpreterMethodFunction *interpreter = (InterpreterMethodFunction *) entry;
-   int64_t stack[10] = {};
+   int64_t *stack = (int64_t *)malloc(sizeof(int64_t) * 10);
+   if (NULL == stack)
+      {
+      cerr << "fail: failed to allocated stack\n";
+      exit(-3);
+      }
    int8_t bytecodes[] =
       {
       interpreter_opcodes::PUSH,3, // push 3
@@ -103,7 +115,9 @@ main(int argc, char *argv[])
       interpreter_opcodes::RET,-1, // return 3
       };
 
-   int64_t result = interpreter(stack, bytecodes);
+   int64_t result = interpreter(&stack, bytecodes);
+
+   free(stack);
 
    cout << "interpreter(values) = " << result << "\n";
 
@@ -120,7 +134,7 @@ InterpreterMethod::InterpreterMethod(TR::TypeDictionary *d)
    DefineName("Interpreter");
 
    pInt64 = d->PointerTo(Int64);
-   DefineParameter("stack", pInt64);
+   DefineParameter("stackPtrPtr", d->PointerTo(pInt64));
    pInt8 = d->PointerTo(Int8);
    DefineParameter("bytecodes", pInt8);
 
@@ -200,33 +214,23 @@ InterpreterMethod::getPC(TR::IlBuilder *builder)
    return builder->Load("pc");
    }
 
-//TR::IlValue *
-//InterpreterMethod::doMath(TR::IlBuilder *builder, MathFuncType mathFunction, TR::IlValue *left, TR::IlValue *right)
-//   {
-//   return (*mathFunction)(builder, left, right);
-//   }
-
 void
 InterpreterMethod::incrementStack(TR::IlBuilder *builder)
    {
-   TR::IlValue *stackPtr = builder->Load("stack");
-   stackPtr = builder->Add(stackPtr, builder->ConstInt32(8));
-   builder->Store("stack", stackPtr);
+   _stack->Adjust(builder, 1);
    }
 
 void
 InterpreterMethod::decrementStack(TR::IlBuilder *builder)
    {
-   TR::IlValue *stackPtr = builder->Load("stack");
-   stackPtr = builder->Sub(stackPtr, builder->ConstInt32(8));
-   builder->Store("stack", stackPtr);
+   _stack->Adjust(builder, -1);
    }
 
 void
 InterpreterMethod::writeToStack(TR::IlBuilder *builder, TR::IlValue *value)
    {
    builder->StoreAt(
-   builder->   Load("stack"),
+   _stack ->   Load(builder),
    builder->   ConvertTo(Int64, value));
    }
 
@@ -234,7 +238,7 @@ TR::IlValue *
 InterpreterMethod::readFromStack(TR::IlBuilder *builder)
    {
    return builder->LoadAt(pInt64,
-          builder->   Load("stack"));
+          _stack ->   Load(builder));
    }
 
 void
@@ -251,17 +255,6 @@ InterpreterMethod::pop(TR::IlBuilder *builder)
    return readFromStack(builder);
    }
 
-void
-InterpreterMethod::handleMath(TR::IlBuilder *builder, MathFuncType mathFunction)
-   {
-   TR::IlValue *right = pop(builder);
-   TR::IlValue *left = pop(builder);
-
-   TR::IlValue *value = (*mathFunction)(builder, left, right);
-
-   push(builder, value);
-   }
-
 bool
 InterpreterMethod::buildIL()
    {
@@ -270,6 +263,8 @@ InterpreterMethod::buildIL()
    TR::IlBuilder *doWhileBody = NULL;
    TR::IlBuilder *breakBody = NULL;
 
+   _stack = new TR::VirtualMachineRegister(this, "_STACK_", _types->PointerTo(_types->PointerTo(STACKILTYPE)), sizeof(STACKILTYPE), Load("stackPtrPtr"));
+
    setPC(this, 0);
 
    DoWhileLoopWithBreak("exitLoop", &doWhileBody, &breakBody);
@@ -277,7 +272,6 @@ InterpreterMethod::buildIL()
    getNextOpcode(doWhileBody);
 
    TR::IlBuilder *opcodeBuilders[interpreter_opcodes::COUNT] = {NULL};
-   TR::IlBuilder *defaultBldr = NULL;
 
    doWhileBody->Switch("opcode", &opcodeBuilders[interpreter_opcodes::DEFAULT], interpreter_opcodes::COUNT - 1,
                    interpreter_opcodes::PUSH, &opcodeBuilders[interpreter_opcodes::PUSH], false,
@@ -320,23 +314,12 @@ InterpreterMethod::handlePush(TR::IlBuilder *builder)
    }
 
 void
-InterpreterMethod::handleAdd(TR::IlBuilder *builder)
+InterpreterMethod::handleMath(TR::IlBuilder *builder, MathFuncType mathFunction)
    {
    TR::IlValue *right = pop(builder);
    TR::IlValue *left = pop(builder);
 
-   TR::IlValue *value = builder->Add(left, right);
-
-   push(builder, value);
-   }
-
-void
-InterpreterMethod::handleSub(TR::IlBuilder *builder)
-   {
-   TR::IlValue *right = pop(builder);
-   TR::IlValue *left = pop(builder);
-
-   TR::IlValue *value = builder->Sub(left, right);
+   TR::IlValue *value = (*mathFunction)(builder, left, right);
 
    push(builder, value);
    }
