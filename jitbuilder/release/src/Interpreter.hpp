@@ -30,6 +30,8 @@ enum interpreter_opcodes {
    PUSH,
    ADD,
    SUB,
+   MUL,
+   DIV,
    RET,
    COUNT
 };
@@ -72,6 +74,7 @@ class InterpreterMethod : public TR::InterpreterBuilder
    void handlePush(TR::IlBuilder *builder);
    void handleAdd(TR::IlBuilder *builder);
    void handleSub(TR::IlBuilder *builder);
+   void handleMath(TR::IlBuilder *builder, MathFuncType mathFunction);
    void handleReturn(TR::IlBuilder *builder);
    };
 

@@ -91,12 +91,16 @@ main(int argc, char *argv[])
    int64_t stack[10] = {};
    int8_t bytecodes[] =
       {
-      0,3,  // push 3
-      0,5,  // push 5
-      1,-1, // add 3 + 5 store 8
-      0,2,  // push 2
-      2,-1, // sub 8 - 2 store 6
-      3,-1, // return 6
+      interpreter_opcodes::PUSH,3, // push 3
+      interpreter_opcodes::PUSH,5, // push 5
+      interpreter_opcodes::ADD,-1, // add 3 + 5 store 8
+      interpreter_opcodes::PUSH,2, // push 2
+      interpreter_opcodes::SUB,-1, // sub 8 - 2 store 6
+      interpreter_opcodes::PUSH,4, // push 4
+      interpreter_opcodes::MUL,-1, // mul 6 * 4 store 24
+      interpreter_opcodes::PUSH,8, // push 8
+      interpreter_opcodes::DIV,-1, // div 24 / 8 store 3
+      interpreter_opcodes::RET,-1, // return 3
       };
 
    int64_t result = interpreter(stack, bytecodes);
@@ -247,6 +251,17 @@ InterpreterMethod::pop(TR::IlBuilder *builder)
    return readFromStack(builder);
    }
 
+void
+InterpreterMethod::handleMath(TR::IlBuilder *builder, MathFuncType mathFunction)
+   {
+   TR::IlValue *right = pop(builder);
+   TR::IlValue *left = pop(builder);
+
+   TR::IlValue *value = (*mathFunction)(builder, left, right);
+
+   push(builder, value);
+   }
+
 bool
 InterpreterMethod::buildIL()
    {
@@ -269,11 +284,15 @@ InterpreterMethod::buildIL()
                    interpreter_opcodes::PUSH, &opcodeBuilders[interpreter_opcodes::PUSH], false,
                    interpreter_opcodes::ADD, &opcodeBuilders[interpreter_opcodes::ADD], false,
                    interpreter_opcodes::SUB, &opcodeBuilders[interpreter_opcodes::SUB], false,
+                   interpreter_opcodes::MUL, &opcodeBuilders[interpreter_opcodes::MUL], false,
+                   interpreter_opcodes::DIV, &opcodeBuilders[interpreter_opcodes::DIV], false,
                    interpreter_opcodes::RET, &opcodeBuilders[interpreter_opcodes::RET], false);
 
    handlePush(opcodeBuilders[interpreter_opcodes::PUSH]);
-   handleAdd(opcodeBuilders[interpreter_opcodes::ADD]);
-   handleSub(opcodeBuilders[interpreter_opcodes::SUB]);
+   handleMath(opcodeBuilders[interpreter_opcodes::ADD], &InterpreterMethod::add);
+   handleMath(opcodeBuilders[interpreter_opcodes::SUB], &InterpreterMethod::sub);
+   handleMath(opcodeBuilders[interpreter_opcodes::MUL], &InterpreterMethod::mul);
+   handleMath(opcodeBuilders[interpreter_opcodes::DIV], &InterpreterMethod::div);
    handleReturn(opcodeBuilders[interpreter_opcodes::RET]);
 
    defaultBldr->Goto(&breakBody);
