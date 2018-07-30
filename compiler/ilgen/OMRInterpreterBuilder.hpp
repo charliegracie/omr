@@ -22,22 +22,69 @@
 #ifndef OMR_INTERPRETERBUILDER_INCL
 #define OMR_INTERPRETERBUILDER_INCL
 
-#include "ilgen/MethodBuilder.hpp"
+#include "ilgen/IlBuilder.hpp"
 
 namespace TR { class InterpreterBuilder; }
 namespace TR { class MethodBuilder; }
+namespace TR { class VirtualMachineRegister; }
 
 namespace OMR
 {
 
-class InterpreterBuilder : public TR::MethodBuilder
+class InterpreterBuilder : public TR::IlBuilder
    {
 public:
    TR_ALLOC(TR_Memory::IlGenerator)
 
-   InterpreterBuilder(TR::TypeDictionary *d);
+enum OPCODES
+   {
+   BC_00,
+   BC_01,
+   BC_02,
+   BC_03,
+   BC_04,
+   BC_05,
+   BC_06,
+   BC_07,
+   BC_08,
+   BC_09,
+   BC_10,
+   BC_11,
+   BC_12,
+   BC_13,
+   BC_14,
+   BC_15,
+   BC_COUNT = BC_15
+   };
+
+   InterpreterBuilder(TR::MethodBuilder *methodBuilder, TR::TypeDictionary *d,TR::IlValue *stackPtrAddress, TR::IlType *stackValueType, const char *bytecodePtrName, TR::IlType *bytecodeElementType, const char *pcName, const char *opcodeName);
+
+   TR::IlBuilder *registerOpcodeHandler(int32_t opcode);
+   void execute(TR::IlBuilder *builder);
+
+   TR::VirtualMachineRegister *getStack() {return _stack;}
 
 protected:
+   void getNextOpcode(TR::IlBuilder *builder);
+
+   void setPC(TR::IlBuilder *builder, int32_t value);
+   void setPC(TR::IlBuilder *builder, TR::IlValue *value);
+   void incrementPC(TR::IlBuilder *builder, int32_t increment);
+   TR::IlValue *getPC(TR::IlBuilder *builder);
+
+   void handleUnusedOpcodes();
+
+private:
+   const char *_bytecodePtrName;
+   const char *_pcName;
+   const char *_opcodeName;
+   TR::IlType *_stackValueType;
+   TR::IlType *_bytecodeElementType;
+   TR::IlType *_bytecodePtrType;
+   TR::VirtualMachineRegister *_stack;
+   TR::IlBuilder *_defaultHandler;
+   TR::IlBuilder *_opcodeBuilders[OPCODES::BC_COUNT];
+   bool _opcodeHasBeenRegistered[OPCODES::BC_COUNT];
 
    };
 

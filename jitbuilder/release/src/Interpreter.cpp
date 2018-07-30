@@ -112,6 +112,9 @@ main(int argc, char *argv[])
       interpreter_opcodes::MUL,-1, // mul 6 * 4 store 24
       interpreter_opcodes::PUSH,8, // push 8
       interpreter_opcodes::DIV,-1, // div 24 / 8 store 3
+
+      //OPCODES::BC_07,-1,
+
       interpreter_opcodes::RET,-1, // return 3
       };
 
@@ -126,7 +129,7 @@ main(int argc, char *argv[])
    }
 
 InterpreterMethod::InterpreterMethod(TR::TypeDictionary *d)
-   : InterpreterBuilder(d)
+   : MethodBuilder(d)
    {
    DefineLine(LINETOSTR(__LINE__));
    DefineFile(__FILE__);
@@ -140,7 +143,6 @@ InterpreterMethod::InterpreterMethod(TR::TypeDictionary *d)
 
    DefineLocal("pc", Int32);
    DefineLocal("opcode", Int32);
-   DefineLocal("exitLoop", Int32);
 
    DefineReturnType(Int64);
 
@@ -172,46 +174,6 @@ TR::IlValue *
 InterpreterMethod::div(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right)
    {
    return builder->Div(left, right);
-   }
-
-void
-InterpreterMethod::getNextOpcode(TR::IlBuilder *builder)
-   {
-   builder->Store("opcode",
-   builder->   ConvertTo(Int32,
-   builder->      LoadAt(pInt8,
-   builder->         IndexAt(pInt8,
-   builder->            Load("bytecodes"),
-                        getPC(builder)))));
-   }
-
-void
-InterpreterMethod::setPC(TR::IlBuilder *builder, int32_t value)
-   {
-   setPC(builder, builder->ConstInt32(value));
-   }
-
-void
-InterpreterMethod::setPC(TR::IlBuilder *builder, TR::IlValue *value)
-   {
-   builder->Store("pc", value);
-   }
-
-void
-InterpreterMethod::incrementPC(TR::IlBuilder *builder, int32_t increment)
-   {
-   TR::IlValue *pc = getPC(builder);
-   TR::IlValue *incrementValue = builder->ConstInt32(increment);
-
-   pc = builder->Add(pc, incrementValue);
-
-   setPC(builder, pc);
-   }
-
-TR::IlValue *
-InterpreterMethod::getPC(TR::IlBuilder *builder)
-   {
-   return builder->Load("pc");
    }
 
 void
@@ -260,38 +222,18 @@ InterpreterMethod::buildIL()
    {
    cout << "InterpreterMethod::buildIL() running!\n";
 
-   TR::IlBuilder *doWhileBody = NULL;
-   TR::IlBuilder *breakBody = NULL;
+   TR::InterpreterBuilder *_interpreterBuilder = new TR::InterpreterBuilder(this, _types, Load("stackPtrPtr"), Int64, "bytecodes", Int8, "pc", "opcode");
 
-   _stack = new TR::VirtualMachineRegister(this, "_STACK_", _types->PointerTo(_types->PointerTo(STACKILTYPE)), sizeof(STACKILTYPE), Load("stackPtrPtr"));
+   _stack = _interpreterBuilder->getStack();
 
-   setPC(this, 0);
+   handlePush(_interpreterBuilder->registerOpcodeHandler(interpreter_opcodes::PUSH));
+   handleMath(_interpreterBuilder->registerOpcodeHandler(interpreter_opcodes::ADD), &InterpreterMethod::add);
+   handleMath(_interpreterBuilder->registerOpcodeHandler(interpreter_opcodes::SUB), &InterpreterMethod::sub);
+   handleMath(_interpreterBuilder->registerOpcodeHandler(interpreter_opcodes::MUL), &InterpreterMethod::mul);
+   handleMath(_interpreterBuilder->registerOpcodeHandler(interpreter_opcodes::DIV), &InterpreterMethod::div);
+   handleReturn(_interpreterBuilder->registerOpcodeHandler(interpreter_opcodes::RET));
 
-   DoWhileLoopWithBreak("exitLoop", &doWhileBody, &breakBody);
-
-   getNextOpcode(doWhileBody);
-
-   TR::IlBuilder *opcodeBuilders[interpreter_opcodes::COUNT] = {NULL};
-
-   doWhileBody->Switch("opcode", &opcodeBuilders[interpreter_opcodes::DEFAULT], interpreter_opcodes::COUNT - 1,
-                   interpreter_opcodes::PUSH, &opcodeBuilders[interpreter_opcodes::PUSH], false,
-                   interpreter_opcodes::ADD, &opcodeBuilders[interpreter_opcodes::ADD], false,
-                   interpreter_opcodes::SUB, &opcodeBuilders[interpreter_opcodes::SUB], false,
-                   interpreter_opcodes::MUL, &opcodeBuilders[interpreter_opcodes::MUL], false,
-                   interpreter_opcodes::DIV, &opcodeBuilders[interpreter_opcodes::DIV], false,
-                   interpreter_opcodes::RET, &opcodeBuilders[interpreter_opcodes::RET], false
-                   );
-
-   handlePush(opcodeBuilders[interpreter_opcodes::PUSH]);
-   handleMath(opcodeBuilders[interpreter_opcodes::ADD], &InterpreterMethod::add);
-   handleMath(opcodeBuilders[interpreter_opcodes::SUB], &InterpreterMethod::sub);
-   handleMath(opcodeBuilders[interpreter_opcodes::MUL], &InterpreterMethod::mul);
-   handleMath(opcodeBuilders[interpreter_opcodes::DIV], &InterpreterMethod::div);
-   handleReturn(opcodeBuilders[interpreter_opcodes::RET]);
-
-   opcodeBuilders[interpreter_opcodes::DEFAULT]->Goto(&breakBody);
-
-   incrementPC(doWhileBody, 2);
+   _interpreterBuilder->execute(this);
 
    Return(
       ConstInt64(-1));

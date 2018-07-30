@@ -29,8 +29,11 @@ namespace TR
    class InterpreterBuilder : public OMR::InterpreterBuilder
       {
       public:
-	   InterpreterBuilder(TR::TypeDictionary *d)
-            : OMR::InterpreterBuilder(d)
+	   InterpreterBuilder(TR::MethodBuilder *methodBuilder, TR::TypeDictionary *d,
+	         TR::IlValue *stackPtrAddress, TR::IlType *stackValueType,
+	         const char *bytecodePtrName, TR::IlType *bytecodeValueType,
+	         const char *pcName, const char *opcodeName)
+            : OMR::InterpreterBuilder(methodBuilder, d, stackPtrAddress, stackValueType, bytecodePtrName, bytecodeValueType, pcName, opcodeName)
             { }
       };
 

@@ -24,18 +24,39 @@
 #ifndef INTERPRETER_INCL
 #define INTERPRETER_INCL
 
-#include "ilgen/InterpreterBuilder.hpp"
+#include "ilgen/MethodBuilder.hpp"
 
-enum interpreter_opcodes {
-   DEFAULT,
-   PUSH,
-   ADD,
-   SUB,
-   MUL,
-   DIV,
-   RET,
-   COUNT
-};
+enum OPCODES
+   {
+   BC_00,
+   BC_01,
+   BC_02,
+   BC_03,
+   BC_04,
+   BC_05,
+   BC_06,
+   BC_07,
+   BC_08,
+   BC_09,
+   BC_10,
+   BC_11,
+   BC_12,
+   BC_13,
+   BC_14,
+   BC_15,
+   BC_COUNT
+   };
+
+enum interpreter_opcodes
+   {
+   PUSH = BC_00,
+   ADD = BC_01,
+   SUB = BC_02,
+   MUL = BC_03,
+   DIV = BC_04,
+   RET = BC_05,
+   COUNT = BC_06
+   };
 
 #define STACKILTYPE Int64
 #define STACKTYPE   int64_t
@@ -43,7 +64,7 @@ enum interpreter_opcodes {
 typedef TR::IlValue * (*MathFuncType)(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
 typedef TR::IlValue * (*BooleanFuncType)(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
 
-class InterpreterMethod : public TR::InterpreterBuilder
+class InterpreterMethod : public TR::MethodBuilder
    {
    public:
    InterpreterMethod(TR::TypeDictionary *d);
@@ -55,13 +76,6 @@ class InterpreterMethod : public TR::InterpreterBuilder
    static TR::IlValue *div(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
 
    protected:
-   void getNextOpcode(TR::IlBuilder *builder);
-
-   void setPC(TR::IlBuilder *builder, int32_t value);
-   void setPC(TR::IlBuilder *builder, TR::IlValue *value);
-   void incrementPC(TR::IlBuilder *builder, int32_t increment);
-   TR::IlValue *getPC(TR::IlBuilder *builder);
-
    void incrementStack(TR::IlBuilder *builder);
    void decrementStack(TR::IlBuilder *builder);
    void writeToStack(TR::IlBuilder *builder, TR::IlValue *value);
@@ -75,6 +89,7 @@ class InterpreterMethod : public TR::InterpreterBuilder
    TR::IlType *pInt8;
    TR::IlType *pInt64;
    TR::VirtualMachineRegister *_stack;
+   TR::InterpreterBuilder *_interpreterBuilder;
 
    void handlePush(TR::IlBuilder *builder);
    void handleAdd(TR::IlBuilder *builder);
