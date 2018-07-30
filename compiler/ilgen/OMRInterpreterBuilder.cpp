@@ -30,6 +30,7 @@
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/VirtualMachineState.hpp"
 #include "ilgen/VirtualMachineRegister.hpp"
+#include "ilgen/VirtualMachineInterpreterStack.hpp"
 
 #include <iostream>
 #include <stdlib.h>
@@ -50,17 +51,14 @@ static void handleBadOpcode(int32_t opcode, int32_t pc)
    fflush(stderr);
    }
 
-#define STACKILTYPE Int64
-#define STACKTYPE   int64_t
-
-OMR::InterpreterBuilder::InterpreterBuilder(TR::MethodBuilder *methodBuilder, TR::TypeDictionary *d, TR::IlValue *stackPtrAddress, TR::IlType *stackValueType, const char *bytecodePtrName, TR::IlType *bytecodeElementType, const char *pcName, const char *opcodeName)
+OMR::InterpreterBuilder::InterpreterBuilder(TR::MethodBuilder *methodBuilder, TR::TypeDictionary *d, TR::VirtualMachineInterpreterStack *stack, const char *bytecodePtrName, TR::IlType *bytecodeElementType, const char *pcName, const char *opcodeName)
    : TR::IlBuilder(methodBuilder, d),
+   _stack(stack),
    _bytecodePtrName(bytecodePtrName),
+   _bytecodeElementType(bytecodeElementType),
+   _bytecodePtrType(NULL),
    _pcName(pcName),
    _opcodeName(opcodeName),
-   _stackValueType(stackValueType),
-   _bytecodeElementType(bytecodeElementType),
-   _stack(NULL),
    _defaultHandler(NULL)
    {
    _bytecodePtrType = d->PointerTo(_bytecodeElementType);
@@ -72,9 +70,6 @@ OMR::InterpreterBuilder::InterpreterBuilder(TR::MethodBuilder *methodBuilder, TR
       _opcodeBuilders[i] = methodBuilder->OrphanBuilder();
       _opcodeHasBeenRegistered[i] = false;
       }
-
-   _stack = new TR::VirtualMachineRegister(methodBuilder, "_STACK_", _types->PointerTo(_types->PointerTo(_stackValueType)), sizeof(_stackValueType), stackPtrAddress);
-
    }
 
 void
@@ -165,8 +160,6 @@ OMR::InterpreterBuilder::handleUnusedOpcodes()
       if (!_opcodeHasBeenRegistered[i])
          {
          _opcodeBuilders[i]->Goto(_defaultHandler);
-         //_opcodeBuilders[i]->Call("handleBadOpcode", 2, _opcodeBuilders[i]->Load("opcode"), _opcodeBuilders[i]->Load("pc"));
-         //_opcodeBuilders[i]->Goto(&breakBody);
          }
       }
    }

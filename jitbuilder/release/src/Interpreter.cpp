@@ -30,10 +30,22 @@
 #include "ilgen/InterpreterBuilder.hpp"
 #include "ilgen/MethodBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
+#include "ilgen/VirtualMachineInterpreterStack.hpp"
 #include "ilgen/VirtualMachineState.hpp"
 #include "ilgen/VirtualMachineRegister.hpp"
 
 #include "Interpreter.hpp"
+
+enum interpreter_opcodes
+   {
+   PUSH = OMR::InterpreterBuilder::OPCODES::BC_00,
+   ADD = OMR::InterpreterBuilder::OPCODES::BC_01,
+   SUB = OMR::InterpreterBuilder::OPCODES::BC_02,
+   MUL = OMR::InterpreterBuilder::OPCODES::BC_03,
+   DIV = OMR::InterpreterBuilder::OPCODES::BC_04,
+   RET = OMR::InterpreterBuilder::OPCODES::BC_05,
+   FAIL = OMR::InterpreterBuilder::OPCODES::BC_06
+   };
 
 using std::cout;
 using std::cerr;
@@ -113,7 +125,7 @@ main(int argc, char *argv[])
       interpreter_opcodes::PUSH,8, // push 8
       interpreter_opcodes::DIV,-1, // div 24 / 8 store 3
 
-      //OPCODES::BC_07,-1,
+      //interpreter_opcodes::FAIL,-1,
 
       interpreter_opcodes::RET,-1, // return 3
       };
@@ -134,11 +146,11 @@ InterpreterMethod::InterpreterMethod(TR::TypeDictionary *d)
    DefineLine(LINETOSTR(__LINE__));
    DefineFile(__FILE__);
 
+   pInt8 = d->PointerTo(Int8);
+
    DefineName("Interpreter");
 
-   pInt64 = d->PointerTo(Int64);
-   DefineParameter("stackPtrPtr", d->PointerTo(pInt64));
-   pInt8 = d->PointerTo(Int8);
+   DefineParameter("stackPtrPtr", d->PointerTo(d->PointerTo(Int64)));
    DefineParameter("bytecodes", pInt8);
 
    DefineLocal("pc", Int32);
@@ -176,55 +188,15 @@ InterpreterMethod::div(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *r
    return builder->Div(left, right);
    }
 
-void
-InterpreterMethod::incrementStack(TR::IlBuilder *builder)
-   {
-   _stack->Adjust(builder, 1);
-   }
-
-void
-InterpreterMethod::decrementStack(TR::IlBuilder *builder)
-   {
-   _stack->Adjust(builder, -1);
-   }
-
-void
-InterpreterMethod::writeToStack(TR::IlBuilder *builder, TR::IlValue *value)
-   {
-   builder->StoreAt(
-   _stack ->   Load(builder),
-   builder->   ConvertTo(Int64, value));
-   }
-
-TR::IlValue *
-InterpreterMethod::readFromStack(TR::IlBuilder *builder)
-   {
-   return builder->LoadAt(pInt64,
-          _stack ->   Load(builder));
-   }
-
-void
-InterpreterMethod::push(TR::IlBuilder *builder, TR::IlValue *value)
-   {
-   writeToStack(builder, value);
-   incrementStack(builder);
-   }
-
-TR::IlValue *
-InterpreterMethod::pop(TR::IlBuilder *builder)
-   {
-   decrementStack(builder);
-   return readFromStack(builder);
-   }
-
 bool
 InterpreterMethod::buildIL()
    {
    cout << "InterpreterMethod::buildIL() running!\n";
 
-   TR::InterpreterBuilder *_interpreterBuilder = new TR::InterpreterBuilder(this, _types, Load("stackPtrPtr"), Int64, "bytecodes", Int8, "pc", "opcode");
+   TR::VirtualMachineRegister *stackRegister = new TR::VirtualMachineRegister(this, "_STACK_", _types->PointerTo(_types->PointerTo(Int64)), sizeof(Int64), Load("stackPtrPtr"));
+   TR::VirtualMachineInterpreterStack *stack = new TR::VirtualMachineInterpreterStack(this, stackRegister, Int64);
 
-   _stack = _interpreterBuilder->getStack();
+   _interpreterBuilder = new TR::InterpreterBuilder(this, _types, stack, "bytecodes", Int8, "pc", "opcode");
 
    handlePush(_interpreterBuilder->registerOpcodeHandler(interpreter_opcodes::PUSH));
    handleMath(_interpreterBuilder->registerOpcodeHandler(interpreter_opcodes::ADD), &InterpreterMethod::add);
@@ -252,23 +224,23 @@ InterpreterMethod::handlePush(TR::IlBuilder *builder)
    builder->         Load("pc"),
    builder->         ConstInt32(1))));
 
-   push(builder, value);
+   _interpreterBuilder->getState()->Push(builder, value);
    }
 
 void
 InterpreterMethod::handleMath(TR::IlBuilder *builder, MathFuncType mathFunction)
    {
-   TR::IlValue *right = pop(builder);
-   TR::IlValue *left = pop(builder);
+   TR::IlValue *right = _interpreterBuilder->getState()->Pop(builder);
+   TR::IlValue *left = _interpreterBuilder->getState()->Pop(builder);
 
    TR::IlValue *value = (*mathFunction)(builder, left, right);
 
-   push(builder, value);
+   _interpreterBuilder->getState()->Push(builder, value);
    }
 
 void
 InterpreterMethod::handleReturn(TR::IlBuilder *builder)
    {
-   TR::IlValue *ret = pop(builder);
+   TR::IlValue *ret = _interpreterBuilder->getState()->Pop(builder);
    builder->Return(ret);
    }

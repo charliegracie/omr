@@ -27,6 +27,7 @@
 namespace TR { class InterpreterBuilder; }
 namespace TR { class MethodBuilder; }
 namespace TR { class VirtualMachineRegister; }
+namespace TR { class VirtualMachineInterpreterStack; }
 
 namespace OMR
 {
@@ -57,12 +58,12 @@ enum OPCODES
    BC_COUNT = BC_15
    };
 
-   InterpreterBuilder(TR::MethodBuilder *methodBuilder, TR::TypeDictionary *d,TR::IlValue *stackPtrAddress, TR::IlType *stackValueType, const char *bytecodePtrName, TR::IlType *bytecodeElementType, const char *pcName, const char *opcodeName);
+   InterpreterBuilder(TR::MethodBuilder *methodBuilder, TR::TypeDictionary *d, TR::VirtualMachineInterpreterStack *interpStack, const char *bytecodePtrName, TR::IlType *bytecodeElementType, const char *pcName, const char *opcodeName);
 
    TR::IlBuilder *registerOpcodeHandler(int32_t opcode);
    void execute(TR::IlBuilder *builder);
 
-   TR::VirtualMachineRegister *getStack() {return _stack;}
+   TR::VirtualMachineInterpreterStack *getState() {return _stack;}
 
 protected:
    void getNextOpcode(TR::IlBuilder *builder);
@@ -75,13 +76,12 @@ protected:
    void handleUnusedOpcodes();
 
 private:
+   TR::VirtualMachineInterpreterStack *_stack;
    const char *_bytecodePtrName;
-   const char *_pcName;
-   const char *_opcodeName;
-   TR::IlType *_stackValueType;
    TR::IlType *_bytecodeElementType;
    TR::IlType *_bytecodePtrType;
-   TR::VirtualMachineRegister *_stack;
+   const char *_pcName;
+   const char *_opcodeName;
    TR::IlBuilder *_defaultHandler;
    TR::IlBuilder *_opcodeBuilders[OPCODES::BC_COUNT];
    bool _opcodeHasBeenRegistered[OPCODES::BC_COUNT];

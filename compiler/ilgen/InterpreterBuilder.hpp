@@ -30,10 +30,10 @@ namespace TR
       {
       public:
 	   InterpreterBuilder(TR::MethodBuilder *methodBuilder, TR::TypeDictionary *d,
-	         TR::IlValue *stackPtrAddress, TR::IlType *stackValueType,
+	         TR::VirtualMachineInterpreterStack *stack,
 	         const char *bytecodePtrName, TR::IlType *bytecodeValueType,
 	         const char *pcName, const char *opcodeName)
-            : OMR::InterpreterBuilder(methodBuilder, d, stackPtrAddress, stackValueType, bytecodePtrName, bytecodeValueType, pcName, opcodeName)
+            : OMR::InterpreterBuilder(methodBuilder, d, stack, bytecodePtrName, bytecodeValueType, pcName, opcodeName)
             { }
       };
 
