@@ -19,23 +19,31 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#ifndef TR_INTERPRETERBUILDER_INCL
-#define TR_INTERPRETERBUILDER_INCL
+#ifndef OMR_OPCODEBUILDER_INCL
+#define OMR_OPCODEBUILDER_INCL
 
-#include "ilgen/OMRInterpreterBuilder.hpp"
+#include "ilgen/BytecodeBuilder.hpp"
 
-namespace TR
+namespace TR { class OpcodeBuilder; }
+namespace TR { class MethodBuilder; }
+namespace TR { class VirtualMachineState; }
+
+namespace OMR
 {
-   class InterpreterBuilder : public OMR::InterpreterBuilder
-      {
-      public:
-	   InterpreterBuilder(TR::TypeDictionary *d,
-	         const char *bytecodePtrName, TR::IlType *bytecodeValueType,
-	         const char *pcName, const char *opcodeName)
-            : OMR::InterpreterBuilder(d, bytecodePtrName, bytecodeValueType, pcName, opcodeName)
-            { }
-      };
 
-} // namespace TR
+class OpcodeBuilder : public TR::BytecodeBuilder
+   {
+public:
+   TR_ALLOC(TR_Memory::IlGenerator)
 
-#endif // !defined(TR_INTERPRETERBUILDER_INCL)
+   OpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, char *name=NULL);
+
+   virtual void execute() {}
+
+protected:
+
+   };
+
+} // namespace OMR
+
+#endif // !defined(OMR_OPCODEBUILDER_INCL)

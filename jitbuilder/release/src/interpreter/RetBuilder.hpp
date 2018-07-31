@@ -21,36 +21,26 @@
  *******************************************************************************/
 
 
-#ifndef INTERPRETER_INCL
-#define INTERPRETER_INCL
+#ifndef RETBUILDER_INCL
+#define RETBUILDER_INCL
 
-#include "ilgen/MethodBuilder.hpp"
+#include "ilgen/OpcodeBuilder.hpp"
 
-typedef TR::IlValue * (*MathFuncType)(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
-typedef TR::IlValue * (*BooleanFuncType)(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
+namespace TR { class InterpreterBuilder; }
 
-class InterpreterMethod : public TR::MethodBuilder
+class RetBuilder : public TR::OpcodeBuilder
    {
    public:
-   InterpreterMethod(TR::TypeDictionary *d);
-   virtual bool buildIL();
+   RetBuilder(TR::InterpreterBuilder *interpreterBuilder, int32_t bcIndex);
 
-   static TR::IlValue *add(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
-   static TR::IlValue *sub(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
-   static TR::IlValue *mul(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
-   static TR::IlValue *div(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
+   virtual void execute();
+
+   static RetBuilder *OrphanOpcodeBuilder(TR::InterpreterBuilder *interpreterBuilder, int32_t bcIndex);
 
    protected:
 
    private:
-   TR::IlType *pInt8;
    TR::InterpreterBuilder *_interpreterBuilder;
-
-   void handlePush(TR::IlBuilder *builder);
-   void handleAdd(TR::IlBuilder *builder);
-   void handleSub(TR::IlBuilder *builder);
-   void handleMath(TR::IlBuilder *builder, MathFuncType mathFunction);
-   void handleReturn(TR::IlBuilder *builder);
    };
 
-#endif // !defined(INTERPRETER_INCL)
+#endif // !defined(RETBUILDER_INCL)

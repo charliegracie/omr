@@ -101,7 +101,7 @@ class VirtualMachineInterpreterStack : public TR::VirtualMachineState
     * Default behaviour for compatibility constructor will be optional arguments, growsUp is true, and stackInitialOffset is -1.
     */
 
-   VirtualMachineInterpreterStack(TR::MethodBuilder *mb, TR::VirtualMachineRegister *stackTopRegister, TR::IlType *elementType);
+   VirtualMachineInterpreterStack(TR::MethodBuilder *mb, TR::VirtualMachineRegister *stackTopRegister, TR::IlType *elementType/*, int32_t stackInitialOffset = -1*/);
 
    /**
     * @brief write the simulated operand stack to the virtual machine
@@ -153,9 +153,10 @@ class VirtualMachineInterpreterStack : public TR::VirtualMachineState
 
    /**
     * @brief Returns the expression at the top of the simulated operand stack
+    * @param b builder object to use for any operations used to implement the pop (e.g. to update the top of stack)
     * @returns the expression at the top of the operand stack
     */
-   virtual TR::IlValue *Top();
+   virtual TR::IlValue *Top(TR::IlBuilder *b);
 
    /**
     * @brief Returns an expression below the top of the simulated operand stack
@@ -186,6 +187,7 @@ class VirtualMachineInterpreterStack : public TR::VirtualMachineState
    TR::MethodBuilder *_mb;
    TR::VirtualMachineRegister *_stackTopRegister;
    TR::IlType *_elementType;
+   bool _preIncrement;
    const char *_stackBaseName;
    };
 }

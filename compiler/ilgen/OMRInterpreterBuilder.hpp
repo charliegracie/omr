@@ -22,17 +22,17 @@
 #ifndef OMR_INTERPRETERBUILDER_INCL
 #define OMR_INTERPRETERBUILDER_INCL
 
-#include "ilgen/IlBuilder.hpp"
+#include "ilgen/MethodBuilder.hpp"
 
 namespace TR { class InterpreterBuilder; }
-namespace TR { class MethodBuilder; }
+namespace TR { class OpcodeBuilder;}
 namespace TR { class VirtualMachineRegister; }
 namespace TR { class VirtualMachineInterpreterStack; }
 
 namespace OMR
 {
 
-class InterpreterBuilder : public TR::IlBuilder
+class InterpreterBuilder : public TR::MethodBuilder
    {
 public:
    TR_ALLOC(TR_Memory::IlGenerator)
@@ -58,10 +58,15 @@ enum OPCODES
    BC_COUNT = BC_15
    };
 
-   InterpreterBuilder(TR::MethodBuilder *methodBuilder, TR::TypeDictionary *d, TR::VirtualMachineInterpreterStack *interpStack, const char *bytecodePtrName, TR::IlType *bytecodeElementType, const char *pcName, const char *opcodeName);
+   InterpreterBuilder(TR::TypeDictionary *d, const char *bytecodePtrName, TR::IlType *bytecodeElementType, const char *pcName, const char *opcodeName);
 
-   TR::IlBuilder *registerOpcodeHandler(int32_t opcode);
-   void execute(TR::IlBuilder *builder);
+   TR::OpcodeBuilder *OrphanOpcodeBuilder(int32_t bcIndex, char *name);
+   void registerOpcodeBuilder(TR::OpcodeBuilder *handler);
+
+   virtual bool buildIL();
+   virtual void handleOpcodes() {}
+   virtual void handleReturn() {}
+   virtual TR::VirtualMachineInterpreterStack *createStack() {return NULL;}
 
    TR::VirtualMachineInterpreterStack *getState() {return _stack;}
 
@@ -84,7 +89,6 @@ private:
    const char *_opcodeName;
    TR::IlBuilder *_defaultHandler;
    TR::IlBuilder *_opcodeBuilders[OPCODES::BC_COUNT];
-   bool _opcodeHasBeenRegistered[OPCODES::BC_COUNT];
 
    };
 

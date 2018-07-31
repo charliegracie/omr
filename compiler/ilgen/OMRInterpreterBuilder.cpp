@@ -24,6 +24,7 @@
 #include "env/FrontEnd.hpp"
 #include "infra/List.hpp"
 #include "il/Block.hpp"
+#include "ilgen/OpcodeBuilder.hpp"
 #include "ilgen/IlBuilder.hpp"
 #include "ilgen/InterpreterBuilder.hpp"
 #include "ilgen/MethodBuilder.hpp"
@@ -51,9 +52,9 @@ static void handleBadOpcode(int32_t opcode, int32_t pc)
    fflush(stderr);
    }
 
-OMR::InterpreterBuilder::InterpreterBuilder(TR::MethodBuilder *methodBuilder, TR::TypeDictionary *d, TR::VirtualMachineInterpreterStack *stack, const char *bytecodePtrName, TR::IlType *bytecodeElementType, const char *pcName, const char *opcodeName)
-   : TR::IlBuilder(methodBuilder, d),
-   _stack(stack),
+OMR::InterpreterBuilder::InterpreterBuilder(TR::TypeDictionary *d, const char *bytecodePtrName, TR::IlType *bytecodeElementType, const char *pcName, const char *opcodeName)
+   : TR::MethodBuilder(d),
+   _stack(NULL),
    _bytecodePtrName(bytecodePtrName),
    _bytecodeElementType(bytecodeElementType),
    _bytecodePtrType(NULL),
@@ -63,27 +64,53 @@ OMR::InterpreterBuilder::InterpreterBuilder(TR::MethodBuilder *methodBuilder, TR
    {
    _bytecodePtrType = d->PointerTo(_bytecodeElementType);
 
-   methodBuilder->DefineFunction((char *)"handleBadOpcode", (char *)__FILE__, (char *)HANDLEBADEOPCODE_LINE, (void *)&handleBadOpcode, NoType, 2, Int32, Int32);
+   DefineFunction((char *)"handleBadOpcode", (char *)__FILE__, (char *)HANDLEBADEOPCODE_LINE, (void *)&handleBadOpcode, NoType, 2, Int32, Int32);
 
    for (int i = 0; i < OPCODES::BC_COUNT; i ++)
       {
-      _opcodeBuilders[i] = methodBuilder->OrphanBuilder();
-      _opcodeHasBeenRegistered[i] = false;
+      _opcodeBuilders[i] = NULL;
       }
    }
 
-void
-OMR::InterpreterBuilder::execute(TR::IlBuilder *builder)
+TR::OpcodeBuilder *
+OMR::InterpreterBuilder::OrphanOpcodeBuilder(int32_t bcIndex, char *name)
    {
+   TR::OpcodeBuilder *orphan = new (comp()->trHeapMemory()) TR::OpcodeBuilder(_methodBuilder, bcIndex, name);
+   orphan->initialize(_details, _methodSymbol, _fe, _symRefTab);
+   orphan->setupForBuildIL();
+   return orphan;
+   }
+
+void
+OMR::InterpreterBuilder::registerOpcodeBuilder(TR::OpcodeBuilder *handler)
+   {
+   int32_t index = handler->bcIndex();
+   _opcodeBuilders[index] = handler;
+
+   handler->execute();
+   }
+
+bool
+OMR::InterpreterBuilder::buildIL()
+   {
+   cout << "InterpreterBuilder::buildIL() running!\n";
+
+   _stack = createStack();
+
+   _defaultHandler = OrphanOpcodeBuilder(OPCODES::BC_COUNT + 1, "default handler");
+
    TR::IlBuilder *doWhileBody = NULL;
    TR::IlBuilder *breakBody = NULL;
 
-   setPC(builder, 0);
+   setPC(this, 0);
 
-   builder->Store("exitLoop", builder->EqualTo(builder->ConstInt32(1), builder->ConstInt32(1)));
-   builder->DoWhileLoopWithBreak("exitLoop", &doWhileBody, &breakBody);
+   Store("exitLoop", EqualTo(ConstInt32(1), ConstInt32(1)));
+   DoWhileLoopWithBreak("exitLoop", &doWhileBody, &breakBody);
 
    getNextOpcode(doWhileBody);
+
+   handleOpcodes();
+   handleUnusedOpcodes();
 
    doWhileBody->Switch("opcode", &_defaultHandler, OPCODES::BC_COUNT,
                    OPCODES::BC_00, &_opcodeBuilders[OPCODES::BC_00], false,
@@ -109,7 +136,9 @@ OMR::InterpreterBuilder::execute(TR::IlBuilder *builder)
 
    incrementPC(doWhileBody, 2);
 
-   handleUnusedOpcodes();
+   handleReturn();
+
+   return true;
    }
 
 void
@@ -157,22 +186,10 @@ OMR::InterpreterBuilder::handleUnusedOpcodes()
    {
    for (int i = 0; i < OPCODES::BC_COUNT; i ++)
       {
-      if (!_opcodeHasBeenRegistered[i])
+      if (NULL == _opcodeBuilders[i])
          {
+         _opcodeBuilders[i] = OrphanOpcodeBuilder(i, "Unknown opcode");
          _opcodeBuilders[i]->Goto(_defaultHandler);
          }
       }
-   }
-
-TR::IlBuilder *
-OMR::InterpreterBuilder::registerOpcodeHandler(int32_t opcode)
-   {
-   if (_opcodeHasBeenRegistered[opcode])
-      {
-      /* Opcode has already been handled!!! should we assert??? */
-      cerr << "should not happen!!!!\n";
-      return NULL;
-      }
-   _opcodeHasBeenRegistered[opcode] = true;
-   return _opcodeBuilders[opcode];
    }

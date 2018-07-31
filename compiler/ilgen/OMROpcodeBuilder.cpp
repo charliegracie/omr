@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2000, 2018 IBM Corp. and others
+ * Copyright (c) 2017, 2018 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -19,23 +19,21 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#ifndef TR_INTERPRETERBUILDER_INCL
-#define TR_INTERPRETERBUILDER_INCL
+#include "ilgen/VirtualMachineState.hpp"
+#include "ilgen/IlBuilder.hpp"
+#include "ilgen/MethodBuilder.hpp"
+#include "ilgen/OpcodeBuilder.hpp"
+#include "ilgen/TypeDictionary.hpp"
 
-#include "ilgen/OMRInterpreterBuilder.hpp"
+// should really move into IlInjector.hpp
+#define TraceEnabled    (comp()->getOption(TR_TraceILGen))
+#define TraceIL(m, ...) {if (TraceEnabled) {traceMsg(comp(), m, ##__VA_ARGS__);}}
 
-namespace TR
-{
-   class InterpreterBuilder : public OMR::InterpreterBuilder
-      {
-      public:
-	   InterpreterBuilder(TR::TypeDictionary *d,
-	         const char *bytecodePtrName, TR::IlType *bytecodeValueType,
-	         const char *pcName, const char *opcodeName)
-            : OMR::InterpreterBuilder(d, bytecodePtrName, bytecodeValueType, pcName, opcodeName)
-            { }
-      };
 
-} // namespace TR
+OMR::OpcodeBuilder::OpcodeBuilder(TR::MethodBuilder *methodBuilder,
+                                      int32_t bcIndex,
+                                      char *name)
+   : TR::BytecodeBuilder(methodBuilder, bcIndex, name)
+   {
+   }
 
-#endif // !defined(TR_INTERPRETERBUILDER_INCL)
