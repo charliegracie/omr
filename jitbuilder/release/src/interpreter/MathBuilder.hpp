@@ -33,11 +33,11 @@ typedef TR::IlValue * (*MathFuncType)(TR::IlBuilder *builder, TR::IlValue *left,
 class MathBuilder : public TR::OpcodeBuilder
    {
    public:
-   MathBuilder(TR::InterpreterBuilder *interpreterBuilder, int32_t bcIndex, MathFuncType mathFunction);
+   MathBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, MathFuncType mathFunction);
 
    virtual void execute();
 
-   static MathBuilder *OrphanOpcodeBuilder(TR::InterpreterBuilder *interpreterBuilder, int32_t bcIndex, MathFuncType mathFunction);
+   static MathBuilder *OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, MathFuncType mathFunction);
 
    static TR::IlValue *add(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
    static TR::IlValue *sub(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
@@ -47,7 +47,6 @@ class MathBuilder : public TR::OpcodeBuilder
    protected:
 
    private:
-   TR::InterpreterBuilder *_interpreterBuilder;
    MathFuncType _mathFunction;
    };
 

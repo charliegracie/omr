@@ -31,16 +31,15 @@ namespace TR { class InterpreterBuilder; }
 class RetBuilder : public TR::OpcodeBuilder
    {
    public:
-   RetBuilder(TR::InterpreterBuilder *interpreterBuilder, int32_t bcIndex);
+   RetBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
 
    virtual void execute();
 
-   static RetBuilder *OrphanOpcodeBuilder(TR::InterpreterBuilder *interpreterBuilder, int32_t bcIndex);
+   static RetBuilder *OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
 
    protected:
 
    private:
-   TR::InterpreterBuilder *_interpreterBuilder;
    };
 
 #endif // !defined(RETBUILDER_INCL)

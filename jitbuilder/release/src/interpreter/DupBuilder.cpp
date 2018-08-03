@@ -22,28 +22,28 @@
 
 #include <new>
 
-#include "ilgen/InterpreterBuilder.hpp"
+#include "ilgen/MethodBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/VirtualMachineInterpreterStack.hpp"
 #include "DupBuilder.hpp"
 
-DupBuilder::DupBuilder(TR::InterpreterBuilder *interpreterBuilder, int32_t bcIndex)
-   : OpcodeBuilder(interpreterBuilder, bcIndex, "DUP"),
-   _interpreterBuilder(interpreterBuilder)
+DupBuilder::DupBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
+   : OpcodeBuilder(methodBuilder, bcIndex, "DUP")
    {
    }
 
-DupBuilder *DupBuilder::OrphanOpcodeBuilder(TR::InterpreterBuilder *methodBuilder, int32_t bcIndex)
+DupBuilder *
+DupBuilder::OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
    {
    DupBuilder *orphan = new DupBuilder(methodBuilder, bcIndex);
-   orphan->initialize(methodBuilder->details(),methodBuilder->methodSymbol(), methodBuilder->fe(), methodBuilder->symRefTab());
-   orphan->setupForBuildIL();
+   methodBuilder->InitializeOpcodeBuilder(orphan);
    return orphan;
    }
 
 void
 DupBuilder::execute()
    {
-   _interpreterBuilder->getState()->Dup(this);
+   TR::VirtualMachineInterpreterStack *state = (TR::VirtualMachineInterpreterStack*)vmState();
+   state->Dup(this);
    }
 

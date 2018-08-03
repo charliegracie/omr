@@ -22,28 +22,28 @@
 
 #include <new>
 
-#include "ilgen/InterpreterBuilder.hpp"
+#include "ilgen/MethodBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/VirtualMachineInterpreterStack.hpp"
 #include "PushBuilder.hpp"
 
-PushBuilder::PushBuilder(TR::InterpreterBuilder *interpreterBuilder, int32_t bcIndex)
-   : OpcodeBuilder(interpreterBuilder, bcIndex, "PUSH_CONSTANT"),
-   _interpreterBuilder(interpreterBuilder)
+PushBuilder::PushBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
+   : OpcodeBuilder(methodBuilder, bcIndex, "PUSH_CONSTANT")
    {
    }
 
-PushBuilder *PushBuilder::OrphanOpcodeBuilder(TR::InterpreterBuilder *methodBuilder, int32_t bcIndex)
+PushBuilder *
+PushBuilder::OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
    {
    PushBuilder *orphan = new PushBuilder(methodBuilder, bcIndex);
-   orphan->initialize(methodBuilder->details(),methodBuilder->methodSymbol(), methodBuilder->fe(), methodBuilder->symRefTab());
-   orphan->setupForBuildIL();
+   methodBuilder->InitializeOpcodeBuilder(orphan);
    return orphan;
    }
 
 void
 PushBuilder::execute()
    {
+   TR::VirtualMachineInterpreterStack *state = (TR::VirtualMachineInterpreterStack*)vmState();
    TR::IlType *pInt8 = _types->PointerTo(Int8);
 
    TR::IlValue *value =
@@ -54,6 +54,6 @@ PushBuilder::execute()
             Load("pc"),
             ConstInt32(1))));
 
-   _interpreterBuilder->getState()->Push(this, value);
+   state->Push(this, value);
    }
 

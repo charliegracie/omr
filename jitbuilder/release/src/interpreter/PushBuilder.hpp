@@ -31,16 +31,15 @@ namespace TR { class InterpreterBuilder; }
 class PushBuilder : public TR::OpcodeBuilder
    {
    public:
-   PushBuilder(TR::InterpreterBuilder *interpreterBuilder, int32_t bcIndex);
+   PushBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
 
    virtual void execute();
 
-   static PushBuilder *OrphanOpcodeBuilder(TR::InterpreterBuilder *interpreterBuilder, int32_t bcIndex);
+   static PushBuilder *OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
 
    protected:
 
    private:
-   TR::InterpreterBuilder *_interpreterBuilder;
    };
 
 #endif // !defined(PUSHBUILDER_INCL)

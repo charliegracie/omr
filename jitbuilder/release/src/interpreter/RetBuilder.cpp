@@ -22,29 +22,29 @@
 
 #include <new>
 
-#include "ilgen/InterpreterBuilder.hpp"
+#include "ilgen/MethodBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/VirtualMachineInterpreterStack.hpp"
 #include "RetBuilder.hpp"
 
-RetBuilder::RetBuilder(TR::InterpreterBuilder *interpreterBuilder, int32_t bcIndex)
-   : OpcodeBuilder(interpreterBuilder, bcIndex, "DUP"),
-   _interpreterBuilder(interpreterBuilder)
+RetBuilder::RetBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
+   : OpcodeBuilder(methodBuilder, bcIndex, "DUP")
    {
    }
 
-RetBuilder *RetBuilder::OrphanOpcodeBuilder(TR::InterpreterBuilder *methodBuilder, int32_t bcIndex)
+RetBuilder *
+RetBuilder::OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
    {
    RetBuilder *orphan = new RetBuilder(methodBuilder, bcIndex);
-   orphan->initialize(methodBuilder->details(),methodBuilder->methodSymbol(), methodBuilder->fe(), methodBuilder->symRefTab());
-   orphan->setupForBuildIL();
+   methodBuilder->InitializeOpcodeBuilder(orphan);
    return orphan;
    }
 
 void
 RetBuilder::execute()
    {
-   TR::IlValue *ret = _interpreterBuilder->getState()->Pop(this);
+   TR::VirtualMachineInterpreterStack *state = (TR::VirtualMachineInterpreterStack*)vmState();
+   TR::IlValue *ret = state->Pop(this);
    this->Return(ret);
    }
 

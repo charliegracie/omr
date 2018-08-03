@@ -96,6 +96,10 @@ OMR::InterpreterBuilder::buildIL()
    cout << "InterpreterBuilder::buildIL() running!\n";
 
    _stack = createStack();
+   setVMState(_stack);
+
+//   TR::OpcodeBuilder *builder = OrphanOpcodeBuilder(-1, "initial");
+//   AppendBuilder(builder);
 
    _defaultHandler = OrphanOpcodeBuilder(OPCODES::BC_COUNT + 1, "default handler");
 

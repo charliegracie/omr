@@ -68,8 +68,6 @@ enum OPCODES
    virtual void handleReturn() {}
    virtual TR::VirtualMachineInterpreterStack *createStack() {return NULL;}
 
-   TR::VirtualMachineInterpreterStack *getState() {return _stack;}
-
 protected:
    void getNextOpcode(TR::IlBuilder *builder);
 

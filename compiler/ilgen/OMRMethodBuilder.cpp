@@ -47,6 +47,7 @@
 #include "ilgen/IlBuilder.hpp"
 #include "ilgen/MethodBuilder.hpp"
 #include "ilgen/BytecodeBuilder.hpp"
+#include "ilgen/OpcodeBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/VirtualMachineState.hpp"
 
@@ -489,6 +490,15 @@ OMR::MethodBuilder::OrphanBytecodeBuilder(int32_t bcIndex, char *name)
    orphan->initialize(_details, _methodSymbol, _fe, _symRefTab);
    orphan->setupForBuildIL();
    return orphan;
+   }
+
+void
+OMR::MethodBuilder::InitializeOpcodeBuilder(TR::OpcodeBuilder *b)
+   {
+   b->initialize(_details, _methodSymbol, _fe, _symRefTab);
+   b->setupForBuildIL();
+   if (vmState())
+      b->propagateVMState(vmState());
    }
 
 void

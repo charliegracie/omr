@@ -26,21 +26,20 @@
 
 #include "ilgen/OpcodeBuilder.hpp"
 
-namespace TR { class InterpreterBuilder; }
+namespace TR { class MethodBuilder; }
 
 class DupBuilder : public TR::OpcodeBuilder
    {
    public:
-   DupBuilder(TR::InterpreterBuilder *interpreterBuilder, int32_t bcIndex);
+   DupBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
 
    virtual void execute();
 
-   static DupBuilder *OrphanOpcodeBuilder(TR::InterpreterBuilder *interpreterBuilder, int32_t bcIndex);
+   static DupBuilder *OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
 
    protected:
 
    private:
-   TR::InterpreterBuilder *_interpreterBuilder;
    };
 
 #endif // !defined(DUPBUILDER_INCL)

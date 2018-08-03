@@ -22,35 +22,36 @@
 
 #include <new>
 
-#include "ilgen/InterpreterBuilder.hpp"
+#include "ilgen/MethodBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/VirtualMachineInterpreterStack.hpp"
 #include "MathBuilder.hpp"
 
-MathBuilder::MathBuilder(TR::InterpreterBuilder *interpreterBuilder, int32_t bcIndex, MathFuncType mathFunction)
-   : OpcodeBuilder(interpreterBuilder, bcIndex, "DUP"),
-   _interpreterBuilder(interpreterBuilder),
+MathBuilder::MathBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, MathFuncType mathFunction)
+   : OpcodeBuilder(methodBuilder, bcIndex, "DUP"),
    _mathFunction(mathFunction)
    {
    }
 
-MathBuilder *MathBuilder::OrphanOpcodeBuilder(TR::InterpreterBuilder *methodBuilder, int32_t bcIndex, MathFuncType mathFunction)
+MathBuilder *
+MathBuilder::OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, MathFuncType mathFunction)
    {
    MathBuilder *orphan = new MathBuilder(methodBuilder, bcIndex, mathFunction);
-   orphan->initialize(methodBuilder->details(),methodBuilder->methodSymbol(), methodBuilder->fe(), methodBuilder->symRefTab());
-   orphan->setupForBuildIL();
+   methodBuilder->InitializeOpcodeBuilder(orphan);
    return orphan;
    }
 
 void
 MathBuilder::execute()
    {
-   TR::IlValue *right = _interpreterBuilder->getState()->Pop(this);
-   TR::IlValue *left = _interpreterBuilder->getState()->Pop(this);
+   TR::VirtualMachineInterpreterStack *state = (TR::VirtualMachineInterpreterStack*)vmState();
+
+   TR::IlValue *right = state->Pop(this);
+   TR::IlValue *left = state->Pop(this);
 
    TR::IlValue *value = (*_mathFunction)(this, left, right);
 
-   _interpreterBuilder->getState()->Push(this, value);
+   state->Push(this, value);
    }
 
 TR::IlValue *
