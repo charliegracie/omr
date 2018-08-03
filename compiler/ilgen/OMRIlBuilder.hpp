@@ -31,6 +31,7 @@
 #include "ilgen/IlValue.hpp" // must go after IlInjector.hpp or TR_ALLOC isn't cleaned up
 
 namespace OMR { class MethodBuilder; }
+namespace OMR { class BytecodeBuilder; }
 
 namespace TR { class Block; }
 namespace TR { class IlGeneratorMethodDetails; }
@@ -143,6 +144,7 @@ public:
       };
 
    friend class OMR::MethodBuilder;
+   friend class OMR::BytecodeBuilder;
 
    IlBuilder(TR::MethodBuilder *methodBuilder, TR::TypeDictionary *types)
       : TR::IlInjector(types),

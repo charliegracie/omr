@@ -29,6 +29,8 @@ namespace TR { class OpcodeBuilder;}
 namespace TR { class VirtualMachineRegister; }
 namespace TR { class VirtualMachineInterpreterStack; }
 
+#define LOOP 1
+
 namespace OMR
 {
 
@@ -65,7 +67,7 @@ enum OPCODES
 
    virtual bool buildIL();
    virtual void handleOpcodes() {}
-   virtual void handleReturn() {}
+   virtual void handleReturn(TR::IlBuilder *builder) {}
    virtual TR::VirtualMachineInterpreterStack *createStack() {return NULL;}
 
 protected:
@@ -85,8 +87,13 @@ private:
    TR::IlType *_bytecodePtrType;
    const char *_pcName;
    const char *_opcodeName;
+#if LOOP == 0
    TR::IlBuilder *_defaultHandler;
    TR::IlBuilder *_opcodeBuilders[OPCODES::BC_COUNT];
+#else
+   TR::BytecodeBuilder *_defaultHandler;
+   TR::BytecodeBuilder *_opcodeBuilders[OPCODES::BC_COUNT];
+#endif
 
    };
 

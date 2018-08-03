@@ -34,7 +34,7 @@ class InterpreterMethod : public TR::InterpreterBuilder
    public:
    InterpreterMethod(TR::TypeDictionary *d);
    virtual void handleOpcodes();
-   virtual void handleReturn();
+   virtual void handleReturn(TR::IlBuilder *builder);
    virtual TR::VirtualMachineInterpreterStack *createStack();
 
    protected:

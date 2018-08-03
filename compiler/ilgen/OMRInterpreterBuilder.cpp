@@ -76,8 +76,7 @@ TR::OpcodeBuilder *
 OMR::InterpreterBuilder::OrphanOpcodeBuilder(int32_t bcIndex, char *name)
    {
    TR::OpcodeBuilder *orphan = new (comp()->trHeapMemory()) TR::OpcodeBuilder(_methodBuilder, bcIndex, name);
-   orphan->initialize(_details, _methodSymbol, _fe, _symRefTab);
-   orphan->setupForBuildIL();
+   InitializeOpcodeBuilder(orphan);
    return orphan;
    }
 
@@ -98,18 +97,43 @@ OMR::InterpreterBuilder::buildIL()
    _stack = createStack();
    setVMState(_stack);
 
-//   TR::OpcodeBuilder *builder = OrphanOpcodeBuilder(-1, "initial");
-//   AppendBuilder(builder);
+#if LOOP == 0
+   _defaultHandler = OrphanBuilder();
+#else
+   TR::OpcodeBuilder *builder = OrphanOpcodeBuilder(-1, "initial");
+   AppendBuilder(builder);
 
    _defaultHandler = OrphanOpcodeBuilder(OPCODES::BC_COUNT + 1, "default handler");
+#endif
 
+
+#if LOOP == 0
    TR::IlBuilder *doWhileBody = NULL;
    TR::IlBuilder *breakBody = NULL;
 
    setPC(this, 0);
 
-   Store("exitLoop", EqualTo(ConstInt32(1), ConstInt32(1)));
+   Store("exitLoop",
+      EqualTo(
+         ConstInt32(1),
+         ConstInt32(1)));
+#else
+   TR::BytecodeBuilder *doWhileBody = NULL;
+   TR::BytecodeBuilder *breakBody = NULL;
+
+   setPC(builder, 0);
+
+   builder->Store("exitLoop",
+   builder->   EqualTo(
+   builder->      ConstInt32(1),
+   builder->      ConstInt32(1)));
+#endif
+
+#if LOOP == 0
    DoWhileLoopWithBreak("exitLoop", &doWhileBody, &breakBody);
+#else
+   builder->DoWhileLoop("exitLoop", &doWhileBody, &breakBody, NULL);
+#endif
 
    getNextOpcode(doWhileBody);
 
@@ -136,11 +160,19 @@ OMR::InterpreterBuilder::buildIL()
                    );
 
    _defaultHandler->Call("handleBadOpcode", 2, _defaultHandler->Load("opcode"), _defaultHandler->Load("pc"));
+#if LOOP == 0
    _defaultHandler->Goto(&breakBody);
+#else
+   _defaultHandler->Goto(&breakBody);
+#endif
 
    incrementPC(doWhileBody, 2);
 
-   handleReturn();
+#if LOOP == 0
+   handleReturn(this);
+#else
+   handleReturn(builder);
+#endif
 
    return true;
    }

@@ -73,7 +73,7 @@ OMR::VirtualMachineInterpreterStack::UpdateStack(TR::IlBuilder *b, TR::IlValue *
 TR::VirtualMachineState *
 OMR::VirtualMachineInterpreterStack::MakeCopy()
    {
-   return this;
+   return static_cast<TR::VirtualMachineState *>(this);
    } 
 
 void

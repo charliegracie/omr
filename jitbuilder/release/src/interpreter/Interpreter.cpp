@@ -161,9 +161,9 @@ InterpreterMethod::handleOpcodes()
    }
 
 void
-InterpreterMethod::handleReturn()
+InterpreterMethod::handleReturn(TR::IlBuilder *builder)
    {
-   Return(
-      ConstInt64(-1));
+   builder->Return(
+   builder->   ConstInt64(-1));
    }
 

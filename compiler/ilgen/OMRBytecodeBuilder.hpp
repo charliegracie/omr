@@ -96,6 +96,17 @@ public:
    void IfCmpGreaterOrEqual(TR::BytecodeBuilder *dest, TR::IlValue *v1, TR::IlValue *v2);
    void IfCmpUnsignedGreaterOrEqual(TR::BytecodeBuilder **dest, TR::IlValue *v1, TR::IlValue *v2);
    void IfCmpUnsignedGreaterOrEqual(TR::BytecodeBuilder *dest, TR::IlValue *v1, TR::IlValue *v2);
+   void DoWhileLoop(const char *whileCondition, TR::BytecodeBuilder **body, TR::BytecodeBuilder **breakBuilder, TR::BytecodeBuilder **continueBuilder);
+   void Switch(const char *selectionVar,
+               TR::BytecodeBuilder **defaultBuilder,
+               uint32_t numCases,
+               int32_t *caseValues,
+               TR::BytecodeBuilder **caseBuilders,
+               bool *caseFallsThrough);
+   void Switch(const char *selectionVar,
+               TR::BytecodeBuilder **defaultBuilder,
+               uint32_t numCases,
+               ...);
 
 protected:
    TR::BytecodeBuilder       * _fallThroughBuilder;
