@@ -1996,7 +1996,18 @@ OMR::IlBuilder::genCall(TR::IlValue *returnValue, TR::SymbolReference *methodSym
 
    if (returnType != TR::NoType)
       {
-      closeValue(returnValue, callNode->getDataType(), callNode);
+      TR::Node *node = callNode;
+      TR::DataType typeTo = returnType;
+      TR::DataType typeFrom = callNode->getDataType();
+      if (typeFrom != typeTo)
+         {
+         TR::ILOpCodes convertOp = ILOpCode::getProperConversion(typeFrom, typeTo, false);
+         TR_ASSERT(convertOp != TR::BadILOp, "Builder [ %p ] unknown conversion attempted for Call %d (TR::DataType %d) to (TR::DataType %d)", this, returnValue->getID(), (int)typeFrom, (int)typeTo);
+
+         node = TR::Node::create(convertOp, 1, callNode);
+         }
+
+      closeValue(returnValue, typeTo, node);
       }
 
    restoreRecorder(savedRecorder);
