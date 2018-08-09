@@ -21,30 +21,25 @@
  *******************************************************************************/
 
 
-#ifndef INTERPRETER_INCL
-#define INTERPRETER_INCL
+#ifndef EXITBUILDER_INCL
+#define EXITBUILDER_INCL
 
-#include "ilgen/InterpreterBuilder.hpp"
+#include "ilgen/OpcodeBuilder.hpp"
 
-typedef TR::IlValue * (*MathFuncType)(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
-typedef TR::IlValue * (*BooleanFuncType)(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
+namespace TR { class InterpreterBuilder; }
 
-class InterpreterMethod : public TR::InterpreterBuilder
+class ExitBuilder : public TR::OpcodeBuilder
    {
    public:
-   InterpreterMethod(TR::TypeDictionary *d);
-   virtual void handleOpcodes();
-   virtual void handleReturn(TR::IlBuilder *builder);
-   virtual TR::VirtualMachineInterpreterStack *createStack();
-   virtual void loadOpcodeArray();
+   ExitBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
+
+   virtual void execute();
+
+   static ExitBuilder *OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
 
    protected:
 
    private:
-   TR::IlType *pInt8;
-   TR::IlType *frame;
-   TR::IlType *pFrame;
-
    };
 
-#endif // !defined(INTERPRETER_INCL)
+#endif // !defined(EXITBUILDER_INCL)

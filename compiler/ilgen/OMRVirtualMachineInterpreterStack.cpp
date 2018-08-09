@@ -45,13 +45,13 @@ OMR::VirtualMachineInterpreterStack::VirtualMachineInterpreterStack(TR::MethodBu
 void
 OMR::VirtualMachineInterpreterStack::Commit(TR::IlBuilder *b)
    {
-   // TODO implement Commit
+   _stackTopRegister->Commit(b);
    }
 
 void
 OMR::VirtualMachineInterpreterStack::Reload(TR::IlBuilder* b)
    {
-   // TODO implement Reload
+   _stackTopRegister->Reload(b);
    }
 
 void
@@ -65,7 +65,7 @@ OMR::VirtualMachineInterpreterStack::MergeInto(TR::VirtualMachineInterpreterStac
 void
 OMR::VirtualMachineInterpreterStack::UpdateStack(TR::IlBuilder *b, TR::IlValue *stack)
    {
-   b->Store(_stackBaseName, stack);
+   // TODO implement?  Is this even useful for anything?
    }
 
 // Allocate a new operand stack and copy everything in this state

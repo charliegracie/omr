@@ -28,7 +28,7 @@
 #include "MathBuilder.hpp"
 
 MathBuilder::MathBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, MathFuncType mathFunction)
-   : OpcodeBuilder(methodBuilder, bcIndex, "DUP"),
+   : OpcodeBuilder(methodBuilder, bcIndex, "MATH"),
    _mathFunction(mathFunction)
    {
    }

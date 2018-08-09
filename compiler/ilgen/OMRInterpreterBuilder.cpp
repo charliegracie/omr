@@ -81,10 +81,11 @@ OMR::InterpreterBuilder::OrphanOpcodeBuilder(int32_t bcIndex, char *name)
    }
 
 void
-OMR::InterpreterBuilder::registerOpcodeBuilder(TR::OpcodeBuilder *handler)
+OMR::InterpreterBuilder::registerOpcodeBuilder(TR::OpcodeBuilder *handler, int32_t opcodeLength)
    {
    int32_t index = handler->bcIndex();
    _opcodeBuilders[index] = handler;
+   _opcodeLengths[index] = opcodeLength;
 
    handler->execute();
    }
@@ -97,6 +98,8 @@ OMR::InterpreterBuilder::buildIL()
    _stack = createStack();
    setVMState(_stack);
 
+   loadOpcodeArray();
+
 #if LOOP == 0
    _defaultHandler = OrphanBuilder();
 #else
@@ -105,7 +108,6 @@ OMR::InterpreterBuilder::buildIL()
 
    _defaultHandler = OrphanOpcodeBuilder(OPCODES::BC_COUNT + 1, "default handler");
 #endif
-
 
 #if LOOP == 0
    TR::IlBuilder *doWhileBody = NULL;
@@ -204,7 +206,8 @@ void
 OMR::InterpreterBuilder::incrementPC(TR::IlBuilder *builder, int32_t increment)
    {
    TR::IlValue *pc = getPC(builder);
-   TR::IlValue *incrementValue = builder->ConstInt32(increment);
+   //TR::IlValue *incrementValue = builder->ConstInt32(increment);
+   TR::IlValue *incrementValue = builder->Load("_pcIncrementAmount_");
 
    pc = builder->Add(pc, incrementValue);
 
@@ -226,6 +229,10 @@ OMR::InterpreterBuilder::handleUnusedOpcodes()
          {
          _opcodeBuilders[i] = OrphanOpcodeBuilder(i, "Unknown opcode");
          _opcodeBuilders[i]->Goto(_defaultHandler);
+         }
+      else
+         {
+         _opcodeBuilders[i]->Store("_pcIncrementAmount_", _opcodeBuilders[i]->ConstInt32(_opcodeLengths[i]));
          }
       }
    }

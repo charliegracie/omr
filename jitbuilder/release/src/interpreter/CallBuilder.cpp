@@ -25,7 +25,7 @@
 #include "ilgen/MethodBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/VirtualMachineInterpreterStack.hpp"
-#include "RetBuilder.hpp"
+#include "CallBuilder.hpp"
 
 #define STACKVALUETYPE int64_t
 
@@ -38,54 +38,87 @@ typedef struct Frame {
    STACKVALUETYPE stack[10];
 } Frame;
 
-static Frame * retHelper(Frame *frame)
+static Frame* callHelper(Frame *frame, int32_t pc, int8_t methodIndex, int8_t argCount)
    {
-   #define RETHELPER_LINE LINETOSTR(__LINE__)
+   #define CALLHELPER_LINE LINETOSTR(__LINE__)
 
-   Frame *previous = frame->previous;
-
-   free(frame);
-
-   return previous;
+   Frame *newFrame = (Frame *)malloc(sizeof(Frame));
+   if (NULL == frame) {
+      int *x = 0;
+      fprintf(stderr, "Unable to allocate frame for call\n");
+      *x = 0;
    }
 
-RetBuilder::RetBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
-   : OpcodeBuilder(methodBuilder, bcIndex, "RET")
+   frame->savedPC = pc;
+
+   newFrame->methods = frame->methods;
+   newFrame->sp = newFrame->stack;
+   newFrame->bytecodes = frame->methods[methodIndex];
+   newFrame->previous = frame;
+
+   memset(newFrame->stack, 0, sizeof(newFrame->stack));
+
+   for (int8_t i = 0; i < argCount; i++)
+      {
+      frame->sp--;
+      newFrame->stack[argCount - 1 - i] = *frame->sp;
+      newFrame->sp++;
+      }
+
+   return newFrame;
+   }
+
+CallBuilder::CallBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, TR::IlType *frameType)
+   : OpcodeBuilder(methodBuilder, bcIndex, "CALL"),
+   _frameType(frameType)
    {
    }
 
-RetBuilder *
-RetBuilder::OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, TR::IlType *frameType)
+CallBuilder *
+CallBuilder::OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, TR::IlType *frameType)
    {
-   RetBuilder *orphan = new RetBuilder(methodBuilder, bcIndex);
+   CallBuilder *orphan = new CallBuilder(methodBuilder, bcIndex, frameType);
    methodBuilder->InitializeOpcodeBuilder(orphan);
 
-   methodBuilder->DefineFunction((char *)"retHelper", (char *)__FILE__, (char *)RETHELPER_LINE, (void *)&retHelper, frameType, 1, frameType);
+   methodBuilder->DefineFunction((char *)"callHelper", (char *)__FILE__, (char *)CALLHELPER_LINE, (void *)&callHelper, frameType, 4, frameType, methodBuilder->typeDictionary()->PrimitiveType(TR::Int32), methodBuilder->typeDictionary()->PrimitiveType(TR::Int8), methodBuilder->typeDictionary()->PrimitiveType(TR::Int8));
 
    return orphan;
    }
 
 void
-RetBuilder::execute()
+CallBuilder::execute()
    {
    TR::VirtualMachineInterpreterStack *state = (TR::VirtualMachineInterpreterStack*)vmState();
+   TR::IlType *pInt8 = _types->PointerTo(Int8);
+   TR::IlValue *pc = Load("pc");
 
-   TR::IlValue *retVal = state->Pop(this);
+   TR::IlValue *methodIndex =
+   LoadAt(pInt8,
+      IndexAt(pInt8,
+         Load("bytecodes"),
+         Add(
+            pc,
+            ConstInt32(1))));
+
+   TR::IlValue *argCount =
+   LoadAt(pInt8,
+      IndexAt(pInt8,
+         Load("bytecodes"),
+         Add(
+            pc,
+            ConstInt32(2))));
+
    state->Commit(this);
 
-   TR::IlValue *newFrame = Call("retHelper", 1, Load("frame"));
+   TR::IlValue *newFrame = Call("callHelper", 4, Load("frame"), pc, methodIndex, argCount);
    Store("frame", newFrame);
 
    TR::IlValue *bytecodesAddress = StructFieldInstanceAddress("Frame", "bytecodes", newFrame);
    TR::IlValue *bytecodes = LoadAt(_types->PointerTo(_types->PointerTo(Int8)), bytecodesAddress);
    Store("bytecodes", bytecodes);
 
-   TR::IlValue *pcAddress = StructFieldInstanceAddress("Frame", "savedPC", newFrame);
-   TR::IlValue *pc = LoadAt(_types->PointerTo(Int32), pcAddress);
-   Store("pc", pc);
+   Store("pc", ConstInt32(0));//TODO verify that PC should be reset here
 
    state->Reload(this);
-
-   state->Push(this, retVal);
    }
 

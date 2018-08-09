@@ -21,30 +21,26 @@
  *******************************************************************************/
 
 
-#ifndef INTERPRETER_INCL
-#define INTERPRETER_INCL
+#ifndef CALLBUILDER_INCL
+#define CALLBUILDER_INCL
 
-#include "ilgen/InterpreterBuilder.hpp"
+#include "ilgen/OpcodeBuilder.hpp"
 
-typedef TR::IlValue * (*MathFuncType)(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
-typedef TR::IlValue * (*BooleanFuncType)(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
+namespace TR { class InterpreterBuilder; }
 
-class InterpreterMethod : public TR::InterpreterBuilder
+class CallBuilder : public TR::OpcodeBuilder
    {
    public:
-   InterpreterMethod(TR::TypeDictionary *d);
-   virtual void handleOpcodes();
-   virtual void handleReturn(TR::IlBuilder *builder);
-   virtual TR::VirtualMachineInterpreterStack *createStack();
-   virtual void loadOpcodeArray();
+   CallBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, TR::IlType *frameType);
+
+   virtual void execute();
+
+   static CallBuilder *OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, TR::IlType *frameType);
 
    protected:
 
    private:
-   TR::IlType *pInt8;
-   TR::IlType *frame;
-   TR::IlType *pFrame;
-
+   TR::IlType *_frameType;
    };
 
-#endif // !defined(INTERPRETER_INCL)
+#endif // !defined(CALLBUILDER_INCL)

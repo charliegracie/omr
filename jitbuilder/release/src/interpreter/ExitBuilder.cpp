@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2016 IBM Corp. and others
+ * Copyright (c) 2016, 2018 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -20,31 +20,31 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
+#include <new>
 
-#ifndef INTERPRETER_INCL
-#define INTERPRETER_INCL
+#include "ilgen/MethodBuilder.hpp"
+#include "ilgen/TypeDictionary.hpp"
+#include "ilgen/VirtualMachineInterpreterStack.hpp"
+#include "ExitBuilder.hpp"
 
-#include "ilgen/InterpreterBuilder.hpp"
-
-typedef TR::IlValue * (*MathFuncType)(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
-typedef TR::IlValue * (*BooleanFuncType)(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
-
-class InterpreterMethod : public TR::InterpreterBuilder
+ExitBuilder::ExitBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
+   : OpcodeBuilder(methodBuilder, bcIndex, "EXIT")
    {
-   public:
-   InterpreterMethod(TR::TypeDictionary *d);
-   virtual void handleOpcodes();
-   virtual void handleReturn(TR::IlBuilder *builder);
-   virtual TR::VirtualMachineInterpreterStack *createStack();
-   virtual void loadOpcodeArray();
+   }
 
-   protected:
+ExitBuilder *
+ExitBuilder::OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
+   {
+   ExitBuilder *orphan = new ExitBuilder(methodBuilder, bcIndex);
+   methodBuilder->InitializeOpcodeBuilder(orphan);
+   return orphan;
+   }
 
-   private:
-   TR::IlType *pInt8;
-   TR::IlType *frame;
-   TR::IlType *pFrame;
+void
+ExitBuilder::execute()
+   {
+   TR::VirtualMachineInterpreterStack *state = (TR::VirtualMachineInterpreterStack*)vmState();
+   TR::IlValue *ret = state->Pop(this);
+   this->Return(ret);
+   }
 
-   };
-
-#endif // !defined(INTERPRETER_INCL)

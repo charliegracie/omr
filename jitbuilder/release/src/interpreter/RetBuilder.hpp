@@ -35,7 +35,7 @@ class RetBuilder : public TR::OpcodeBuilder
 
    virtual void execute();
 
-   static RetBuilder *OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
+   static RetBuilder *OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, TR::IlType *frameType);
 
    protected:
 

@@ -63,12 +63,13 @@ enum OPCODES
    InterpreterBuilder(TR::TypeDictionary *d, const char *bytecodePtrName, TR::IlType *bytecodeElementType, const char *pcName, const char *opcodeName);
 
    TR::OpcodeBuilder *OrphanOpcodeBuilder(int32_t bcIndex, char *name);
-   void registerOpcodeBuilder(TR::OpcodeBuilder *handler);
+   void registerOpcodeBuilder(TR::OpcodeBuilder *handler, int32_t opcodeLength);
 
    virtual bool buildIL();
    virtual void handleOpcodes() {}
    virtual void handleReturn(TR::IlBuilder *builder) {}
    virtual TR::VirtualMachineInterpreterStack *createStack() {return NULL;}
+   virtual void loadOpcodeArray() {}
 
 protected:
    void getNextOpcode(TR::IlBuilder *builder);
@@ -94,7 +95,7 @@ private:
    TR::BytecodeBuilder *_defaultHandler;
    TR::BytecodeBuilder *_opcodeBuilders[OPCODES::BC_COUNT];
 #endif
-
+   int32_t _opcodeLengths[OPCODES::BC_COUNT];
    };
 
 } // namespace OMR
