@@ -26,9 +26,9 @@
 
 #include "ilgen/OpcodeBuilder.hpp"
 
-namespace TR { class InterpreterBuilder; }
+#include "InterpreterTypes.h"
 
-typedef TR::IlValue * (*MathFuncType)(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
+namespace TR { class InterpreterBuilder; }
 
 class MathBuilder : public TR::OpcodeBuilder
    {

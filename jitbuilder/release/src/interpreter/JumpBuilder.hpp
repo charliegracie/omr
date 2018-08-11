@@ -21,27 +21,25 @@
  *******************************************************************************/
 
 
-#ifndef INTERPRETER_INCL
-#define INTERPRETER_INCL
+#ifndef JUMPBUILDER_INCL
+#define JUMPBUILDER_INCL
 
-#include "ilgen/InterpreterBuilder.hpp"
+#include "ilgen/OpcodeBuilder.hpp"
 
-class InterpreterMethod : public TR::InterpreterBuilder
+namespace TR { class InterpreterBuilder; }
+
+class JumpBuilder : public TR::OpcodeBuilder
    {
    public:
-   InterpreterMethod(TR::TypeDictionary *d);
-   virtual void handleOpcodes();
-   virtual void handleReturn(TR::IlBuilder *builder);
-   virtual TR::VirtualMachineInterpreterStack *createStack();
-   virtual void loadOpcodeArray();
+   JumpBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
+
+   virtual void execute();
+
+   static JumpBuilder *OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
 
    protected:
 
    private:
-   TR::IlType *pInt8;
-   TR::IlType *frame;
-   TR::IlType *pFrame;
-
    };
 
-#endif // !defined(INTERPRETER_INCL)
+#endif // !defined(JUMPBUILDER_INCL)

@@ -27,56 +27,45 @@
 #include "ilgen/VirtualMachineInterpreterStack.hpp"
 
 #include "InterpreterTypes.h"
-#include "RetBuilder.hpp"
+#include "PopLocalBuilder.hpp"
 
-static Frame * retHelper(Frame *frame)
-   {
-   #define RETHELPER_LINE LINETOSTR(__LINE__)
-
-   Frame *previous = frame->previous;
-
-   free(frame);
-
-   return previous;
-   }
-
-RetBuilder::RetBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
-   : OpcodeBuilder(methodBuilder, bcIndex, "RET")
+PopLocalBuilder::PopLocalBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
+   : OpcodeBuilder(methodBuilder, bcIndex, "POP_LOCAL")
    {
    }
 
-RetBuilder *
-RetBuilder::OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, TR::IlType *frameType)
+PopLocalBuilder *
+PopLocalBuilder::OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
    {
-   RetBuilder *orphan = new RetBuilder(methodBuilder, bcIndex);
+   PopLocalBuilder *orphan = new PopLocalBuilder(methodBuilder, bcIndex);
    methodBuilder->InitializeOpcodeBuilder(orphan);
-
-   methodBuilder->DefineFunction((char *)"retHelper", (char *)__FILE__, (char *)RETHELPER_LINE, (void *)&retHelper, frameType, 1, frameType);
-
    return orphan;
    }
 
 void
-RetBuilder::execute()
+PopLocalBuilder::execute()
    {
    TR::VirtualMachineInterpreterStack *state = (TR::VirtualMachineInterpreterStack*)vmState();
+   TR::IlType *pInt8 = _types->PointerTo(Int8);
+   TR::IlType *pStackType = _types->PointerTo(STACKVALUEILTYPE);
 
-   TR::IlValue *retVal = state->Pop(this);
-   state->Commit(this);
+   TR::IlValue *poppedValue = state->Pop(this);
+   TR::IlValue *frame = Load("frame");
 
-   TR::IlValue *newFrame = Call("retHelper", 1, Load("frame"));
-   Store("frame", newFrame);
+   TR::IlValue *localIndex =
+   LoadAt(pInt8,
+      IndexAt(pInt8,
+         Load("bytecodes"),
+         Add(
+            Load("pc"),
+            ConstInt32(1))));
 
-   TR::IlValue *bytecodesAddress = StructFieldInstanceAddress("Frame", "bytecodes", newFrame);
-   TR::IlValue *bytecodes = LoadAt(_types->PointerTo(_types->PointerTo(Int8)), bytecodesAddress);
-   Store("bytecodes", bytecodes);
+   TR::IlValue *locals = LoadIndirect("Frame", "locals", frame);
 
-   TR::IlValue *pcAddress = StructFieldInstanceAddress("Frame", "savedPC", newFrame);
-   TR::IlValue *pc = LoadAt(_types->PointerTo(Int32), pcAddress);
-   Store("pc", pc);
-
-   state->Reload(this);
-
-   state->Push(this, retVal);
+   StoreAt(
+      IndexAt(pStackType,
+         locals,
+         localIndex),
+      poppedValue);
    }
 

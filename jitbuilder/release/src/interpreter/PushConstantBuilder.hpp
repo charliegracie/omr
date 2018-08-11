@@ -21,27 +21,25 @@
  *******************************************************************************/
 
 
-#ifndef INTERPRETER_INCL
-#define INTERPRETER_INCL
+#ifndef PUSHCONSTANTBUILDER_INCL
+#define PUSHCONSTANTBUILDER_INCL
 
-#include "ilgen/InterpreterBuilder.hpp"
+#include "ilgen/OpcodeBuilder.hpp"
 
-class InterpreterMethod : public TR::InterpreterBuilder
+namespace TR { class InterpreterBuilder; }
+
+class PushConstantBuilder : public TR::OpcodeBuilder
    {
    public:
-   InterpreterMethod(TR::TypeDictionary *d);
-   virtual void handleOpcodes();
-   virtual void handleReturn(TR::IlBuilder *builder);
-   virtual TR::VirtualMachineInterpreterStack *createStack();
-   virtual void loadOpcodeArray();
+   PushConstantBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
+
+   virtual void execute();
+
+   static PushConstantBuilder *OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
 
    protected:
 
    private:
-   TR::IlType *pInt8;
-   TR::IlType *frame;
-   TR::IlType *pFrame;
-
    };
 
-#endif // !defined(INTERPRETER_INCL)
+#endif // !defined(PUSHCONSTANTBUILDER_INCL)

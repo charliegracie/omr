@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2018 IBM Corp. and others
+ * Copyright (c) 2016, 2016 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -20,40 +20,26 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include <new>
 
-#include "ilgen/MethodBuilder.hpp"
-#include "ilgen/TypeDictionary.hpp"
-#include "ilgen/VirtualMachineInterpreterStack.hpp"
-#include "PushBuilder.hpp"
+#ifndef POPLOCALBUILDER_INCL
+#define POPLOCALBUILDER_INCL
 
-PushBuilder::PushBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
-   : OpcodeBuilder(methodBuilder, bcIndex, "PUSH_CONSTANT")
+#include "ilgen/OpcodeBuilder.hpp"
+
+namespace TR { class InterpreterBuilder; }
+
+class PopLocalBuilder : public TR::OpcodeBuilder
    {
-   }
+   public:
+   PopLocalBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
 
-PushBuilder *
-PushBuilder::OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
-   {
-   PushBuilder *orphan = new PushBuilder(methodBuilder, bcIndex);
-   methodBuilder->InitializeOpcodeBuilder(orphan);
-   return orphan;
-   }
+   virtual void execute();
 
-void
-PushBuilder::execute()
-   {
-   TR::VirtualMachineInterpreterStack *state = (TR::VirtualMachineInterpreterStack*)vmState();
-   TR::IlType *pInt8 = _types->PointerTo(Int8);
+   static PopLocalBuilder *OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
 
-   TR::IlValue *value =
-   LoadAt(pInt8,
-      IndexAt(pInt8,
-         Load("bytecodes"),
-         Add(
-            Load("pc"),
-            ConstInt32(1))));
+   protected:
 
-   state->Push(this, value);
-   }
+   private:
+   };
 
+#endif // !defined(POPLOCALBUILDER_INCL)

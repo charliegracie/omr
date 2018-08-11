@@ -20,28 +20,24 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
+#ifndef INTERPRETERTYPES_INCL
+#define INTERPRETERTYPES_INCL
 
-#ifndef INTERPRETER_INCL
-#define INTERPRETER_INCL
+#define STACKVALUEILTYPE Int64
+#define STACKVALUETYPE int64_t
 
-#include "ilgen/InterpreterBuilder.hpp"
+typedef struct Frame {
+   Frame *previous;
+   int32_t savedPC;
+   int8_t *bytecodes;
+   int8_t **methods;
+   STACKVALUETYPE *locals;
+   STACKVALUETYPE loc[10];
+   STACKVALUETYPE *sp;
+   STACKVALUETYPE stack[10];
+} Frame;
 
-class InterpreterMethod : public TR::InterpreterBuilder
-   {
-   public:
-   InterpreterMethod(TR::TypeDictionary *d);
-   virtual void handleOpcodes();
-   virtual void handleReturn(TR::IlBuilder *builder);
-   virtual TR::VirtualMachineInterpreterStack *createStack();
-   virtual void loadOpcodeArray();
+typedef TR::IlValue * (*MathFuncType)(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
+typedef TR::IlValue * (*BooleanFuncType)(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
 
-   protected:
-
-   private:
-   TR::IlType *pInt8;
-   TR::IlType *frame;
-   TR::IlType *pFrame;
-
-   };
-
-#endif // !defined(INTERPRETER_INCL)
+#endif // !defined(INTERPRETERTYPES_INCL)

@@ -25,18 +25,9 @@
 #include "ilgen/MethodBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/VirtualMachineInterpreterStack.hpp"
+
+#include "InterpreterTypes.h"
 #include "CallBuilder.hpp"
-
-#define STACKVALUETYPE int64_t
-
-typedef struct Frame {
-   Frame *previous;
-   int32_t savedPC;
-   int8_t *bytecodes;
-   int8_t **methods;
-   STACKVALUETYPE *sp;
-   STACKVALUETYPE stack[10];
-} Frame;
 
 static Frame* callHelper(Frame *frame, int32_t pc, int8_t methodIndex, int8_t argCount)
    {
@@ -52,10 +43,12 @@ static Frame* callHelper(Frame *frame, int32_t pc, int8_t methodIndex, int8_t ar
    frame->savedPC = pc;
 
    newFrame->methods = frame->methods;
+   newFrame->locals = newFrame->loc;
    newFrame->sp = newFrame->stack;
    newFrame->bytecodes = frame->methods[methodIndex];
    newFrame->previous = frame;
 
+   memset(newFrame->loc, 0, sizeof(newFrame->loc));
    memset(newFrame->stack, 0, sizeof(newFrame->stack));
 
    for (int8_t i = 0; i < argCount; i++)

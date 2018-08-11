@@ -25,58 +25,50 @@
 #include "ilgen/MethodBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/VirtualMachineInterpreterStack.hpp"
+#include "JumpBuilder.hpp"
 
-#include "InterpreterTypes.h"
-#include "RetBuilder.hpp"
-
-static Frame * retHelper(Frame *frame)
-   {
-   #define RETHELPER_LINE LINETOSTR(__LINE__)
-
-   Frame *previous = frame->previous;
-
-   free(frame);
-
-   return previous;
-   }
-
-RetBuilder::RetBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
-   : OpcodeBuilder(methodBuilder, bcIndex, "RET")
+JumpBuilder::JumpBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
+   : OpcodeBuilder(methodBuilder, bcIndex, "JUMP")
    {
    }
 
-RetBuilder *
-RetBuilder::OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, TR::IlType *frameType)
+JumpBuilder *
+JumpBuilder::OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
    {
-   RetBuilder *orphan = new RetBuilder(methodBuilder, bcIndex);
+   JumpBuilder *orphan = new JumpBuilder(methodBuilder, bcIndex);
    methodBuilder->InitializeOpcodeBuilder(orphan);
-
-   methodBuilder->DefineFunction((char *)"retHelper", (char *)__FILE__, (char *)RETHELPER_LINE, (void *)&retHelper, frameType, 1, frameType);
-
    return orphan;
    }
 
 void
-RetBuilder::execute()
+JumpBuilder::execute()
    {
    TR::VirtualMachineInterpreterStack *state = (TR::VirtualMachineInterpreterStack*)vmState();
+   TR::IlType *pInt8 = _types->PointerTo(Int8);
 
-   TR::IlValue *retVal = state->Pop(this);
-   state->Commit(this);
+   TR::IlValue *pc = Load("pc");
 
-   TR::IlValue *newFrame = Call("retHelper", 1, Load("frame"));
-   Store("frame", newFrame);
+   TR::IlValue *value =
+   LoadAt(pInt8,
+      IndexAt(pInt8,
+         Load("bytecodes"),
+         Add(
+            pc,
+            ConstInt32(1))));
 
-   TR::IlValue *bytecodesAddress = StructFieldInstanceAddress("Frame", "bytecodes", newFrame);
-   TR::IlValue *bytecodes = LoadAt(_types->PointerTo(_types->PointerTo(Int8)), bytecodesAddress);
-   Store("bytecodes", bytecodes);
+   TR::IlValue *right = state->Pop(this);
+   TR::IlValue *left = state->Pop(this);
 
-   TR::IlValue *pcAddress = StructFieldInstanceAddress("Frame", "savedPC", newFrame);
-   TR::IlValue *pc = LoadAt(_types->PointerTo(Int32), pcAddress);
-   Store("pc", pc);
+   TR::IlBuilder *jump = NULL;
+   TR::IlBuilder *doNotJump = NULL;
+   IfThenElse(&jump, &doNotJump,
+      LessThan(left, right));
 
-   state->Reload(this);
+   jump->Store("pc",
+   jump->   ConvertTo(Int32, value));
 
-   state->Push(this, retVal);
+   doNotJump->Store("pc",
+   doNotJump->   Add(pc,
+   doNotJump->      ConstInt32(2)));
    }
 

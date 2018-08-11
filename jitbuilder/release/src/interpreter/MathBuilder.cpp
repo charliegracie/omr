@@ -25,6 +25,8 @@
 #include "ilgen/MethodBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/VirtualMachineInterpreterStack.hpp"
+
+#include "InterpreterTypes.h"
 #include "MathBuilder.hpp"
 
 MathBuilder::MathBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, MathFuncType mathFunction)
