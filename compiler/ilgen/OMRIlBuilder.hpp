@@ -193,6 +193,12 @@ public:
 
    bool blocksHaveBeenCounted() { return _count > -1; }
 
+   TR::Node *loadValue(TR::IlValue *v);
+   void appendNoFallThroughBlock(TR::Block *block = 0)
+      {
+      appendBlock(block, false);
+      }
+
    TR::IlBuilder *createBuilderIfNeeded(TR::IlBuilder *builder);
    TR::IlBuilder *OrphanBuilder();
    bool TraceEnabled_log();
@@ -585,7 +591,6 @@ protected:
    TR::IlValue *newValue(TR::DataType dt, TR::Node *n=NULL);
    void defineValue(const char *name, TR::IlType *dt);
 
-   TR::Node *loadValue(TR::IlValue *v);
    void storeNode(TR::SymbolReference *symRef, TR::Node *v);
    void indirectStoreNode(TR::Node *addr, TR::Node *v);
    TR::IlValue *indirectLoadNode(TR::IlType *dt, TR::Node *addr, bool isVectorLoad=false);
@@ -617,10 +622,6 @@ protected:
    void appendGoto(TR::Block *destBlock);
 
    virtual void appendBlock(TR::Block *block = 0, bool addEdge=true);
-   void appendNoFallThroughBlock(TR::Block *block = 0)
-      {
-      appendBlock(block, false);
-      }
 
    TR::Block *emptyBlock();
    

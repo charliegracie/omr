@@ -25,7 +25,7 @@
 #include "ilgen/MethodBuilder.hpp"
 
 namespace TR { class InterpreterBuilder; }
-namespace TR { class OpcodeBuilder;}
+namespace TR { class BytecodeBuilder;}
 namespace TR { class VirtualMachineRegister; }
 namespace TR { class VirtualMachineInterpreterStack; }
 
@@ -61,13 +61,11 @@ enum OPCODES
    };
 
    InterpreterBuilder(TR::TypeDictionary *d, const char *bytecodePtrName, TR::IlType *bytecodeElementType, const char *pcName, const char *opcodeName);
-
-   TR::OpcodeBuilder *OrphanOpcodeBuilder(int32_t bcIndex, char *name);
-   void registerOpcodeBuilder(TR::OpcodeBuilder *handler, int32_t opcodeLength);
+   void registerBytecodeBuilder(TR::BytecodeBuilder *handler, int32_t opcodeLength);
 
    virtual bool buildIL();
-   virtual void handleOpcodes() {}
-   virtual void handleReturn(TR::IlBuilder *builder) {}
+   virtual void registerBytecodeBuilders() = 0;
+   virtual void handleReturn(TR::IlBuilder *builder) = 0;
    virtual TR::VirtualMachineInterpreterStack *createStack() {return NULL;}
    virtual void loadOpcodeArray() {}
 
@@ -79,7 +77,24 @@ protected:
    void incrementPC(TR::IlBuilder *builder, int32_t increment);
    TR::IlValue *getPC(TR::IlBuilder *builder);
 
-   void handleUnusedOpcodes();
+   void completeBytecodeBuilderRegistration();
+
+   void DoWhileLoop(const char *whileCondition,
+               TR::BytecodeBuilder **body,
+               TR::BytecodeBuilder **breakBuilder,
+               TR::BytecodeBuilder **continueBuilder);
+   void Switch(const char *selectionVar,
+               TR::BytecodeBuilder *currentBuilder,
+               TR::BytecodeBuilder *defaultBuilder,
+               uint32_t numCases,
+               int32_t *caseValues,
+               TR::BytecodeBuilder **caseBuilders,
+               bool *caseFallsThrough);
+   void Switch(const char *selectionVar,
+               TR::BytecodeBuilder *currentBuilder,
+               TR::BytecodeBuilder *defaultBuilder,
+               uint32_t numCases,
+               ...);
 
 private:
    TR::VirtualMachineInterpreterStack *_stack;

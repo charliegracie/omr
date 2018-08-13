@@ -62,16 +62,16 @@ static Frame* callHelper(Frame *frame, int32_t pc, int8_t methodIndex, int8_t ar
    }
 
 CallBuilder::CallBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, TR::IlType *frameType)
-   : OpcodeBuilder(methodBuilder, bcIndex, "CALL"),
+   : BytecodeBuilder(methodBuilder, bcIndex, "CALL"),
    _frameType(frameType)
    {
    }
 
 CallBuilder *
-CallBuilder::OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, TR::IlType *frameType)
+CallBuilder::OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, TR::IlType *frameType)
    {
    CallBuilder *orphan = new CallBuilder(methodBuilder, bcIndex, frameType);
-   methodBuilder->InitializeOpcodeBuilder(orphan);
+   methodBuilder->InitializeBytecodeBuilder(orphan);
 
    methodBuilder->DefineFunction((char *)"callHelper", (char *)__FILE__, (char *)CALLHELPER_LINE, (void *)&callHelper, frameType, 4, frameType, methodBuilder->typeDictionary()->PrimitiveType(TR::Int32), methodBuilder->typeDictionary()->PrimitiveType(TR::Int8), methodBuilder->typeDictionary()->PrimitiveType(TR::Int8));
 

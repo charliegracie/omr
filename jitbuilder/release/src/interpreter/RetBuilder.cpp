@@ -41,15 +41,15 @@ static Frame * retHelper(Frame *frame)
    }
 
 RetBuilder::RetBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
-   : OpcodeBuilder(methodBuilder, bcIndex, "RET")
+   : BytecodeBuilder(methodBuilder, bcIndex, "RET")
    {
    }
 
 RetBuilder *
-RetBuilder::OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, TR::IlType *frameType)
+RetBuilder::OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, TR::IlType *frameType)
    {
    RetBuilder *orphan = new RetBuilder(methodBuilder, bcIndex);
-   methodBuilder->InitializeOpcodeBuilder(orphan);
+   methodBuilder->InitializeBytecodeBuilder(orphan);
 
    methodBuilder->DefineFunction((char *)"retHelper", (char *)__FILE__, (char *)RETHELPER_LINE, (void *)&retHelper, frameType, 1, frameType);
 

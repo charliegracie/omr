@@ -24,18 +24,18 @@
 #ifndef POPLOCALBUILDER_INCL
 #define POPLOCALBUILDER_INCL
 
-#include "ilgen/OpcodeBuilder.hpp"
+#include "ilgen/BytecodeBuilder.hpp"
 
 namespace TR { class InterpreterBuilder; }
 
-class PopLocalBuilder : public TR::OpcodeBuilder
+class PopLocalBuilder : public TR::BytecodeBuilder
    {
    public:
    PopLocalBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
 
    virtual void execute();
 
-   static PopLocalBuilder *OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
+   static PopLocalBuilder *OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
 
    protected:
 

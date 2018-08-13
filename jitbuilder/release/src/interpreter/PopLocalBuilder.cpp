@@ -30,15 +30,15 @@
 #include "PopLocalBuilder.hpp"
 
 PopLocalBuilder::PopLocalBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
-   : OpcodeBuilder(methodBuilder, bcIndex, "POP_LOCAL")
+   : BytecodeBuilder(methodBuilder, bcIndex, "POP_LOCAL")
    {
    }
 
 PopLocalBuilder *
-PopLocalBuilder::OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
+PopLocalBuilder::OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
    {
    PopLocalBuilder *orphan = new PopLocalBuilder(methodBuilder, bcIndex);
-   methodBuilder->InitializeOpcodeBuilder(orphan);
+   methodBuilder->InitializeBytecodeBuilder(orphan);
    return orphan;
    }
 

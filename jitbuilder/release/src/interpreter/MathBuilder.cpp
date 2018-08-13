@@ -30,16 +30,16 @@
 #include "MathBuilder.hpp"
 
 MathBuilder::MathBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, MathFuncType mathFunction)
-   : OpcodeBuilder(methodBuilder, bcIndex, "MATH"),
+   : BytecodeBuilder(methodBuilder, bcIndex, "MATH"),
    _mathFunction(mathFunction)
    {
    }
 
 MathBuilder *
-MathBuilder::OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, MathFuncType mathFunction)
+MathBuilder::OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, MathFuncType mathFunction)
    {
    MathBuilder *orphan = new MathBuilder(methodBuilder, bcIndex, mathFunction);
-   methodBuilder->InitializeOpcodeBuilder(orphan);
+   methodBuilder->InitializeBytecodeBuilder(orphan);
    return orphan;
    }
 

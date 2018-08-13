@@ -28,15 +28,15 @@
 #include "PushConstantBuilder.hpp"
 
 PushConstantBuilder::PushConstantBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
-   : OpcodeBuilder(methodBuilder, bcIndex, "PUSH_CONSTANT")
+   : BytecodeBuilder(methodBuilder, bcIndex, "PUSH_CONSTANT")
    {
    }
 
 PushConstantBuilder *
-PushConstantBuilder::OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
+PushConstantBuilder::OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
    {
    PushConstantBuilder *orphan = new PushConstantBuilder(methodBuilder, bcIndex);
-   methodBuilder->InitializeOpcodeBuilder(orphan);
+   methodBuilder->InitializeBytecodeBuilder(orphan);
    return orphan;
    }
 

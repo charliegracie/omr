@@ -28,15 +28,15 @@
 #include "JumpBuilder.hpp"
 
 JumpBuilder::JumpBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
-   : OpcodeBuilder(methodBuilder, bcIndex, "JUMP")
+   : BytecodeBuilder(methodBuilder, bcIndex, "JUMP")
    {
    }
 
 JumpBuilder *
-JumpBuilder::OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
+JumpBuilder::OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
    {
    JumpBuilder *orphan = new JumpBuilder(methodBuilder, bcIndex);
-   methodBuilder->InitializeOpcodeBuilder(orphan);
+   methodBuilder->InitializeBytecodeBuilder(orphan);
    return orphan;
    }
 

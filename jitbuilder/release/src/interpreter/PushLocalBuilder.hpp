@@ -24,18 +24,18 @@
 #ifndef PUSHLOCALBUILDER_INCL
 #define PUSHLOCALBUILDER_INCL
 
-#include "ilgen/OpcodeBuilder.hpp"
+#include "ilgen/BytecodeBuilder.hpp"
 
 namespace TR { class InterpreterBuilder; }
 
-class PushLocalBuilder : public TR::OpcodeBuilder
+class PushLocalBuilder : public TR::BytecodeBuilder
    {
    public:
    PushLocalBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
 
    virtual void execute();
 
-   static PushLocalBuilder *OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
+   static PushLocalBuilder *OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
 
    protected:
 

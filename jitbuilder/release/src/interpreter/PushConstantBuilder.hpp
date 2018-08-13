@@ -24,18 +24,18 @@
 #ifndef PUSHCONSTANTBUILDER_INCL
 #define PUSHCONSTANTBUILDER_INCL
 
-#include "ilgen/OpcodeBuilder.hpp"
+#include "ilgen/BytecodeBuilder.hpp"
 
 namespace TR { class InterpreterBuilder; }
 
-class PushConstantBuilder : public TR::OpcodeBuilder
+class PushConstantBuilder : public TR::BytecodeBuilder
    {
    public:
    PushConstantBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
 
    virtual void execute();
 
-   static PushConstantBuilder *OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
+   static PushConstantBuilder *OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
 
    protected:
 

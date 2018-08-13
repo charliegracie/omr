@@ -24,18 +24,18 @@
 #ifndef RETBUILDER_INCL
 #define RETBUILDER_INCL
 
-#include "ilgen/OpcodeBuilder.hpp"
+#include "ilgen/BytecodeBuilder.hpp"
 
 namespace TR { class InterpreterBuilder; }
 
-class RetBuilder : public TR::OpcodeBuilder
+class RetBuilder : public TR::BytecodeBuilder
    {
    public:
    RetBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
 
    virtual void execute();
 
-   static RetBuilder *OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, TR::IlType *frameType);
+   static RetBuilder *OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, TR::IlType *frameType);
 
    protected:
 

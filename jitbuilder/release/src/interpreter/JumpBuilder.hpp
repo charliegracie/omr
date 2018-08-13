@@ -24,18 +24,18 @@
 #ifndef JUMPBUILDER_INCL
 #define JUMPBUILDER_INCL
 
-#include "ilgen/OpcodeBuilder.hpp"
+#include "ilgen/BytecodeBuilder.hpp"
 
 namespace TR { class InterpreterBuilder; }
 
-class JumpBuilder : public TR::OpcodeBuilder
+class JumpBuilder : public TR::BytecodeBuilder
    {
    public:
    JumpBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
 
    virtual void execute();
 
-   static JumpBuilder *OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
+   static JumpBuilder *OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
 
    protected:
 

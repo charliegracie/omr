@@ -24,18 +24,18 @@
 #ifndef EXITBUILDER_INCL
 #define EXITBUILDER_INCL
 
-#include "ilgen/OpcodeBuilder.hpp"
+#include "ilgen/BytecodeBuilder.hpp"
 
 namespace TR { class InterpreterBuilder; }
 
-class ExitBuilder : public TR::OpcodeBuilder
+class ExitBuilder : public TR::BytecodeBuilder
    {
    public:
    ExitBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
 
    virtual void execute();
 
-   static ExitBuilder *OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
+   static ExitBuilder *OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
 
    protected:
 

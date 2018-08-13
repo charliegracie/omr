@@ -30,15 +30,15 @@
 #include "PushLocalBuilder.hpp"
 
 PushLocalBuilder::PushLocalBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
-   : OpcodeBuilder(methodBuilder, bcIndex, "PUSH_LOCAL")
+   : BytecodeBuilder(methodBuilder, bcIndex, "PUSH_LOCAL")
    {
    }
 
 PushLocalBuilder *
-PushLocalBuilder::OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
+PushLocalBuilder::OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
    {
    PushLocalBuilder *orphan = new PushLocalBuilder(methodBuilder, bcIndex);
-   methodBuilder->InitializeOpcodeBuilder(orphan);
+   methodBuilder->InitializeBytecodeBuilder(orphan);
    return orphan;
    }
 

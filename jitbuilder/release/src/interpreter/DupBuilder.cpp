@@ -28,15 +28,15 @@
 #include "DupBuilder.hpp"
 
 DupBuilder::DupBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
-   : OpcodeBuilder(methodBuilder, bcIndex, "DUP")
+   : BytecodeBuilder(methodBuilder, bcIndex, "DUP")
    {
    }
 
 DupBuilder *
-DupBuilder::OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
+DupBuilder::OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
    {
    DupBuilder *orphan = new DupBuilder(methodBuilder, bcIndex);
-   methodBuilder->InitializeOpcodeBuilder(orphan);
+   methodBuilder->InitializeBytecodeBuilder(orphan);
    return orphan;
    }
 

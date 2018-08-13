@@ -264,20 +264,20 @@ InterpreterMethod::loadOpcodeArray()
    }
 
 void
-InterpreterMethod::handleOpcodes()
+InterpreterMethod::registerBytecodeBuilders()
    {
-   registerOpcodeBuilder(PushConstantBuilder::OrphanOpcodeBuilder(this, interpreter_opcodes::PUSH_CONSTANT), 2);
-   registerOpcodeBuilder(DupBuilder::OrphanOpcodeBuilder(this, interpreter_opcodes::DUP), 1);
-   registerOpcodeBuilder(MathBuilder::OrphanOpcodeBuilder(this, interpreter_opcodes::ADD, &MathBuilder::add), 1);
-   registerOpcodeBuilder(MathBuilder::OrphanOpcodeBuilder(this, interpreter_opcodes::SUB, &MathBuilder::sub), 1);
-   registerOpcodeBuilder(MathBuilder::OrphanOpcodeBuilder(this, interpreter_opcodes::MUL, &MathBuilder::mul), 1);
-   registerOpcodeBuilder(MathBuilder::OrphanOpcodeBuilder(this, interpreter_opcodes::DIV, &MathBuilder::div), 1);
-   registerOpcodeBuilder(RetBuilder::OrphanOpcodeBuilder(this, interpreter_opcodes::RET, pFrame), 3); //PC increment of 3 to handle previous call
-   registerOpcodeBuilder(CallBuilder::OrphanOpcodeBuilder(this, interpreter_opcodes::CALL, pFrame), 0); //PC increment of 0 to handle starting at pc 0
-   registerOpcodeBuilder(JumpBuilder::OrphanOpcodeBuilder(this, interpreter_opcodes::JMPL), 0); //PC increment of 0 since Jump sets PC
-   registerOpcodeBuilder(PopLocalBuilder::OrphanOpcodeBuilder(this, interpreter_opcodes::POP_LOCAL), 2);
-   registerOpcodeBuilder(PushLocalBuilder::OrphanOpcodeBuilder(this, interpreter_opcodes::PUSH_LOCAL), 2);
-   registerOpcodeBuilder(ExitBuilder::OrphanOpcodeBuilder(this, interpreter_opcodes::EXIT), 2);
+   registerBytecodeBuilder(PushConstantBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::PUSH_CONSTANT), 2);
+   registerBytecodeBuilder(DupBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::DUP), 1);
+   registerBytecodeBuilder(MathBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::ADD, &MathBuilder::add), 1);
+   registerBytecodeBuilder(MathBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::SUB, &MathBuilder::sub), 1);
+   registerBytecodeBuilder(MathBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::MUL, &MathBuilder::mul), 1);
+   registerBytecodeBuilder(MathBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::DIV, &MathBuilder::div), 1);
+   registerBytecodeBuilder(RetBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::RET, pFrame), 3); //PC increment of 3 to handle previous call
+   registerBytecodeBuilder(CallBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::CALL, pFrame), 0); //PC increment of 0 to handle starting at pc 0
+   registerBytecodeBuilder(JumpBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::JMPL), 0); //PC increment of 0 since Jump sets PC
+   registerBytecodeBuilder(PopLocalBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::POP_LOCAL), 2);
+   registerBytecodeBuilder(PushLocalBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::PUSH_LOCAL), 2);
+   registerBytecodeBuilder(ExitBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::EXIT), 2);
    }
 
 void

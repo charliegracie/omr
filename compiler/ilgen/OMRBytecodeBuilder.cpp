@@ -441,52 +441,6 @@ OMR::BytecodeBuilder::IfCmpUnsignedGreaterOrEqual(TR::BytecodeBuilder *dest, TR:
    }
 
 void
-OMR::BytecodeBuilder::DoWhileLoop(const char *whileCondition, TR::BytecodeBuilder **body, TR::BytecodeBuilder **breakBuilder, TR::BytecodeBuilder **continueBuilder)
-   {
-   methodSymbol()->setMayHaveLoops(true);
-   TR_ASSERT(body != NULL, "doWhileLoop needs to have a body");
-
-   if (!_methodBuilder->symbolDefined(whileCondition))
-      _methodBuilder->defineValue(whileCondition, Int32);
-
-   if (*body == NULL)
-      {
-      *body = _methodBuilder->OrphanBytecodeBuilder(_bcIndex, _name);
-      }
-   TraceIL("BytecodelBuilder[ %p ]::DoWhileLoop do body B%d while %s\n", this, (*body)->getEntry()->getNumber(), whileCondition);
-
-   AppendBuilder(*body);
-   (*body)->propagateVMState(vmState());
-
-   TR::BytecodeBuilder *loopContinue = NULL;
-
-   if (continueBuilder)
-      {
-      TR_ASSERT(*continueBuilder == NULL, "DoWhileLoop returns continueBuilder, cannot provide continueBuilder as input");
-      loopContinue = *continueBuilder = _methodBuilder->OrphanBytecodeBuilder(_bcIndex, _name);
-      }
-   else
-      loopContinue = _methodBuilder->OrphanBytecodeBuilder(_bcIndex, _name);
-
-   AppendBuilder(loopContinue);
-   loopContinue->propagateVMState(vmState());
-
-   loopContinue->IfCmpNotEqualZero(*body,
-   loopContinue->   Load(whileCondition));
-
-   if (breakBuilder)
-      {
-      *breakBuilder = _methodBuilder->OrphanBytecodeBuilder(_bcIndex, _name);
-      AppendBuilder(*breakBuilder);
-      (*breakBuilder)->propagateVMState(vmState());
-
-      }
-
-   // make sure any subsequent operations go into their own block *after* the loop
-   appendBlock();
-   }
-
-void
 OMR::BytecodeBuilder::Switch(const char *selectionVar,
                   TR::BytecodeBuilder **defaultBuilder,
                   uint32_t numCases,

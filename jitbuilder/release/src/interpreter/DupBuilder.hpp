@@ -24,18 +24,18 @@
 #ifndef DUPBUILDER_INCL
 #define DUPBUILDER_INCL
 
-#include "ilgen/OpcodeBuilder.hpp"
+#include "ilgen/BytecodeBuilder.hpp"
 
 namespace TR { class MethodBuilder; }
 
-class DupBuilder : public TR::OpcodeBuilder
+class DupBuilder : public TR::BytecodeBuilder
    {
    public:
    DupBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
 
    virtual void execute();
 
-   static DupBuilder *OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
+   static DupBuilder *OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
 
    protected:
 

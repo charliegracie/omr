@@ -24,18 +24,18 @@
 #ifndef CALLBUILDER_INCL
 #define CALLBUILDER_INCL
 
-#include "ilgen/OpcodeBuilder.hpp"
+#include "ilgen/BytecodeBuilder.hpp"
 
 namespace TR { class InterpreterBuilder; }
 
-class CallBuilder : public TR::OpcodeBuilder
+class CallBuilder : public TR::BytecodeBuilder
    {
    public:
    CallBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, TR::IlType *frameType);
 
    virtual void execute();
 
-   static CallBuilder *OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, TR::IlType *frameType);
+   static CallBuilder *OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, TR::IlType *frameType);
 
    protected:
 

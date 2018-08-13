@@ -24,7 +24,8 @@
 #include "env/FrontEnd.hpp"
 #include "infra/List.hpp"
 #include "il/Block.hpp"
-#include "ilgen/OpcodeBuilder.hpp"
+#include "ilgen/BytecodeBuilder.hpp"
+#include "ilgen/IlInjector.hpp"
 #include "ilgen/IlBuilder.hpp"
 #include "ilgen/InterpreterBuilder.hpp"
 #include "ilgen/MethodBuilder.hpp"
@@ -72,20 +73,18 @@ OMR::InterpreterBuilder::InterpreterBuilder(TR::TypeDictionary *d, const char *b
       }
    }
 
-TR::OpcodeBuilder *
-OMR::InterpreterBuilder::OrphanOpcodeBuilder(int32_t bcIndex, char *name)
-   {
-   TR::OpcodeBuilder *orphan = new (comp()->trHeapMemory()) TR::OpcodeBuilder(_methodBuilder, bcIndex, name);
-   InitializeOpcodeBuilder(orphan);
-   return orphan;
-   }
-
 void
-OMR::InterpreterBuilder::registerOpcodeBuilder(TR::OpcodeBuilder *handler, int32_t opcodeLength)
+OMR::InterpreterBuilder::registerBytecodeBuilder(TR::BytecodeBuilder *handler, int32_t opcodeLength)
    {
+   TR_ASSERT(handler != NULL, "Can not register a NULL bytecodeBuilder");
+
    int32_t index = handler->bcIndex();
+   TR_ASSERT(index < OPCODES::BC_COUNT, "Can not register an index (%d) larger than %d", index, OPCODES::BC_COUNT);
+
    _opcodeBuilders[index] = handler;
    _opcodeLengths[index] = opcodeLength;
+
+   handler->propagateVMState(vmState());
 
    handler->execute();
    }
@@ -98,20 +97,11 @@ OMR::InterpreterBuilder::buildIL()
    _stack = createStack();
    setVMState(_stack);
 
+   _defaultHandler = OrphanBytecodeBuilder(OPCODES::BC_COUNT + 1, "default handler");
+
+
+
    loadOpcodeArray();
-
-#if LOOP == 0
-   _defaultHandler = OrphanBuilder();
-#else
-   TR::OpcodeBuilder *builder = OrphanOpcodeBuilder(-1, "initial");
-   AppendBuilder(builder);
-
-   _defaultHandler = OrphanOpcodeBuilder(OPCODES::BC_COUNT + 1, "default handler");
-#endif
-
-#if LOOP == 0
-   TR::IlBuilder *doWhileBody = NULL;
-   TR::IlBuilder *breakBody = NULL;
 
    setPC(this, 0);
 
@@ -119,30 +109,18 @@ OMR::InterpreterBuilder::buildIL()
       EqualTo(
          ConstInt32(1),
          ConstInt32(1)));
-#else
+
    TR::BytecodeBuilder *doWhileBody = NULL;
    TR::BytecodeBuilder *breakBody = NULL;
-
-   setPC(builder, 0);
-
-   builder->Store("exitLoop",
-   builder->   EqualTo(
-   builder->      ConstInt32(1),
-   builder->      ConstInt32(1)));
-#endif
-
-#if LOOP == 0
-   DoWhileLoopWithBreak("exitLoop", &doWhileBody, &breakBody);
-#else
-   builder->DoWhileLoop("exitLoop", &doWhileBody, &breakBody, NULL);
-#endif
+   DoWhileLoop("exitLoop", &doWhileBody, &breakBody, NULL);
 
    getNextOpcode(doWhileBody);
 
-   handleOpcodes();
-   handleUnusedOpcodes();
+   registerBytecodeBuilders();
+   completeBytecodeBuilderRegistration();
 
-   doWhileBody->Switch("opcode", &_defaultHandler, OPCODES::BC_COUNT,
+   //doWhileBody->Switch("opcode", &_defaultHandler, OPCODES::BC_COUNT,
+   Switch("opcode", doWhileBody, _defaultHandler, OPCODES::BC_COUNT,
                    OPCODES::BC_00, &_opcodeBuilders[OPCODES::BC_00], false,
                    OPCODES::BC_01, &_opcodeBuilders[OPCODES::BC_01], false,
                    OPCODES::BC_02, &_opcodeBuilders[OPCODES::BC_02], false,
@@ -162,19 +140,11 @@ OMR::InterpreterBuilder::buildIL()
                    );
 
    _defaultHandler->Call("handleBadOpcode", 2, _defaultHandler->Load("opcode"), _defaultHandler->Load("pc"));
-#if LOOP == 0
    _defaultHandler->Goto(&breakBody);
-#else
-   _defaultHandler->Goto(&breakBody);
-#endif
 
    incrementPC(doWhileBody, 2);
 
-#if LOOP == 0
    handleReturn(this);
-#else
-   handleReturn(builder);
-#endif
 
    return true;
    }
@@ -206,7 +176,6 @@ void
 OMR::InterpreterBuilder::incrementPC(TR::IlBuilder *builder, int32_t increment)
    {
    TR::IlValue *pc = getPC(builder);
-   //TR::IlValue *incrementValue = builder->ConstInt32(increment);
    TR::IlValue *incrementValue = builder->Load("_pcIncrementAmount_");
 
    pc = builder->Add(pc, incrementValue);
@@ -221,13 +190,14 @@ OMR::InterpreterBuilder::getPC(TR::IlBuilder *builder)
    }
 
 void
-OMR::InterpreterBuilder::handleUnusedOpcodes()
+OMR::InterpreterBuilder::completeBytecodeBuilderRegistration()
    {
    for (int i = 0; i < OPCODES::BC_COUNT; i ++)
       {
       if (NULL == _opcodeBuilders[i])
          {
-         _opcodeBuilders[i] = OrphanOpcodeBuilder(i, "Unknown opcode");
+         _opcodeBuilders[i] = OrphanBytecodeBuilder(i, "Unknown opcode");
+         _opcodeBuilders[i]->propagateVMState(vmState());
          _opcodeBuilders[i]->Goto(_defaultHandler);
          }
       else
@@ -235,4 +205,159 @@ OMR::InterpreterBuilder::handleUnusedOpcodes()
          _opcodeBuilders[i]->Store("_pcIncrementAmount_", _opcodeBuilders[i]->ConstInt32(_opcodeLengths[i]));
          }
       }
+   }
+
+void
+OMR::InterpreterBuilder::DoWhileLoop(const char *whileCondition, TR::BytecodeBuilder **body, TR::BytecodeBuilder **breakBuilder, TR::BytecodeBuilder **continueBuilder)
+   {
+   methodSymbol()->setMayHaveLoops(true);
+   TR_ASSERT(body != NULL, "doWhileLoop needs to have a body");
+
+   if (!symbolDefined(whileCondition))
+      defineValue(whileCondition, Int32);
+
+   if (*body == NULL)
+      {
+      *body = OrphanBytecodeBuilder(-1, "DoWhileLoopBody");
+      }
+   TraceIL("InterpreterBuilder[ %p ]::DoWhileLoop do body B%d while %s\n", this, (*body)->getEntry()->getNumber(), whileCondition);
+
+   AppendBuilder(*body);
+   (*body)->propagateVMState(vmState());
+
+   TR::BytecodeBuilder *loopContinue = NULL;
+
+   if (continueBuilder)
+      {
+      TR_ASSERT(*continueBuilder == NULL, "DoWhileLoop returns continueBuilder, cannot provide continueBuilder as input");
+      loopContinue = *continueBuilder = OrphanBytecodeBuilder(-1, "DoWhileLoopContinue");
+      }
+   else
+      loopContinue = OrphanBytecodeBuilder(-1, "DoWhileLoopContinue");
+
+   AppendBuilder(loopContinue);
+   loopContinue->propagateVMState(vmState());
+
+   loopContinue->IfCmpNotEqualZero(*body,
+   loopContinue->   Load(whileCondition));
+
+   if (breakBuilder)
+      {
+      *breakBuilder = OrphanBytecodeBuilder(-1, "DoWhileLoopBreakBuilder");
+      AppendBuilder(*breakBuilder);
+      (*breakBuilder)->propagateVMState(vmState());
+
+      }
+
+   // make sure any subsequent operations go into their own block *after* the loop
+   appendBlock();
+   }
+
+void
+OMR::InterpreterBuilder::Switch(const char *selectionVar,
+                  TR::BytecodeBuilder *currentBuilder,
+                  TR::BytecodeBuilder *defaultBuilder,
+                  uint32_t numCases,
+                  ...)
+   {
+   int32_t *caseValues = (int32_t *) _comp->trMemory()->allocateHeapMemory(numCases * sizeof(int32_t));
+   TR_ASSERT(0 != caseValues, "out of memory");
+
+   TR::BytecodeBuilder **caseBuilders = (TR::BytecodeBuilder **) _comp->trMemory()->allocateHeapMemory(numCases * sizeof(TR::BytecodeBuilder *));
+   TR_ASSERT(0 != caseBuilders, "out of memory");
+
+   bool *caseFallsThrough = (bool *) _comp->trMemory()->allocateHeapMemory(numCases * sizeof(bool));
+   TR_ASSERT(0 != caseFallsThrough, "out of memory");
+
+   va_list cases;
+   va_start(cases, numCases);
+   for (int32_t c=0;c < numCases;c++)
+      {
+      caseValues[c] = (int32_t) va_arg(cases, int);
+      caseBuilders[c] = *(TR::BytecodeBuilder **) va_arg(cases, TR::BytecodeBuilder **);
+      caseFallsThrough[c] = (bool) va_arg(cases, int);
+      }
+   va_end(cases);
+
+   Switch(selectionVar, currentBuilder, defaultBuilder, numCases, caseValues, caseBuilders, caseFallsThrough);
+
+   // if Switch created any new builders, we need to put those back into the arguments passed into this Switch call
+   va_start(cases, numCases);
+   for (int32_t c=0;c < numCases;c++)
+      {
+      int throwawayValue = va_arg(cases, int);
+      TR::BytecodeBuilder **caseBuilder = va_arg(cases, TR::BytecodeBuilder **);
+      (*caseBuilder) = caseBuilders[c];
+      int throwAwayFallsThrough = va_arg(cases, int);
+      }
+   va_end(cases);
+   }
+
+void
+OMR::InterpreterBuilder::Switch(const char *selectionVar,
+                  TR::BytecodeBuilder *currentBuilder,
+                  TR::BytecodeBuilder *defaultBuilder,
+                  uint32_t numCases,
+                  int32_t *caseValues,
+                  TR::BytecodeBuilder **caseBuilders,
+                  bool *caseFallsThrough)
+   {
+   TR::IlValue *selectorValue = currentBuilder->Load(selectionVar);
+   TR_ASSERT(selectorValue->getDataType() == TR::Int32, "Switch only supports selector having type Int32");
+
+   TR::Node *defaultNode = TR::Node::createCase(0, defaultBuilder->getEntry()->getEntry());
+   TR::Node *lookupNode = TR::Node::create(TR::lookup, numCases + 2, currentBuilder->loadValue(selectorValue), defaultNode);
+
+   // get the lookup tree into this builder, even though we haven't completely filled it in yet
+   currentBuilder->genTreeTop(lookupNode);
+   TR::Block *switchBlock = currentBuilder->getCurrentBlock();
+
+   // make sure no fall through edge created from the lookup
+   currentBuilder->appendNoFallThroughBlock();
+
+   TR::BytecodeBuilder *breakBuilder = OrphanBytecodeBuilder(-1, "SwitchBreakBuilder");
+
+   // each case handler is a sequence of two builder objects: first the one passed in via caseBuilder (or will be passed
+   //   back via caseBuilders, and second a builder that branches to the breakBuilder (unless this case falls through)
+   for (int32_t c=0;c < numCases;c++)
+      {
+      int32_t value = caseValues[c];
+      TR::BytecodeBuilder *handler = NULL;
+      TR_ASSERT(caseBuilders[c] != NULL, "Switch does not support NULL case builders");
+      if (!caseFallsThrough[c])
+         {
+         handler = OrphanBytecodeBuilder(-1, "SwitchCaseHandler");
+         handler->propagateVMState(vmState());
+
+         handler->AppendBuilder(caseBuilders[c]);
+         caseBuilders[c]->propagateVMState(vmState());
+
+         // handle "break" with a separate builder so user can add whatever they want into caseBuilders[c]
+         TR::BytecodeBuilder *branchToBreak = OrphanBytecodeBuilder(-1, "SwitchBranchToBreak");
+         branchToBreak->propagateVMState(vmState());
+
+         branchToBreak->Goto(&breakBuilder);
+         handler->AppendBuilder(branchToBreak);
+         branchToBreak->propagateVMState(vmState());
+         }
+      else
+         {
+         handler = caseBuilders[c];
+         handler->propagateVMState(vmState());
+         }
+
+      TR::Block *caseBlock = handler->getEntry();
+      cfg()->addEdge(switchBlock, caseBlock);
+      currentBuilder->AppendBuilder(handler);
+
+      TR::Node *caseNode = TR::Node::createCase(0, caseBlock->getEntry(), value);
+      lookupNode->setAndIncChild(c+2, caseNode);
+      }
+
+   cfg()->addEdge(switchBlock, defaultBuilder->getEntry());
+   currentBuilder->AppendBuilder(defaultBuilder);
+   defaultBuilder->propagateVMState(vmState());
+
+   currentBuilder->AppendBuilder(breakBuilder);
+   breakBuilder->propagateVMState(vmState());
    }

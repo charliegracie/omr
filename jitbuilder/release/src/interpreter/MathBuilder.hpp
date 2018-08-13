@@ -24,20 +24,20 @@
 #ifndef MATHBUILDER_INCL
 #define MATHBUILDER_INCL
 
-#include "ilgen/OpcodeBuilder.hpp"
+#include "ilgen/BytecodeBuilder.hpp"
 
 #include "InterpreterTypes.h"
 
 namespace TR { class InterpreterBuilder; }
 
-class MathBuilder : public TR::OpcodeBuilder
+class MathBuilder : public TR::BytecodeBuilder
    {
    public:
    MathBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, MathFuncType mathFunction);
 
    virtual void execute();
 
-   static MathBuilder *OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, MathFuncType mathFunction);
+   static MathBuilder *OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, MathFuncType mathFunction);
 
    static TR::IlValue *add(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
    static TR::IlValue *sub(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);

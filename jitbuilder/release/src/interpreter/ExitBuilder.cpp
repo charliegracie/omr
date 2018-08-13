@@ -28,15 +28,15 @@
 #include "ExitBuilder.hpp"
 
 ExitBuilder::ExitBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
-   : OpcodeBuilder(methodBuilder, bcIndex, "EXIT")
+   : BytecodeBuilder(methodBuilder, bcIndex, "EXIT")
    {
    }
 
 ExitBuilder *
-ExitBuilder::OrphanOpcodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
+ExitBuilder::OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
    {
    ExitBuilder *orphan = new ExitBuilder(methodBuilder, bcIndex);
-   methodBuilder->InitializeOpcodeBuilder(orphan);
+   methodBuilder->InitializeBytecodeBuilder(orphan);
    return orphan;
    }
 
