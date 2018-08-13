@@ -29,8 +29,8 @@
 typedef struct Frame {
    Frame *previous;
    int32_t savedPC;
-   int8_t *bytecodes;
-   int8_t **methods;
+   const int8_t *bytecodes;
+   int8_t const **methods;
    STACKVALUETYPE *locals;
    STACKVALUETYPE loc[10];
    STACKVALUETYPE *sp;
