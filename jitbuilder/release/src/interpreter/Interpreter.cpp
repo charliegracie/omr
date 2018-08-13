@@ -84,13 +84,14 @@ main(int argc, char *argv[])
    typedef int64_t (InterpreterMethodFunction)(Frame *);
    InterpreterMethodFunction *interpreter = (InterpreterMethodFunction *) entry;
 
-   int8_t const * methods[6];
+   int8_t const * methods[7];
    methods[0] = interpreterMethod._mainMethod;
    methods[1] = interpreterMethod._testCallMethod;
    methods[2] = interpreterMethod._testDivMethod;
    methods[3] = interpreterMethod._testAddMethod;
    methods[4] = interpreterMethod._testJMPLMethod;
    methods[5] = interpreterMethod._fib;
+   methods[6] = interpreterMethod._iterFib;
 
    Frame frame;
    frame.methods = methods;

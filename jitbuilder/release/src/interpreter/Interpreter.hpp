@@ -60,7 +60,7 @@ class InterpreterMethod : public TR::InterpreterBuilder
       };
 
    public:
-   const int8_t _mainMethod[36] =
+   const int8_t _mainMethod[52] =
       {
       interpreter_opcodes::PUSH_CONSTANT,3, // push 3
       interpreter_opcodes::PUSH_CONSTANT,5, // push 5
@@ -80,7 +80,12 @@ class InterpreterMethod : public TR::InterpreterBuilder
       interpreter_opcodes::CALL,4,1,        // call method 3 (call result 3)
       interpreter_opcodes::PUSH_CONSTANT,4, // push 4
       interpreter_opcodes::MUL,             // mul 3 * 4 store 12
-      interpreter_opcodes::CALL,5,1,        // call method 5 (call result fib(12))
+      interpreter_opcodes::CALL,5,1,        // call method 5 (call result fib(12)) store 144
+      interpreter_opcodes::PUSH_CONSTANT,12,// push 12
+      interpreter_opcodes::DIV,             // div 144 / 12 store 12
+      interpreter_opcodes::PUSH_CONSTANT,3, // push 3
+      interpreter_opcodes::SUB,             // sub 12 - 3 store 9
+      interpreter_opcodes::CALL,6,1,        // call method 6 (call iterFib(9)) store 34
 
       //interpreter_opcodes::FAIL,-1,
 
@@ -126,7 +131,7 @@ class InterpreterMethod : public TR::InterpreterBuilder
       // save arg in locals[0]
       interpreter_opcodes::DUP,             // dup arg store arg..........stack is arg,arg
       interpreter_opcodes::POP_LOCAL,0,     // pop arg into local 0.......stack is arg
-      // if arg < 3 goto push 1/ret
+      // if arg < 2 goto push n/ret
       interpreter_opcodes::PUSH_CONSTANT,2, // push 2
       interpreter_opcodes::JMPL,34,         // if arg < 2
       // call f(n-1)
@@ -146,7 +151,49 @@ class InterpreterMethod : public TR::InterpreterBuilder
       interpreter_opcodes::PUSH_LOCAL,0,    // push local 0..............stack is fib(arg-2)
       interpreter_opcodes::ADD,             // fib(arg-1) + fib(arg-2)...stack is (fib(arg-1) + fib(arg-2))
       interpreter_opcodes::RET,1,           // ret fib(arg-1) + fib(arg-2)
-      // return 1
+      // return n
+      interpreter_opcodes::PUSH_LOCAL,0,    // push arg
+      interpreter_opcodes::RET,1,           // ret arg
+      };
+
+    const int8_t _iterFib[50]
+      {
+      // Expecting 1 arg
+      // save arg in locals[0]
+      interpreter_opcodes::DUP,             // dup arg store arg..........stack is arg,arg
+      interpreter_opcodes::POP_LOCAL,0,     // pop arg into local 0.......stack is arg
+      // if arg < 1 goto push n/ret
+      interpreter_opcodes::PUSH_CONSTANT,1, // push 1
+      interpreter_opcodes::JMPL,46,          // if arg < 1
+
+      // set up for loop
+      interpreter_opcodes::PUSH_CONSTANT,1, // push 1
+      interpreter_opcodes::POP_LOCAL,1,     // pop 1 into local 1 (fib)........stack is
+      interpreter_opcodes::PUSH_CONSTANT,0, // push 0
+      interpreter_opcodes::POP_LOCAL,2,     // pop 0 into local 2 (temp).......stack is
+      interpreter_opcodes::PUSH_CONSTANT,1, // push 1
+      interpreter_opcodes::POP_LOCAL,3,     // pop 1 into local 2 (counter)....stack is
+
+      //start of loop
+      interpreter_opcodes::PUSH_LOCAL,1,    // push local 1 (fib)..............stack is fib
+      interpreter_opcodes::PUSH_LOCAL,2,    // push local 2 (temp).............stack is fib,temp
+      interpreter_opcodes::PUSH_LOCAL,1,    // push local 1 (fib)..............stack is fib,temp,fib
+      interpreter_opcodes::POP_LOCAL,2,     // pop fib into local 2 (temp).....stack is fib,temp
+      interpreter_opcodes::ADD,             // add fib + temp store result.....stack is fib+temp
+      interpreter_opcodes::POP_LOCAL,1,     // pop result into local 2 (fib)...stack is
+      interpreter_opcodes::PUSH_LOCAL,3,    // push local 3 (counter)..........stack is counter
+      interpreter_opcodes::PUSH_CONSTANT,1, // push 1..........................stack is counter,1
+      interpreter_opcodes::ADD,             // add counter + 1 store result....stack is result
+      interpreter_opcodes::DUP,             // dup result store result.........stack is result,result
+      interpreter_opcodes::POP_LOCAL,3,     // pop result into local counter...stack is result
+      interpreter_opcodes::PUSH_LOCAL,0,    // push local 0 (arg)..............stack is result,arg
+      interpreter_opcodes::JMPL,19,          // if result < arg
+      //end of loop
+
+      interpreter_opcodes::PUSH_LOCAL,1,    // push local 1 (fib)..............stack is fib
+      interpreter_opcodes::RET,1,           // ret fib
+
+      // return n
       interpreter_opcodes::PUSH_LOCAL,0,    // push arg
       interpreter_opcodes::RET,1,           // ret arg
       };
