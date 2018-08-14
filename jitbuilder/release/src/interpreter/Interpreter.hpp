@@ -198,6 +198,10 @@ class InterpreterMethod : public TR::InterpreterBuilder
       interpreter_opcodes::RET,1,           // ret arg
       };
 
+
+    static const int32_t _methodCount = 7;
+    Method _methods[_methodCount];
+
    };
 
 #endif // !defined(INTERPRETER_INCL)

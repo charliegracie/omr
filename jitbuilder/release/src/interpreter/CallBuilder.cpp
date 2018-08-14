@@ -34,18 +34,31 @@ static Frame* callHelper(Frame *frame, int32_t pc, int8_t methodIndex, int8_t ar
    #define CALLHELPER_LINE LINETOSTR(__LINE__)
 
    Frame *newFrame = (Frame *)malloc(sizeof(Frame));
-   if (NULL == frame) {
+   if (NULL == frame)
+      {
       int *x = 0;
       fprintf(stderr, "Unable to allocate frame for call\n");
       *x = 0;
-   }
+      }
+
+   Method *methodToCall = &frame->methods[methodIndex];
 
    frame->savedPC = pc;
+
+   int32_t callsUntilJit = methodToCall->callsUntilJit;
+   if (callsUntilJit > 0)
+      {
+      methodToCall->callsUntilJit = callsUntilJit - 1;
+      }
+   else if (0 == callsUntilJit)
+      {
+      //TODO register for compilation
+      }
 
    newFrame->methods = frame->methods;
    newFrame->locals = newFrame->loc;
    newFrame->sp = newFrame->stack;
-   newFrame->bytecodes = frame->methods[methodIndex];
+   newFrame->bytecodes = methodToCall->bytecodes;
    newFrame->previous = frame;
 
    memset(newFrame->loc, 0, sizeof(newFrame->loc));
@@ -58,7 +71,18 @@ static Frame* callHelper(Frame *frame, int32_t pc, int8_t methodIndex, int8_t ar
       newFrame->sp++;
       }
 
-   return newFrame;
+   if (NULL != methodToCall->compiledMethod)
+      {
+      newFrame->frameType = JIT;
+      JitMethodFunction *compiledMethod = methodToCall->compiledMethod;
+      compiledMethod(newFrame);
+      return frame;
+      }
+   else
+      {
+      newFrame->frameType = JIT;
+      return newFrame;
+      }
    }
 
 CallBuilder::CallBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, TR::IlType *frameType)

@@ -81,30 +81,21 @@ main(int argc, char *argv[])
       }
 
    cout << "step 4: invoke compiled code and print results\n";
-   typedef int64_t (InterpreterMethodFunction)(Frame *);
    InterpreterMethodFunction *interpreter = (InterpreterMethodFunction *) entry;
 
-   int8_t const * methods[7];
-   methods[0] = interpreterMethod._mainMethod;
-   methods[1] = interpreterMethod._testCallMethod;
-   methods[2] = interpreterMethod._testDivMethod;
-   methods[3] = interpreterMethod._testAddMethod;
-   methods[4] = interpreterMethod._testJMPLMethod;
-   methods[5] = interpreterMethod._fib;
-   methods[6] = interpreterMethod._iterFib;
-
    Frame frame;
-   frame.methods = methods;
+   frame.methods = interpreterMethod._methods;
    frame.locals = frame.loc;
    frame.sp = frame.stack;
-   frame.bytecodes = interpreterMethod._mainMethod;
+   frame.bytecodes = interpreterMethod._methods[0].bytecodes;
    frame.previous = NULL;
    frame.savedPC = 0;
+   frame.frameType = INTERPRETER;
 
    memset(frame.stack, 0, sizeof(frame.stack));
    memset(frame.loc, 0, sizeof(frame.loc));
 
-   int64_t result = interpreter(&frame);
+   int64_t result = interpreter(NULL, &frame);
 
    cout << "interpreter(values) = " << result << "\n";
 
@@ -122,6 +113,13 @@ InterpreterMethod::InterpreterMethod(TR::TypeDictionary *d)
 
    DefineName("Interpreter");
 
+   TR::IlType *meth = d->DefineStruct("Method");
+   TR::IlType *pMeth = d->PointerTo(meth);
+   d->DefineField("Method", "callsUntilJit", Int32, offsetof(Method, callsUntilJit));
+   d->DefineField("Method", "bytecodes", pInt8, offsetof(Method, bytecodes));
+   d->DefineField("Method", "compiledMethod", Address, offsetof(Method, compiledMethod));
+   d->CloseStruct("Method");
+
    frame = d->DefineStruct("Frame");
    pFrame = d->PointerTo(frame);
    d->DefineField("Frame", "previous", pFrame, offsetof(Frame, previous));
@@ -131,12 +129,33 @@ InterpreterMethod::InterpreterMethod(TR::TypeDictionary *d)
    d->DefineField("Frame", "sp", d->PointerTo(STACKVALUEILTYPE), offsetof(Frame, sp));
    d->CloseStruct("Frame");
 
+   TR::IlType *interp = d->DefineStruct("Interpreter");
+   TR::IlType *pInterp = d->PointerTo(interp);
+   d->DefineField("Interpreter", "currentFrame", pFrame, offsetof(Interpreter, currentFrame));
+   d->DefineField("Interpreter", "methods", pMeth, offsetof(Interpreter, methods));
+   d->CloseStruct("Interpreter");
+
+   DefineParameter("interp", pInterp);
    DefineParameter("frame", pFrame);
 
    DefineLocal("pc", Int32);
    DefineLocal("opcode", Int32);
 
    DefineReturnType(Int64);
+
+   for (int32_t i = 0; i < _methodCount; i++)
+      {
+      _methods[i].callsUntilJit = 10;
+      _methods[i].compiledMethod = NULL;
+      }
+
+   _methods[0].bytecodes = _mainMethod;
+   _methods[1].bytecodes = _testCallMethod;
+   _methods[2].bytecodes = _testDivMethod;
+   _methods[3].bytecodes = _testAddMethod;
+   _methods[4].bytecodes = _testJMPLMethod;
+   _methods[5].bytecodes = _fib;
+   _methods[6].bytecodes = _iterFib;
    }
 
 TR::VirtualMachineInterpreterStack *

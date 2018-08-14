@@ -26,16 +26,40 @@
 #define STACKVALUEILTYPE Int64
 #define STACKVALUETYPE int64_t
 
-typedef struct Frame {
+typedef int64_t (InterpreterMethodFunction)(struct Interpreter *, struct Frame *);
+typedef int64_t (JitMethodFunction)(struct Frame *);
+
+typedef struct Method
+   {
+   int32_t callsUntilJit;
+   int8_t const *bytecodes;
+   JitMethodFunction *compiledMethod;
+   } Method;
+
+enum FrameTypes
+   {
+   INTERPRETER,
+   JIT
+   };
+
+typedef struct Frame
+   {
    Frame *previous;
    int32_t savedPC;
-   const int8_t *bytecodes;
-   int8_t const **methods;
+   int8_t const *bytecodes;
+   Method *methods;
+   int32_t frameType;
    STACKVALUETYPE *locals;
    STACKVALUETYPE loc[10];
    STACKVALUETYPE *sp;
    STACKVALUETYPE stack[10];
-} Frame;
+   } Frame;
+
+typedef struct Interpreter
+   {
+   Frame *currentFrame;
+   Method *methods;
+   } Interpreter;
 
 typedef TR::IlValue * (*MathFuncType)(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
 typedef TR::IlValue * (*BooleanFuncType)(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
