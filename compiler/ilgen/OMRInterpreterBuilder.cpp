@@ -99,8 +99,6 @@ OMR::InterpreterBuilder::buildIL()
 
    _defaultHandler = OrphanBytecodeBuilder(OPCODES::BC_COUNT + 1, "default handler");
 
-
-
    loadOpcodeArray();
 
    setPC(this, 0);

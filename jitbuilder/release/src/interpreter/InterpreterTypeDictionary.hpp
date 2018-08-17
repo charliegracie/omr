@@ -20,28 +20,36 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
+#ifndef INTERPRETERTYPEDICTIONARY_INCL
+#define INTERPRETERTYPEDICTIONARY_INCL
 
-#ifndef RETBUILDER_INCL
-#define RETBUILDER_INCL
+#include "ilgen/TypeDictionary.hpp"
 
-#include "ilgen/BytecodeBuilder.hpp"
+#include "InterpreterTypes.h"
 
-namespace TR { class InterpreterBuilder; }
+/*
+** A TypeDictionary for defining JitBuilder representations of the InterpreterTypes
+*/
+class InterpreterTypeDictionary : public TR::TypeDictionary {
+public:
 
-class RetBuilder : public TR::BytecodeBuilder
-   {
-   public:
-   RetBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, TR::IlType *frameType);
-
-   virtual void execute();
-
-   static void DefineFunctions(TR::MethodBuilder *methodBuilder, TR::IlType *interpType, TR::IlType *frameType);
-   static RetBuilder *OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, TR::IlType *frameType);
-
-   protected:
-
-   private:
-   TR::IlType *_frameType;
+   // struct for caching JitBuilder representations of commonly used VM types
+   struct InterpreterTypes {
+      TR::IlType* interpreter;
+      TR::IlType* pInterpreter;
+      TR::IlType* frame;
+      TR::IlType* pFrame;
+      TR::IlType* method;
+      TR::IlType* pMethod;
    };
 
-#endif // !defined(RETBUILDER_INCL)
+   InterpreterTypeDictionary();
+
+   InterpreterTypes getTypes() { return _interpreterTypes; }
+
+private:
+   InterpreterTypes _interpreterTypes;
+};
+
+
+#endif // !defined(INTERPRETERTYPEDICTIONARY_INCL)

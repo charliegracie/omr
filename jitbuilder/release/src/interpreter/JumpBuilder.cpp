@@ -59,6 +59,8 @@ JumpBuilder::execute()
    TR::IlValue *right = state->Pop(this);
    TR::IlValue *left = state->Pop(this);
 
+   state->Commit(this);
+
    TR::IlBuilder *jump = NULL;
    TR::IlBuilder *doNotJump = NULL;
    IfThenElse(&jump, &doNotJump,

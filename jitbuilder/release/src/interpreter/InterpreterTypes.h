@@ -23,16 +23,20 @@
 #ifndef INTERPRETERTYPES_INCL
 #define INTERPRETERTYPES_INCL
 
+#include "ilgen/InterpreterBuilder.hpp"
+
 #define STACKVALUEILTYPE Int64
 #define STACKVALUETYPE int64_t
 
 typedef int64_t (InterpreterMethodFunction)(struct Interpreter *, struct Frame *);
-typedef int64_t (JitMethodFunction)(struct Frame *);
+typedef int64_t (JitMethodFunction)(struct Interpreter *, struct Frame *);
 
 typedef struct Method
    {
    int32_t callsUntilJit;
+   int32_t bytecodeLength;
    int8_t const *bytecodes;
+   char const *name;
    JitMethodFunction *compiledMethod;
    } Method;
 
@@ -47,7 +51,6 @@ typedef struct Frame
    Frame *previous;
    int32_t savedPC;
    int8_t const *bytecodes;
-   Method *methods;
    int32_t frameType;
    STACKVALUETYPE *locals;
    STACKVALUETYPE loc[10];
@@ -63,5 +66,23 @@ typedef struct Interpreter
 
 typedef TR::IlValue * (*MathFuncType)(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
 typedef TR::IlValue * (*BooleanFuncType)(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
+
+enum interpreter_opcodes
+   {
+   PUSH_CONSTANT = OMR::InterpreterBuilder::OPCODES::BC_00,
+   DUP = OMR::InterpreterBuilder::OPCODES::BC_01,
+   ADD = OMR::InterpreterBuilder::OPCODES::BC_02,
+   SUB = OMR::InterpreterBuilder::OPCODES::BC_03,
+   MUL = OMR::InterpreterBuilder::OPCODES::BC_04,
+   DIV = OMR::InterpreterBuilder::OPCODES::BC_05,
+   RET = OMR::InterpreterBuilder::OPCODES::BC_06,
+   CALL = OMR::InterpreterBuilder::OPCODES::BC_07,
+   EXIT = OMR::InterpreterBuilder::OPCODES::BC_08,
+   JMPL = OMR::InterpreterBuilder::OPCODES::BC_09,
+   PUSH_LOCAL = OMR::InterpreterBuilder::OPCODES::BC_10,
+   POP_LOCAL = OMR::InterpreterBuilder::OPCODES::BC_11,
+   FAIL = OMR::InterpreterBuilder::OPCODES::BC_12,
+   COUNT = OMR::InterpreterBuilder::OPCODES::BC_13
+   };
 
 #endif // !defined(INTERPRETERTYPES_INCL)

@@ -26,10 +26,12 @@
 
 #include "ilgen/InterpreterBuilder.hpp"
 
+class InterpreterTypeDictionary;
+
 class InterpreterMethod : public TR::InterpreterBuilder
    {
    public:
-   InterpreterMethod(TR::TypeDictionary *d);
+   InterpreterMethod(InterpreterTypeDictionary *d);
    virtual void registerBytecodeBuilders();
    virtual void handleReturn(TR::IlBuilder *builder);
    virtual TR::VirtualMachineInterpreterStack *createStack();
@@ -39,28 +41,12 @@ class InterpreterMethod : public TR::InterpreterBuilder
 
    private:
    TR::IlType *pInt8;
-   TR::IlType *frame;
-   TR::IlType *pFrame;
-
-   enum interpreter_opcodes
-      {
-      PUSH_CONSTANT = OMR::InterpreterBuilder::OPCODES::BC_00,
-      DUP = OMR::InterpreterBuilder::OPCODES::BC_01,
-      ADD = OMR::InterpreterBuilder::OPCODES::BC_02,
-      SUB = OMR::InterpreterBuilder::OPCODES::BC_03,
-      MUL = OMR::InterpreterBuilder::OPCODES::BC_04,
-      DIV = OMR::InterpreterBuilder::OPCODES::BC_05,
-      RET = OMR::InterpreterBuilder::OPCODES::BC_06,
-      CALL = OMR::InterpreterBuilder::OPCODES::BC_07,
-      EXIT = OMR::InterpreterBuilder::OPCODES::BC_08,
-      JMPL = OMR::InterpreterBuilder::OPCODES::BC_09,
-      PUSH_LOCAL = OMR::InterpreterBuilder::OPCODES::BC_10,
-      POP_LOCAL = OMR::InterpreterBuilder::OPCODES::BC_11,
-      FAIL = OMR::InterpreterBuilder::OPCODES::BC_12
-      };
+   InterpreterTypeDictionary *_interpTypes;
 
    public:
-   const int8_t _mainMethod[52] =
+   //const int8_t _mainMethod[52] =
+   //const int8_t _mainMethod[102] =
+   const int8_t _mainMethod[138] =
       {
       interpreter_opcodes::PUSH_CONSTANT,3, // push 3
       interpreter_opcodes::PUSH_CONSTANT,5, // push 5
@@ -73,11 +59,54 @@ class InterpreterMethod : public TR::InterpreterBuilder
       interpreter_opcodes::DIV,             // div 24 / 8 store 3
       interpreter_opcodes::DUP,             // dup 3 store 3
       interpreter_opcodes::ADD,             // add 3 + 3 store 6
+#if 1
       interpreter_opcodes::CALL,1,0,        // call method 1 (call result 8)
+#if 1
       interpreter_opcodes::ADD,             // add 6 + 8 (call result) store 14
       interpreter_opcodes::PUSH_CONSTANT,2, // push 2
       interpreter_opcodes::CALL,2,2,        // call method 2 (call result 7)
+#if 1 || test
+      interpreter_opcodes::PUSH_CONSTANT,1, // push 1
+      interpreter_opcodes::CALL,2,2,        // call method 2 (call result 7)
+      interpreter_opcodes::PUSH_CONSTANT,1, // push 1
+      interpreter_opcodes::CALL,2,2,        // call method 2 (call result 7)
+      interpreter_opcodes::PUSH_CONSTANT,1, // push 1
+      interpreter_opcodes::CALL,2,2,        // call method 2 (call result 7)
+      interpreter_opcodes::PUSH_CONSTANT,1, // push 1
+      interpreter_opcodes::CALL,2,2,        // call method 2 (call result 7)
+      interpreter_opcodes::PUSH_CONSTANT,1, // push 1
+      interpreter_opcodes::CALL,2,2,        // call method 2 (call result 7)
+      interpreter_opcodes::PUSH_CONSTANT,1, // push 1
+      interpreter_opcodes::CALL,2,2,        // call method 2 (call result 7)
+      interpreter_opcodes::PUSH_CONSTANT,1, // push 1
+      interpreter_opcodes::CALL,2,2,        // call method 2 (call result 7)
+      interpreter_opcodes::PUSH_CONSTANT,1, // push 1
+      interpreter_opcodes::CALL,2,2,        // call method 2 (call result 7)
+      interpreter_opcodes::PUSH_CONSTANT,1, // push 1
+      interpreter_opcodes::CALL,2,2,        // call method 2 (call result 7)
+      interpreter_opcodes::PUSH_CONSTANT,1, // push 1
+      interpreter_opcodes::CALL,2,2,        // call method 2 (call result 7)
+#endif
       interpreter_opcodes::CALL,4,1,        // call method 3 (call result 3)
+
+#if 1 || test2
+      interpreter_opcodes::CALL,4,1,        // call method 3 (call result 1)
+      interpreter_opcodes::CALL,4,1,        // call method 3 (call result 1)
+      interpreter_opcodes::CALL,4,1,        // call method 3 (call result 1)
+      interpreter_opcodes::CALL,4,1,        // call method 3 (call result 1)
+      interpreter_opcodes::CALL,4,1,        // call method 3 (call result 1)
+      interpreter_opcodes::CALL,4,1,        // call method 3 (call result 1)
+      interpreter_opcodes::CALL,4,1,        // call method 3 (call result 1)
+      interpreter_opcodes::CALL,4,1,        // call method 3 (call result 1)
+      interpreter_opcodes::CALL,4,1,        // call method 3 (call result 1)
+      interpreter_opcodes::CALL,4,1,        // call method 3 (call result 1)
+      interpreter_opcodes::PUSH_CONSTANT,7, // push 7
+      interpreter_opcodes::ADD,             // add 1 + 7 store 10
+      interpreter_opcodes::CALL,4,1,        // call method 3 (call result 3)
+      //interpreter_opcodes::PUSH_CONSTANT,2, // push 2
+      //interpreter_opcodes::ADD,             // add 1 + 1 store 3
+#endif
+#if 1
       interpreter_opcodes::PUSH_CONSTANT,4, // push 4
       interpreter_opcodes::MUL,             // mul 3 * 4 store 12
       interpreter_opcodes::CALL,5,1,        // call method 5 (call result fib(12)) store 144
@@ -86,7 +115,9 @@ class InterpreterMethod : public TR::InterpreterBuilder
       interpreter_opcodes::PUSH_CONSTANT,3, // push 3
       interpreter_opcodes::SUB,             // sub 12 - 3 store 9
       interpreter_opcodes::CALL,6,1,        // call method 6 (call iterFib(9)) store 34
-
+#endif
+#endif
+#endif
       //interpreter_opcodes::FAIL,-1,
 
       interpreter_opcodes::EXIT,-1, // return 144 (call result)
@@ -119,7 +150,7 @@ class InterpreterMethod : public TR::InterpreterBuilder
       //Expecting 1 arg
       interpreter_opcodes::PUSH_CONSTANT,5, // push 5
       interpreter_opcodes::JMPL,8,          // if arg < 5
-      interpreter_opcodes::PUSH_CONSTANT,3, // push 1
+      interpreter_opcodes::PUSH_CONSTANT,3, // push 3
       interpreter_opcodes::RET,1,           // ret 3
       interpreter_opcodes::PUSH_CONSTANT,1, // push 1
       interpreter_opcodes::RET,1,           // ret 1

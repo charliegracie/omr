@@ -29,7 +29,6 @@
 #include "Jit.hpp"
 #include "ilgen/InterpreterBuilder.hpp"
 #include "ilgen/MethodBuilder.hpp"
-#include "ilgen/TypeDictionary.hpp"
 #include "ilgen/VirtualMachineInterpreterStack.hpp"
 #include "ilgen/VirtualMachineState.hpp"
 #include "ilgen/VirtualMachineRegister.hpp"
@@ -37,6 +36,7 @@
 
 #include "InterpreterTypes.h"
 
+#include "InterpreterTypeDictionary.hpp"
 #include "Interpreter.hpp"
 #include "PushConstantBuilder.hpp"
 #include "DupBuilder.hpp"
@@ -68,7 +68,7 @@ main(int argc, char *argv[])
       }
 
    cout << "Step 2: define type dictionary\n";
-   TR::TypeDictionary types;
+   InterpreterTypeDictionary types;
 
    cout << "Step 3: compile method builder\n";
    InterpreterMethod interpreterMethod(&types);
@@ -83,11 +83,13 @@ main(int argc, char *argv[])
    cout << "step 4: invoke compiled code and print results\n";
    InterpreterMethodFunction *interpreter = (InterpreterMethodFunction *) entry;
 
+   Interpreter interp;
+   interp.methods = interpreterMethod._methods;
+
    Frame frame;
-   frame.methods = interpreterMethod._methods;
    frame.locals = frame.loc;
    frame.sp = frame.stack;
-   frame.bytecodes = interpreterMethod._methods[0].bytecodes;
+   frame.bytecodes = interp.methods[0].bytecodes;
    frame.previous = NULL;
    frame.savedPC = 0;
    frame.frameType = INTERPRETER;
@@ -95,7 +97,9 @@ main(int argc, char *argv[])
    memset(frame.stack, 0, sizeof(frame.stack));
    memset(frame.loc, 0, sizeof(frame.loc));
 
-   int64_t result = interpreter(NULL, &frame);
+   interp.currentFrame = &frame;
+
+   int64_t result = interpreter(&interp, &frame);
 
    cout << "interpreter(values) = " << result << "\n";
 
@@ -103,8 +107,9 @@ main(int argc, char *argv[])
    shutdownJit();
    }
 
-InterpreterMethod::InterpreterMethod(TR::TypeDictionary *d)
-   : InterpreterBuilder(d, "bytecodes", d->toIlType<uint8_t>(), "pc", "opcode")
+InterpreterMethod::InterpreterMethod(InterpreterTypeDictionary *d)
+   : InterpreterBuilder(d, "bytecodes", d->toIlType<uint8_t>(), "pc", "opcode"),
+   _interpTypes(d)
    {
    DefineLine(LINETOSTR(__LINE__));
    DefineFile(__FILE__);
@@ -113,30 +118,8 @@ InterpreterMethod::InterpreterMethod(TR::TypeDictionary *d)
 
    DefineName("Interpreter");
 
-   TR::IlType *meth = d->DefineStruct("Method");
-   TR::IlType *pMeth = d->PointerTo(meth);
-   d->DefineField("Method", "callsUntilJit", Int32, offsetof(Method, callsUntilJit));
-   d->DefineField("Method", "bytecodes", pInt8, offsetof(Method, bytecodes));
-   d->DefineField("Method", "compiledMethod", Address, offsetof(Method, compiledMethod));
-   d->CloseStruct("Method");
-
-   frame = d->DefineStruct("Frame");
-   pFrame = d->PointerTo(frame);
-   d->DefineField("Frame", "previous", pFrame, offsetof(Frame, previous));
-   d->DefineField("Frame", "savedPC", pFrame, offsetof(Frame, savedPC));
-   d->DefineField("Frame", "bytecodes", pInt8, offsetof(Frame, bytecodes));
-   d->DefineField("Frame", "locals", d->PointerTo(STACKVALUEILTYPE), offsetof(Frame, locals));
-   d->DefineField("Frame", "sp", d->PointerTo(STACKVALUEILTYPE), offsetof(Frame, sp));
-   d->CloseStruct("Frame");
-
-   TR::IlType *interp = d->DefineStruct("Interpreter");
-   TR::IlType *pInterp = d->PointerTo(interp);
-   d->DefineField("Interpreter", "currentFrame", pFrame, offsetof(Interpreter, currentFrame));
-   d->DefineField("Interpreter", "methods", pMeth, offsetof(Interpreter, methods));
-   d->CloseStruct("Interpreter");
-
-   DefineParameter("interp", pInterp);
-   DefineParameter("frame", pFrame);
+   DefineParameter("interp", _interpTypes->getTypes().pInterpreter);
+   DefineParameter("frame", _interpTypes->getTypes().pFrame);
 
    DefineLocal("pc", Int32);
    DefineLocal("opcode", Int32);
@@ -150,12 +133,26 @@ InterpreterMethod::InterpreterMethod(TR::TypeDictionary *d)
       }
 
    _methods[0].bytecodes = _mainMethod;
+   _methods[0].name = "MainMethod";
+   _methods[0].bytecodeLength = sizeof(_mainMethod);
    _methods[1].bytecodes = _testCallMethod;
+   _methods[1].name = "TestCallMethod";
+   _methods[1].bytecodeLength = sizeof(_testCallMethod);
    _methods[2].bytecodes = _testDivMethod;
+   _methods[2].name = "TestDivMethod";
+   _methods[2].bytecodeLength = sizeof(_testDivMethod);
    _methods[3].bytecodes = _testAddMethod;
+   _methods[3].name = "TestAddMethod";
+   _methods[3].bytecodeLength = sizeof(_testAddMethod);
    _methods[4].bytecodes = _testJMPLMethod;
+   _methods[4].name = "TestJMPLMethod";
+   _methods[4].bytecodeLength = sizeof(_testJMPLMethod);
    _methods[5].bytecodes = _fib;
+   _methods[5].name = "Fib";
+   _methods[5].bytecodeLength = sizeof(_fib);
    _methods[6].bytecodes = _iterFib;
+   _methods[6].name = "IterFib";
+   _methods[6].bytecodeLength = sizeof(_iterFib);
    }
 
 TR::VirtualMachineInterpreterStack *
@@ -176,14 +173,17 @@ InterpreterMethod::loadOpcodeArray()
 void
 InterpreterMethod::registerBytecodeBuilders()
    {
+   CallBuilder::DefineFunctions(this, _interpTypes->getTypes().pInterpreter, _interpTypes->getTypes().pFrame);
+   RetBuilder::DefineFunctions(this, _interpTypes->getTypes().pInterpreter, _interpTypes->getTypes().pFrame);
+
    registerBytecodeBuilder(PushConstantBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::PUSH_CONSTANT), 2);
    registerBytecodeBuilder(DupBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::DUP), 1);
    registerBytecodeBuilder(MathBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::ADD, &MathBuilder::add), 1);
    registerBytecodeBuilder(MathBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::SUB, &MathBuilder::sub), 1);
    registerBytecodeBuilder(MathBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::MUL, &MathBuilder::mul), 1);
    registerBytecodeBuilder(MathBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::DIV, &MathBuilder::div), 1);
-   registerBytecodeBuilder(RetBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::RET, pFrame), 3); //PC increment of 3 to handle previous call
-   registerBytecodeBuilder(CallBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::CALL, pFrame), 0); //PC increment of 0 to handle starting at pc 0
+   registerBytecodeBuilder(RetBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::RET, _interpTypes->getTypes().pFrame), 3); //PC increment of 3 to handle previous call
+   registerBytecodeBuilder(CallBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::CALL, _interpTypes->getTypes().pInterpreter, _interpTypes->getTypes().pFrame), 0); //PC increment of 0 to handle starting at pc 0
    registerBytecodeBuilder(JumpBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::JMPL), 0); //PC increment of 0 since Jump sets PC
    registerBytecodeBuilder(PopLocalBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::POP_LOCAL), 2);
    registerBytecodeBuilder(PushLocalBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::PUSH_LOCAL), 2);
