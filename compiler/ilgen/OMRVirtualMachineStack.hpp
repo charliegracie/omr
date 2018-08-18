@@ -19,18 +19,18 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#ifndef OMR_VIRTUALMACHINEOPERANDSTACK_INCL
-#define OMR_VIRTUALMACHINEOPERANDSTACK_INCL
+#ifndef OMR_VIRTUALMACHINESTACK_INCL
+#define OMR_VIRTUALMACHINESTACK_INCL
 
 #include <stdint.h>
 
-#include "ilgen/VirtualMachineStack.hpp"
+#include "ilgen/VirtualMachineState.hpp"
 
 namespace TR { class IlBuilder; }
 namespace TR { class IlValue; }
 namespace TR { class IlType; }
 namespace TR { class MethodBuilder; }
-namespace TR { class VirtualMachineOperandStack; }
+namespace TR { class VirtualMachineInterpreterStack; }
 namespace TR { class VirtualMachineRegister; }
 
 namespace OMR
@@ -79,130 +79,65 @@ namespace OMR
  *
  */
 
-class VirtualMachineOperandStack : public TR::VirtualMachineStack
+class VirtualMachineStack : public TR::VirtualMachineState
    {
    public:
-  
-  /**
-    * @brief public constructor, must be instantiated inside a compilation because uses heap memory
-    * @param mb TR::MethodBuilder object of the method currently being compiled
-    * @param sizeHint initial size used to allocate the stack; will grow larger if needed
-    * @param elementType TR::IlType representing the underlying type of the virtual machine's operand stack entries
-    * @param stackTop previously allocated and initialized VirtualMachineRegister representing the top of stack
-    * @param growsUp to configure virtual machine stack growth direction, set to true if virtual machine stack grows towards larger addresses, false otherwise 
-    * @param stackInitialOffset to configure virtual machine stack stack offset 
-    * set to the difference in elements between initial stack pointer and actual bottom of stack
-    * Some stacks Push by incrementing stack pointer then storing, some by storing and then
-    * incrementing stack pointer. In the first case, stackInitialOffset should be -1
-    * because the stack pointer initially points one element below the bottom of the stack.
-    * In the second case, stackInitialOffset should be 0, because the stack pointer
-    * initially points at the bottom of the stack. Other values are possible but would be
-    * considered highly unusual. 
-    * Default behaviour for compatibility constructor will be optional arguments, growsUp is true, and stackInitialOffset is -1.
-    */
-
-   VirtualMachineOperandStack(TR::MethodBuilder *mb, int32_t sizeHint, TR::IlType *elementType, TR::VirtualMachineRegister *stackTopRegister,
-    bool growsUp = true, int32_t stackInitialOffset = -1);
-
-   /**
-    * @brief constructor used to copy the stack from another state
-    * @param other the operand stack whose values should be used to initialize this object
-    */
-   VirtualMachineOperandStack(TR::VirtualMachineOperandStack *other);
-
-   /**
-    * @brief write the simulated operand stack to the virtual machine
-    * @param b the builder where the operations will be placed to recreate the virtual machine operand stack
-    */
-   virtual void Commit(TR::IlBuilder *b);
-   
-   /**
-    * @brief read the virtual machine stack back into the simulated operand stack
-    * @param b the builder where the operations will be placed to recreate the simulated operand stack 
-    * Users can call Drop beforehand with the appropriate positive or negative count to ensure the simulated
-    * stack accounts for new or dropped virtual machine stack elements. 
-    */
-   virtual void Reload(TR::IlBuilder *b);
-
-   /**
-    * @brief create an identical copy of the current object.
-    * @returns the copy of the current object
-    */
-   virtual TR::VirtualMachineState *MakeCopy();
-
-   /**
-    * @brief emit operands to store current operand stack values into same variables as used in another operand stack
-    * @param other operand stack for the builder object control is merging into
-    * @param b builder object where the operations will be added to make the current operand stack the same as the other
-    */
-   virtual void MergeInto(TR::VirtualMachineOperandStack *other, TR::IlBuilder *b);
+   VirtualMachineStack()
+      : TR::VirtualMachineState()
+      {
+      }
 
    /**
     * @brief update the values used to read and write the virtual machine stack
     * @param b the builder where the values will be placed
     * @param stack the new stack base address.  It is assumed that the address is already adjusted to _stackOffset
     */
-   virtual void UpdateStack(TR::IlBuilder *b, TR::IlValue *stack);
+   virtual void UpdateStack(TR::IlBuilder *b, TR::IlValue *stack) = 0;
 
    /**
     * @brief Push an expression onto the simulated operand stack
     * @param b builder object to use for any operations used to implement the push (e.g. update the top of stack)
     * @param value expression to push onto the simulated operand stack
     */
-   virtual void Push(TR::IlBuilder *b, TR::IlValue *value);
+   virtual void Push(TR::IlBuilder *b, TR::IlValue *value) = 0;
 
    /**
     * @brief Pops an expression from the top of the simulated operand stack
     * @param b builder object to use for any operations used to implement the pop (e.g. to update the top of stack)
     * @returns expression popped from the stack
     */
-   virtual TR::IlValue *Pop(TR::IlBuilder *b);
+   virtual TR::IlValue *Pop(TR::IlBuilder *b) = 0;
 
    /**
     * @brief Returns the expression at the top of the simulated operand stack
+    * @param b builder object to use for any operations used to implement the pop (e.g. to update the top of stack)
     * @returns the expression at the top of the operand stack
     */
-   virtual TR::IlValue *Top(TR::IlBuilder *b);
+   virtual TR::IlValue *Top(TR::IlBuilder *b) = 0;
 
    /**
     * @brief Returns an expression below the top of the simulated operand stack
     * @param depth number of values below top (Pick(0) is same as Top())
     * @returns the requested expression from the operand stack
     */
-   virtual TR::IlValue *Pick(int32_t depth);
+   virtual TR::IlValue *Pick(int32_t depth) = 0;
 
    /**
     * @brief Removes some number of expressions from the operand stack
     * @param b builder object to use for any operations used to implement the drop (e.g. to update the top of stack)
     * @param depth how many values to drop from the stack
     */
-   virtual void Drop(TR::IlBuilder *b, int32_t depth);
+   virtual void Drop(TR::IlBuilder *b, int32_t depth) = 0;
 
    /**
     * @brief Duplicates the expression on top of the simulated operand stack
     * @param b builder object to use for any operations used to duplicate the expression (e.g. to update the top of stack)
     */
-   virtual void Dup(TR::IlBuilder *b);
-
- 
+   virtual void Dup(TR::IlBuilder *b) = 0;
 
    protected:
-   void copyTo(TR::VirtualMachineOperandStack *copy);
-   void checkSize();
-   void grow(int32_t growAmount = 0);
-   void init();
-
    private:
-   TR::MethodBuilder *_mb;
-   TR::VirtualMachineRegister *_stackTopRegister;
-   int32_t _stackMax;
-   int32_t _stackTop;
-   TR::IlValue **_stack;
-   TR::IlType *_elementType;
-   int32_t _pushAmount;
-   int32_t _stackOffset;
-   const char *_stackBaseName;
    };
 }
 
-#endif // !defined(OMR_VIRTUALMACHINEOPERANDSTACK_INCL)
+#endif // !defined(OMR_VIRTUALMACHINESTACK_INCL)

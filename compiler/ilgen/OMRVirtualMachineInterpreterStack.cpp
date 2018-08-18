@@ -29,7 +29,7 @@
 #include "ilgen/TypeDictionary.hpp"
 
 OMR::VirtualMachineInterpreterStack::VirtualMachineInterpreterStack(TR::MethodBuilder *mb, TR::VirtualMachineRegister *stackTopRegister, TR::IlType *elementType)
-   : TR::VirtualMachineState(),
+   : TR::VirtualMachineStack(),
    _mb(mb),
    _stackTopRegister(stackTopRegister),
    _elementType(elementType),
@@ -45,13 +45,13 @@ OMR::VirtualMachineInterpreterStack::VirtualMachineInterpreterStack(TR::MethodBu
 void
 OMR::VirtualMachineInterpreterStack::Commit(TR::IlBuilder *b)
    {
-   _stackTopRegister->Commit(b);
+   //_stackTopRegister->Commit(b);
    }
 
 void
 OMR::VirtualMachineInterpreterStack::Reload(TR::IlBuilder* b)
    {
-   _stackTopRegister->Reload(b);
+   //_stackTopRegister->Reload(b);
    }
 
 void

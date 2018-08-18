@@ -32,7 +32,7 @@
 
 OMR::VirtualMachineOperandStack::VirtualMachineOperandStack(TR::MethodBuilder *mb, int32_t sizeHint, TR::IlType *elementType,
    TR::VirtualMachineRegister *stackTopRegister, bool growsUp, int32_t stackInitialOffset)
-   : TR::VirtualMachineState(),
+   : TR::VirtualMachineStack(),
    _mb(mb),
    _stackTopRegister(stackTopRegister),
    _stackMax(sizeHint),
@@ -45,7 +45,7 @@ OMR::VirtualMachineOperandStack::VirtualMachineOperandStack(TR::MethodBuilder *m
    }
 
 OMR::VirtualMachineOperandStack::VirtualMachineOperandStack(TR::VirtualMachineOperandStack *other)
-   : TR::VirtualMachineState(),
+   : TR::VirtualMachineStack(),
    _mb(other->_mb),
    _stackTopRegister(other->_stackTopRegister),
    _stackMax(other->_stackMax),
@@ -155,7 +155,7 @@ OMR::VirtualMachineOperandStack::Push(TR::IlBuilder *b, TR::IlValue *value)
    }
 
 TR::IlValue *
-OMR::VirtualMachineOperandStack::Top()
+OMR::VirtualMachineOperandStack::Top(TR::IlBuilder *b)
    {
    TR_ASSERT(_stackTop >= 0, "no top: stack empty");
    return _stack[_stackTop];

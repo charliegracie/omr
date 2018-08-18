@@ -46,7 +46,7 @@ MathBuilder::OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcI
 void
 MathBuilder::execute()
    {
-   TR::VirtualMachineInterpreterStack *state = (TR::VirtualMachineInterpreterStack*)vmState();
+   TR::VirtualMachineStack *state = ((InterpreterVMState*)vmState())->_stack;
 
    TR::IlValue *right = state->Pop(this);
    TR::IlValue *left = state->Pop(this);

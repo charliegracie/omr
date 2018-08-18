@@ -29,7 +29,7 @@
 #include "Jit.hpp"
 #include "ilgen/InterpreterBuilder.hpp"
 #include "ilgen/MethodBuilder.hpp"
-#include "ilgen/VirtualMachineInterpreterStack.hpp"
+#include "ilgen/VirtualMachineOperandStack.hpp"
 #include "ilgen/VirtualMachineState.hpp"
 #include "ilgen/VirtualMachineRegister.hpp"
 #include "ilgen/VirtualMachineRegisterInStruct.hpp"
@@ -55,6 +55,12 @@ using std::cerr;
 //#define PRINTINT64(builder, value) ((builder)->Call("printInt64", 1, (builder)->ConstInt64((int64_t)value))
 //#define PRINTINT64VALUE(builder, value) ((builder)->Call("printInt64", 1, value))
 
+static void debug(Interpreter *interp, Frame *frame)
+   {
+#define DEBUG_LINE LINETOSTR(__LINE__)
+   fprintf(stderr, "debug interp %p frame %p frame->stack[0] %lld \n", interp, frame, frame->stack[0]);
+   }
+
 JitMethod::JitMethod(InterpreterTypeDictionary *d, Method *method)
    : MethodBuilder(d),
    _interpTypes(d),
@@ -72,6 +78,9 @@ JitMethod::JitMethod(InterpreterTypeDictionary *d, Method *method)
 
    DefineLocal("pc", Int32);
    DefineLocal("opcode", Int32);
+
+   TR::IlType *voidType = d->toIlType<void>();
+   DefineFunction((char *)"debug2", (char *)__FILE__, (char *)DEBUG_LINE, (void *)&debug, voidType, 2, _interpTypes->getTypes().pInterpreter, _interpTypes->getTypes().pFrame);
 
    DefineReturnType(Int64);
    }
@@ -100,8 +109,16 @@ JitMethod::buildIL()
 
    //TODO create / set proper vmstate
    TR::VirtualMachineRegisterInStruct *stackRegister = new TR::VirtualMachineRegisterInStruct(this, "Frame", "frame", "sp", "SP");
-   TR::VirtualMachineInterpreterStack *stack = new TR::VirtualMachineInterpreterStack(this, stackRegister, STACKVALUEILTYPE);
-   setVMState(stack);
+   TR::VirtualMachineOperandStack *stack = new TR::VirtualMachineOperandStack(this, 10, STACKVALUEILTYPE, stackRegister, true, 0);
+   InterpreterVMState *vmState = new InterpreterVMState(stack, stackRegister);
+   setVMState(vmState);
+
+   //TODO fix this..... sp is too far along.... need to move sp back by param count then Drop(-paramCount) then Reload
+   //Also retopcode needs to be fixed to push the ret value properly on the returning frame
+   stack->Drop(this, -_method->argCount);
+   stack->Reload(this);
+
+   //Call("debug2", 2, Load("interp"), Load("frame"));
 
    TR::IlValue *bytecodesAddress = StructFieldInstanceAddress("Frame", "bytecodes", Load("frame"));
    TR::IlValue *bytecodes = LoadAt(_types->PointerTo(_types->PointerTo(Int8)), bytecodesAddress);

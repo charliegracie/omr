@@ -45,7 +45,7 @@ PushLocalBuilder::OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_
 void
 PushLocalBuilder::execute()
    {
-   TR::VirtualMachineInterpreterStack *state = (TR::VirtualMachineInterpreterStack*)vmState();
+   TR::VirtualMachineStack *state = ((InterpreterVMState*)vmState())->_stack;
    TR::IlType *pInt8 = _types->PointerTo(Int8);
    TR::IlType *pStackType = _types->PointerTo(STACKVALUEILTYPE);
    TR::IlValue *frame = Load("frame");

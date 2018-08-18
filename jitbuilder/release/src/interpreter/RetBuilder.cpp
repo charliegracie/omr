@@ -40,17 +40,23 @@ static void freeFrame(Frame *frame)
 static void j2iReturn(Interpreter *interp, Frame *frame, int64_t retVal)
    {
 #define J2IRETURN_LINE LINETOSTR(__LINE__)
+   *frame->sp = retVal;
+   frame->sp++;
    frame->savedPC += 3;
    }
 
 static void j2jReturn(Interpreter *interp, Frame *frame, int64_t retVal)
    {
 #define J2JRETURN_LINE LINETOSTR(__LINE__)
+   *frame->sp = retVal;
+   frame->sp++;
    }
 
 static void i2iReturn(Interpreter *interp, Frame *frame, int64_t retVal)
    {
 #define I2IRETURN_LINE LINETOSTR(__LINE__)
+   *frame->sp = retVal;
+   frame->sp++;
    }
 
 static void i2jReturn(Interpreter *interp, Frame *frame, int64_t retVal)
@@ -91,9 +97,10 @@ RetBuilder::OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIn
 void
 RetBuilder::execute()
    {
-   TR::VirtualMachineInterpreterStack *state = (TR::VirtualMachineInterpreterStack*)vmState();
+   InterpreterVMState *state = (InterpreterVMState*)vmState();
+   TR::VirtualMachineStack *stack = state->_stack;
 
-   TR::IlValue *retVal = state->Pop(this);
+   TR::IlValue *retVal = stack->Pop(this);
    state->Commit(this);
 
    TR::IlValue *currentFrameAddress = StructFieldInstanceAddress("Interpreter", "currentFrame", Load("interp"));
@@ -121,7 +128,7 @@ RetBuilder::execute()
    TR::IlValue *previousFrameFrameTypeAddress = StructFieldInstanceAddress("Frame", "frameType", previous);
    TR::IlValue *previousFrameFrameType = LoadAt(_types->PointerTo(Int32), previousFrameFrameTypeAddress);
 
-   state->Reload(this);
+   //state->Reload(this);
 
    TR::IlBuilder *i2_Transition = NULL;
    TR::IlBuilder *j2_Transition = NULL;
@@ -138,11 +145,9 @@ RetBuilder::execute()
 
    //i2i return
    i2iTransition->Call("i2iReturn", 3, i2iTransition->Load("interp"), i2iTransition->Load("frame"), retVal);
-   state->Push(i2iTransition, retVal);
 
    //i2j return
    i2jTransition->Call("i2jReturn", 3, i2jTransition->Load("interp"), i2jTransition->Load("frame"), retVal);
-   //TODO handle
 
    //transition from the jit
    TR::IlBuilder *j2iTransition = NULL;
@@ -153,12 +158,10 @@ RetBuilder::execute()
 
    //j2i return
    j2iTransition->Call("j2iReturn", 3, j2iTransition->Load("interp"), j2iTransition->Load("frame"), retVal);
-   state->Push(j2iTransition, retVal);
-   state->Commit(j2iTransition);
 
    //j2j return
    j2jTransition->Call("j2jReturn", 3, j2jTransition->Load("interp"), j2jTransition->Load("frame"), retVal);
-   state->Push(j2jTransition, retVal);
-   state->Commit(j2jTransition);
+
+   state->Reload(this);
    }
 

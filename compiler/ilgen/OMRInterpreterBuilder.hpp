@@ -66,7 +66,7 @@ enum OPCODES
    virtual bool buildIL();
    virtual void registerBytecodeBuilders() = 0;
    virtual void handleReturn(TR::IlBuilder *builder) = 0;
-   virtual TR::VirtualMachineInterpreterStack *createStack() {return NULL;}
+   virtual TR::VirtualMachineState *createVMState() {return NULL;}
    virtual void loadOpcodeArray() {}
 
 protected:
@@ -97,7 +97,6 @@ protected:
                ...);
 
 private:
-   TR::VirtualMachineInterpreterStack *_stack;
    const char *_bytecodePtrName;
    TR::IlType *_bytecodeElementType;
    TR::IlType *_bytecodePtrType;

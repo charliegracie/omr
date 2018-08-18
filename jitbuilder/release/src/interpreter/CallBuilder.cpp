@@ -60,7 +60,6 @@ static void setupArgs(Frame *newFrame, Frame *frame, int8_t argCount)
       {
       frame->sp--;
       newFrame->stack[argCount - 1 - i] = *frame->sp;
-      newFrame->sp++;
       }
    }
 
@@ -91,9 +90,10 @@ static Frame *j2iTransition(Interpreter *interp)
    return NULL;
    }
 
-static Frame *i2iTransition(Interpreter *interp)
+static Frame *i2iTransition(Interpreter *interp, int8_t argCount)
    {
 #define I2ITRANSITION_LINE LINETOSTR(__LINE__)
+   interp->currentFrame->sp+=argCount;
    return interp->currentFrame;
    }
 
@@ -120,7 +120,7 @@ static void compileMethod(Interpreter *interp, int8_t methodIndex)
 static void debug(Interpreter *interp, Frame *frame, int8_t *bytecodes, int8_t methodIndex)
    {
 #define DEBUG_LINE LINETOSTR(__LINE__)
-   fprintf(stderr, "debug interp %p frame %p bytecodesFromSender %p methodIndex %d bytecodesInFrame %p previousPC %d\n", interp, frame, bytecodes, methodIndex, frame->bytecodes, frame->previous->savedPC);
+   fprintf(stderr, "debug interp %p frame %p bytecodesFromSender %p methodIndex %d bytecodesInFrame %p previousPC %d frame->stack[0] %lld method->name %s\n", interp, frame, bytecodes, methodIndex, frame->bytecodes, frame->previous->savedPC, frame->stack[0], interp->methods[methodIndex].name);
    }
 
 CallBuilder::CallBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, TR::IlType *frameType)
@@ -142,7 +142,7 @@ CallBuilder::DefineFunctions(TR::MethodBuilder *methodBuilder, TR::IlType *inter
    methodBuilder->DefineFunction((char *)"j2iTransition", (char *)__FILE__, (char *)J2ITRANSITION_LINE, (void *)&j2iTransition, frameType, 1, interpType);
    methodBuilder->DefineFunction((char *)"j2jTransition", (char *)__FILE__, (char *)J2JTRANSITION_LINE, (void *)&j2jTransition, frameType, 2, interpType, pVoidType);
    methodBuilder->DefineFunction((char *)"i2jTransition", (char *)__FILE__, (char *)I2JTRANSITION_LINE, (void *)&i2jTransition, frameType, 2, interpType, pVoidType);
-   methodBuilder->DefineFunction((char *)"i2iTransition", (char *)__FILE__, (char *)I2ITRANSITION_LINE, (void *)&i2iTransition, frameType, 1, interpType);
+   methodBuilder->DefineFunction((char *)"i2iTransition", (char *)__FILE__, (char *)I2ITRANSITION_LINE, (void *)&i2iTransition, frameType, 2, interpType, Int8);
    methodBuilder->DefineFunction((char *)"compileMethod", (char *)__FILE__, (char *)COMPILEMETHOD_LINE, (void *)&compileMethod, voidType, 2, interpType, Int8);
 
    methodBuilder->DefineFunction((char *)"debug", (char *)__FILE__, (char *)DEBUG_LINE, (void *)&debug, voidType, 4, interpType, frameType, pInt8, Int8);
@@ -159,7 +159,7 @@ CallBuilder::OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcI
 void
 CallBuilder::execute()
    {
-   TR::VirtualMachineInterpreterStack *state = (TR::VirtualMachineInterpreterStack*)vmState();
+   InterpreterVMState *state = (InterpreterVMState*)vmState();
    TR::IlType *pInt8 = _types->PointerTo(Int8);
    TR::IlValue *pc = Load("pc");
 
@@ -210,7 +210,7 @@ CallBuilder::execute()
    //Pop the argCount values from currentFrame->sp into newFrame->sp
    Call("setupArgs", 3, newFrame, currentFrame, argCount);
 
-   TR::IlValue *bogusBytecodes = Load("bytecodes");
+   //TR::IlValue *bogusBytecodes = Load("bytecodes");
 
    //Set frame->bytecodes = methodBytecodes
    TR::IlValue *bytecodesAddress = StructFieldInstanceAddress("Frame", "bytecodes", newFrame);
@@ -293,7 +293,7 @@ CallBuilder::execute()
 
    //interpreter frame is calling interpreter frame. No transition required so just store frame = newFrame
    i2i->Store("frame",
-   i2i->   Call("i2iTransition", 1, interp));
+   i2i->   Call("i2iTransition", 2, interp, argCount));
 
    //JIT'd frame is calling interpreter. Call j2iTransition and store the result frame
    j2i->Store("frame",

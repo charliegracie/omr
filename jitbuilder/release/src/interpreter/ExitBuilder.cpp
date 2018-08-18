@@ -25,6 +25,7 @@
 #include "ilgen/MethodBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/VirtualMachineInterpreterStack.hpp"
+#include "InterpreterTypes.h"
 #include "ExitBuilder.hpp"
 
 ExitBuilder::ExitBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
@@ -43,7 +44,7 @@ ExitBuilder::OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcI
 void
 ExitBuilder::execute()
    {
-   TR::VirtualMachineInterpreterStack *state = (TR::VirtualMachineInterpreterStack*)vmState();
+   TR::VirtualMachineStack *state = ((InterpreterVMState*)vmState())->_stack;
    TR::IlValue *ret = state->Pop(this);
    this->Return(ret);
    }

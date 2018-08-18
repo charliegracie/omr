@@ -25,6 +25,7 @@
 #include "ilgen/MethodBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/VirtualMachineInterpreterStack.hpp"
+#include "InterpreterTypes.h"
 #include "JumpBuilder.hpp"
 
 JumpBuilder::JumpBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
@@ -43,7 +44,8 @@ JumpBuilder::OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcI
 void
 JumpBuilder::execute()
    {
-   TR::VirtualMachineInterpreterStack *state = (TR::VirtualMachineInterpreterStack*)vmState();
+   InterpreterVMState *state = (InterpreterVMState*)vmState();
+   TR::VirtualMachineStack *stack = state->_stack;
    TR::IlType *pInt8 = _types->PointerTo(Int8);
 
    TR::IlValue *pc = Load("pc");
@@ -56,8 +58,8 @@ JumpBuilder::execute()
             pc,
             ConstInt32(1))));
 
-   TR::IlValue *right = state->Pop(this);
-   TR::IlValue *left = state->Pop(this);
+   TR::IlValue *right = stack->Pop(this);
+   TR::IlValue *left = stack->Pop(this);
 
    state->Commit(this);
 

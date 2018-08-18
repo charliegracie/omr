@@ -45,7 +45,7 @@ PopLocalBuilder::OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t
 void
 PopLocalBuilder::execute()
    {
-   TR::VirtualMachineInterpreterStack *state = (TR::VirtualMachineInterpreterStack*)vmState();
+   TR::VirtualMachineStack *state = ((InterpreterVMState*)vmState())->_stack;
    TR::IlType *pInt8 = _types->PointerTo(Int8);
    TR::IlType *pStackType = _types->PointerTo(STACKVALUEILTYPE);
 

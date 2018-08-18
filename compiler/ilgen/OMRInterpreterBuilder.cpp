@@ -55,7 +55,6 @@ static void handleBadOpcode(int32_t opcode, int32_t pc)
 
 OMR::InterpreterBuilder::InterpreterBuilder(TR::TypeDictionary *d, const char *bytecodePtrName, TR::IlType *bytecodeElementType, const char *pcName, const char *opcodeName)
    : TR::MethodBuilder(d),
-   _stack(NULL),
    _bytecodePtrName(bytecodePtrName),
    _bytecodeElementType(bytecodeElementType),
    _bytecodePtrType(NULL),
@@ -94,8 +93,7 @@ OMR::InterpreterBuilder::buildIL()
    {
    cout << "InterpreterBuilder::buildIL() running!\n";
 
-   _stack = createStack();
-   setVMState(_stack);
+   setVMState(createVMState());
 
    _defaultHandler = OrphanBytecodeBuilder(OPCODES::BC_COUNT + 1, "default handler");
 

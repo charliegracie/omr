@@ -24,7 +24,7 @@
 
 #include <stdint.h>
 
-#include "ilgen/VirtualMachineState.hpp"
+#include "ilgen/VirtualMachineStack.hpp"
 
 namespace TR { class IlBuilder; }
 namespace TR { class IlValue; }
@@ -79,7 +79,7 @@ namespace OMR
  *
  */
 
-class VirtualMachineInterpreterStack : public TR::VirtualMachineState
+class VirtualMachineInterpreterStack : public TR::VirtualMachineStack
    {
    public:
   

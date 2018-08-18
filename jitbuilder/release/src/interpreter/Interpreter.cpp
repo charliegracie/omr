@@ -135,31 +135,40 @@ InterpreterMethod::InterpreterMethod(InterpreterTypeDictionary *d)
    _methods[0].bytecodes = _mainMethod;
    _methods[0].name = "MainMethod";
    _methods[0].bytecodeLength = sizeof(_mainMethod);
+   _methods[0].argCount = 0;
    _methods[1].bytecodes = _testCallMethod;
    _methods[1].name = "TestCallMethod";
    _methods[1].bytecodeLength = sizeof(_testCallMethod);
+   _methods[1].argCount = 0;
    _methods[2].bytecodes = _testDivMethod;
    _methods[2].name = "TestDivMethod";
    _methods[2].bytecodeLength = sizeof(_testDivMethod);
+   _methods[2].argCount = 2;
    _methods[3].bytecodes = _testAddMethod;
    _methods[3].name = "TestAddMethod";
    _methods[3].bytecodeLength = sizeof(_testAddMethod);
+   _methods[3].argCount = 2;
    _methods[4].bytecodes = _testJMPLMethod;
    _methods[4].name = "TestJMPLMethod";
    _methods[4].bytecodeLength = sizeof(_testJMPLMethod);
+   _methods[4].argCount = 1;
    _methods[5].bytecodes = _fib;
    _methods[5].name = "Fib";
    _methods[5].bytecodeLength = sizeof(_fib);
+   _methods[5].argCount = 1;
    _methods[6].bytecodes = _iterFib;
    _methods[6].name = "IterFib";
    _methods[6].bytecodeLength = sizeof(_iterFib);
+   _methods[6].argCount = 1;
    }
 
-TR::VirtualMachineInterpreterStack *
-InterpreterMethod::createStack()
+TR::VirtualMachineState *
+InterpreterMethod::createVMState()
    {
    TR::VirtualMachineRegisterInStruct *stackRegister = new TR::VirtualMachineRegisterInStruct(this, "Frame", "frame", "sp", "SP");
-   return new TR::VirtualMachineInterpreterStack(this, stackRegister, STACKVALUEILTYPE);
+   TR::VirtualMachineInterpreterStack *stack = new TR::VirtualMachineInterpreterStack(this, stackRegister, STACKVALUEILTYPE);
+   InterpreterVMState *vmState = new InterpreterVMState(stack, stackRegister);
+   return vmState;
    }
 
 void

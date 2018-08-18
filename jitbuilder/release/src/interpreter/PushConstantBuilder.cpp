@@ -25,6 +25,8 @@
 #include "ilgen/MethodBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/VirtualMachineInterpreterStack.hpp"
+
+#include "InterpreterTypes.h"
 #include "PushConstantBuilder.hpp"
 
 PushConstantBuilder::PushConstantBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
@@ -43,7 +45,7 @@ PushConstantBuilder::OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int
 void
 PushConstantBuilder::execute()
    {
-   TR::VirtualMachineInterpreterStack *state = (TR::VirtualMachineInterpreterStack*)vmState();
+   TR::VirtualMachineStack *state = ((InterpreterVMState*)vmState())->_stack;
    TR::IlType *pInt8 = _types->PointerTo(Int8);
 
    TR::IlValue *value =
@@ -53,6 +55,7 @@ PushConstantBuilder::execute()
          Add(
             Load("pc"),
             ConstInt32(1))));
+   value = ConvertTo(Int64, value);
 
    state->Push(this, value);
    }

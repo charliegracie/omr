@@ -24,6 +24,9 @@
 #define INTERPRETERTYPES_INCL
 
 #include "ilgen/InterpreterBuilder.hpp"
+#include "ilgen/VirtualMachineState.hpp"
+#include "ilgen/VirtualMachineRegister.hpp"
+#include "ilgen/VirtualMachineStack.hpp"
 
 #define STACKVALUEILTYPE Int64
 #define STACKVALUETYPE int64_t
@@ -34,6 +37,7 @@ typedef int64_t (JitMethodFunction)(struct Interpreter *, struct Frame *);
 typedef struct Method
    {
    int32_t callsUntilJit;
+   int32_t argCount;
    int32_t bytecodeLength;
    int8_t const *bytecodes;
    char const *name;
@@ -83,6 +87,53 @@ enum interpreter_opcodes
    POP_LOCAL = OMR::InterpreterBuilder::OPCODES::BC_11,
    FAIL = OMR::InterpreterBuilder::OPCODES::BC_12,
    COUNT = OMR::InterpreterBuilder::OPCODES::BC_13
+   };
+
+class InterpreterVMState : public TR::VirtualMachineState
+   {
+   public:
+   InterpreterVMState()
+      : TR::VirtualMachineState(),
+      _stack(nullptr),
+      _stackTop(nullptr)
+      { }
+
+   InterpreterVMState(TR::VirtualMachineStack *stack, TR::VirtualMachineRegister *stackTop)
+      : TR::VirtualMachineState(),
+      _stack(stack),
+      _stackTop(stackTop)
+      {
+      }
+
+   virtual void Commit(TR::IlBuilder *b)
+      {
+      _stack->Commit(b);
+      _stackTop->Commit(b);
+      }
+
+   virtual void Reload(TR::IlBuilder *b)
+      {
+      _stackTop->Reload(b);
+      _stack->Reload(b);
+      }
+
+   virtual VirtualMachineState *MakeCopy()
+      {
+      InterpreterVMState *newState = new InterpreterVMState();
+      newState->_stack = (TR::VirtualMachineStack *)_stack->MakeCopy();
+      newState->_stackTop = (TR::VirtualMachineRegister *) _stackTop->MakeCopy();
+      return newState;
+      }
+
+   virtual void MergeInto(VirtualMachineState *other, TR::IlBuilder *b)
+      {
+      InterpreterVMState *otherState = (InterpreterVMState *)other;
+      _stack->MergeInto(otherState->_stack, b);
+      _stackTop->MergeInto(otherState->_stackTop, b);
+      }
+
+   TR::VirtualMachineStack * _stack;
+   TR::VirtualMachineRegister * _stackTop;
    };
 
 #endif // !defined(INTERPRETERTYPES_INCL)

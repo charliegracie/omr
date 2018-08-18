@@ -34,7 +34,7 @@ class InterpreterMethod : public TR::InterpreterBuilder
    InterpreterMethod(InterpreterTypeDictionary *d);
    virtual void registerBytecodeBuilders();
    virtual void handleReturn(TR::IlBuilder *builder);
-   virtual TR::VirtualMachineInterpreterStack *createStack();
+   virtual TR::VirtualMachineState *createVMState();
    virtual void loadOpcodeArray();
 
    protected:
@@ -65,7 +65,7 @@ class InterpreterMethod : public TR::InterpreterBuilder
       interpreter_opcodes::ADD,             // add 6 + 8 (call result) store 14
       interpreter_opcodes::PUSH_CONSTANT,2, // push 2
       interpreter_opcodes::CALL,2,2,        // call method 2 (call result 7)
-#if 1 || test
+#if 1
       interpreter_opcodes::PUSH_CONSTANT,1, // push 1
       interpreter_opcodes::CALL,2,2,        // call method 2 (call result 7)
       interpreter_opcodes::PUSH_CONSTANT,1, // push 1
@@ -89,7 +89,7 @@ class InterpreterMethod : public TR::InterpreterBuilder
 #endif
       interpreter_opcodes::CALL,4,1,        // call method 3 (call result 3)
 
-#if 1 || test2
+#if 1
       interpreter_opcodes::CALL,4,1,        // call method 3 (call result 1)
       interpreter_opcodes::CALL,4,1,        // call method 3 (call result 1)
       interpreter_opcodes::CALL,4,1,        // call method 3 (call result 1)

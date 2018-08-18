@@ -25,6 +25,7 @@
 #include "ilgen/MethodBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/VirtualMachineInterpreterStack.hpp"
+#include "InterpreterTypes.h"
 #include "DupBuilder.hpp"
 
 DupBuilder::DupBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
@@ -43,7 +44,7 @@ DupBuilder::OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIn
 void
 DupBuilder::execute()
    {
-   TR::VirtualMachineInterpreterStack *state = (TR::VirtualMachineInterpreterStack*)vmState();
+   TR::VirtualMachineStack *state = ((InterpreterVMState*)vmState())->_stack;
    state->Dup(this);
    }
 
