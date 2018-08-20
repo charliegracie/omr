@@ -31,15 +31,16 @@ namespace TR { class InterpreterBuilder; }
 class PushConstantBuilder : public TR::BytecodeBuilder
    {
    public:
-   PushConstantBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
+   PushConstantBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex);
 
    virtual void execute();
 
-   static PushConstantBuilder *OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
+   static PushConstantBuilder *OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex);
 
    protected:
 
    private:
+   TR::RuntimeBuilder *_runtimeBuilder;
    };
 
 #endif // !defined(PUSHCONSTANTBUILDER_INCL)

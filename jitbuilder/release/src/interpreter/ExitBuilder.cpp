@@ -22,22 +22,22 @@
 
 #include <new>
 
-#include "ilgen/MethodBuilder.hpp"
+#include "ilgen/RuntimeBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/VirtualMachineInterpreterStack.hpp"
 #include "InterpreterTypes.h"
 #include "ExitBuilder.hpp"
 
-ExitBuilder::ExitBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
-   : BytecodeBuilder(methodBuilder, bcIndex, "EXIT")
+ExitBuilder::ExitBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex)
+   : BytecodeBuilder(runtimeBuilder, bcIndex, "EXIT")
    {
    }
 
 ExitBuilder *
-ExitBuilder::OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
+ExitBuilder::OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex)
    {
-   ExitBuilder *orphan = new ExitBuilder(methodBuilder, bcIndex);
-   methodBuilder->InitializeBytecodeBuilder(orphan);
+   ExitBuilder *orphan = new ExitBuilder(runtimeBuilder, bcIndex);
+   runtimeBuilder->InitializeBytecodeBuilder(orphan);
    return orphan;
    }
 

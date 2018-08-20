@@ -31,12 +31,12 @@ namespace TR { class InterpreterBuilder; }
 class RetBuilder : public TR::BytecodeBuilder
    {
    public:
-   RetBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, TR::IlType *frameType);
+   RetBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex, TR::IlType *frameType);
 
    virtual void execute();
 
-   static void DefineFunctions(TR::MethodBuilder *methodBuilder, TR::IlType *interpType, TR::IlType *frameType);
-   static RetBuilder *OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, TR::IlType *frameType);
+   static void DefineFunctions(TR::RuntimeBuilder *runtimeBuilder, TR::IlType *interpType, TR::IlType *frameType);
+   static RetBuilder *OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex, TR::IlType *frameType);
 
    protected:
 

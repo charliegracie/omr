@@ -26,20 +26,21 @@
 
 #include "ilgen/BytecodeBuilder.hpp"
 
-namespace TR { class InterpreterBuilder; }
+namespace TR { class RuntimeBuilder; }
 
 class PushLocalBuilder : public TR::BytecodeBuilder
    {
    public:
-   PushLocalBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
+   PushLocalBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex);
 
    virtual void execute();
 
-   static PushLocalBuilder *OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
+   static PushLocalBuilder *OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex);
 
    protected:
 
    private:
+   TR::RuntimeBuilder *_runtimeBuilder;
    };
 
 #endif // !defined(PUSHLOCALBUILDER_INCL)

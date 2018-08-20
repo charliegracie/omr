@@ -22,23 +22,24 @@
 
 #include <new>
 
-#include "ilgen/MethodBuilder.hpp"
+#include "ilgen/RuntimeBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/VirtualMachineInterpreterStack.hpp"
 
 #include "InterpreterTypes.h"
 #include "PopLocalBuilder.hpp"
 
-PopLocalBuilder::PopLocalBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
-   : BytecodeBuilder(methodBuilder, bcIndex, "POP_LOCAL")
+PopLocalBuilder::PopLocalBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex)
+   : BytecodeBuilder(runtimeBuilder, bcIndex, "POP_LOCAL"),
+   _runtimeBuilder(runtimeBuilder)
    {
    }
 
 PopLocalBuilder *
-PopLocalBuilder::OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
+PopLocalBuilder::OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex)
    {
-   PopLocalBuilder *orphan = new PopLocalBuilder(methodBuilder, bcIndex);
-   methodBuilder->InitializeBytecodeBuilder(orphan);
+   PopLocalBuilder *orphan = new PopLocalBuilder(runtimeBuilder, bcIndex);
+   runtimeBuilder->InitializeBytecodeBuilder(orphan);
    return orphan;
    }
 
@@ -46,21 +47,12 @@ void
 PopLocalBuilder::execute()
    {
    TR::VirtualMachineStack *state = ((InterpreterVMState*)vmState())->_stack;
-   TR::IlType *pInt8 = _types->PointerTo(Int8);
    TR::IlType *pStackType = _types->PointerTo(STACKVALUEILTYPE);
 
-   TR::IlValue *poppedValue = state->Pop(this);
    TR::IlValue *frame = Load("frame");
-
-   TR::IlValue *localIndex =
-   LoadAt(pInt8,
-      IndexAt(pInt8,
-         Load("bytecodes"),
-         Add(
-            Load("pc"),
-            ConstInt32(1))));
-
    TR::IlValue *locals = LoadIndirect("Frame", "locals", frame);
+   TR::IlValue *localIndex = _runtimeBuilder->GetImmediate(this, 1);
+   TR::IlValue *poppedValue = state->Pop(this);
 
    StoreAt(
       IndexAt(pStackType,

@@ -24,7 +24,7 @@
 #ifndef JITMETHOD_INCL
 #define JITMETHOD_INCL
 
-#include "ilgen/MethodBuilder.hpp"
+#include "ilgen/RuntimeBuilder.hpp"
 
 #include "InterpreterTypes.h"
 #include "InterpreterTypeDictionary.hpp"
@@ -39,10 +39,13 @@
 #include "PopLocalBuilder.hpp"
 #include "PushLocalBuilder.hpp"
 
-class JitMethod : public TR::MethodBuilder
+namespace TR { class BytecodeBuilder;}
+
+class JitMethod : public TR::RuntimeBuilder
    {
    public:
    JitMethod(InterpreterTypeDictionary *d, Method *method);
+   virtual TR::IlValue *GetImmediate(TR::BytecodeBuilder *builder, int32_t pcOffset);
    virtual bool buildIL();
 
    protected:

@@ -26,16 +26,14 @@
 
 #include "ilgen/BytecodeBuilder.hpp"
 
-namespace TR { class InterpreterBuilder; }
-
 class ExitBuilder : public TR::BytecodeBuilder
    {
    public:
-   ExitBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
+   ExitBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex);
 
    virtual void execute();
 
-   static ExitBuilder *OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
+   static ExitBuilder *OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex);
 
    protected:
 

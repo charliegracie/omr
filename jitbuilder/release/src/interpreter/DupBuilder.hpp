@@ -26,16 +26,16 @@
 
 #include "ilgen/BytecodeBuilder.hpp"
 
-namespace TR { class MethodBuilder; }
+namespace TR { class RuntimeBuilder; }
 
 class DupBuilder : public TR::BytecodeBuilder
    {
    public:
-   DupBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
+   DupBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex);
 
    virtual void execute();
 
-   static DupBuilder *OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
+   static DupBuilder *OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex);
 
    protected:
 

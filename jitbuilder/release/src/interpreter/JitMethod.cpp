@@ -62,7 +62,7 @@ static void debug(Interpreter *interp, Frame *frame)
    }
 
 JitMethod::JitMethod(InterpreterTypeDictionary *d, Method *method)
-   : MethodBuilder(d),
+   : RuntimeBuilder(d),
    _interpTypes(d),
    _method(method)
    {
@@ -83,6 +83,14 @@ JitMethod::JitMethod(InterpreterTypeDictionary *d, Method *method)
    DefineFunction((char *)"debug2", (char *)__FILE__, (char *)DEBUG_LINE, (void *)&debug, voidType, 2, _interpTypes->getTypes().pInterpreter, _interpTypes->getTypes().pFrame);
 
    DefineReturnType(Int64);
+   }
+
+TR::IlValue *
+JitMethod::GetImmediate(TR::BytecodeBuilder *builder, int32_t pcOffset)
+   {
+   int8_t immediate = _method->bytecodes[builder->bcIndex() + pcOffset];
+
+   return builder->ConstInt8(immediate);
    }
 
 bool

@@ -22,23 +22,24 @@
 
 #include <new>
 
-#include "ilgen/MethodBuilder.hpp"
+#include "ilgen/RuntimeBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/VirtualMachineInterpreterStack.hpp"
 
 #include "InterpreterTypes.h"
 #include "PushConstantBuilder.hpp"
 
-PushConstantBuilder::PushConstantBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
-   : BytecodeBuilder(methodBuilder, bcIndex, "PUSH_CONSTANT")
+PushConstantBuilder::PushConstantBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex)
+   : BytecodeBuilder(runtimeBuilder, bcIndex, "PUSH_CONSTANT"),
+   _runtimeBuilder(runtimeBuilder)
    {
    }
 
 PushConstantBuilder *
-PushConstantBuilder::OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
+PushConstantBuilder::OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex)
    {
-   PushConstantBuilder *orphan = new PushConstantBuilder(methodBuilder, bcIndex);
-   methodBuilder->InitializeBytecodeBuilder(orphan);
+   PushConstantBuilder *orphan = new PushConstantBuilder(runtimeBuilder, bcIndex);
+   runtimeBuilder->InitializeBytecodeBuilder(orphan);
    return orphan;
    }
 
@@ -46,15 +47,8 @@ void
 PushConstantBuilder::execute()
    {
    TR::VirtualMachineStack *state = ((InterpreterVMState*)vmState())->_stack;
-   TR::IlType *pInt8 = _types->PointerTo(Int8);
+   TR::IlValue *value = _runtimeBuilder->GetImmediate(this, 1);
 
-   TR::IlValue *value =
-   LoadAt(pInt8,
-      IndexAt(pInt8,
-         Load("bytecodes"),
-         Add(
-            Load("pc"),
-            ConstInt32(1))));
    value = ConvertTo(Int64, value);
 
    state->Push(this, value);

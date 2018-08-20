@@ -22,7 +22,7 @@
 #ifndef OMR_INTERPRETERBUILDER_INCL
 #define OMR_INTERPRETERBUILDER_INCL
 
-#include "ilgen/MethodBuilder.hpp"
+#include "ilgen/RuntimeBuilder.hpp"
 
 namespace TR { class InterpreterBuilder; }
 namespace TR { class BytecodeBuilder;}
@@ -34,7 +34,7 @@ namespace TR { class VirtualMachineInterpreterStack; }
 namespace OMR
 {
 
-class InterpreterBuilder : public TR::MethodBuilder
+class InterpreterBuilder : public TR::RuntimeBuilder
    {
 public:
    TR_ALLOC(TR_Memory::IlGenerator)
@@ -61,13 +61,16 @@ enum OPCODES
    };
 
    InterpreterBuilder(TR::TypeDictionary *d, const char *bytecodePtrName, TR::IlType *bytecodeElementType, const char *pcName, const char *opcodeName);
-   void registerBytecodeBuilder(TR::BytecodeBuilder *handler, int32_t opcodeLength);
+
+   virtual TR::IlValue *GetImmediate(TR::BytecodeBuilder *builder, int32_t pcOffset);
 
    virtual bool buildIL();
    virtual void registerBytecodeBuilders() = 0;
-   virtual void handleReturn(TR::IlBuilder *builder) = 0;
+   virtual void handleInterpreterExit(TR::IlBuilder *builder) = 0;
    virtual TR::VirtualMachineState *createVMState() {return NULL;}
    virtual void loadOpcodeArray() {}
+
+   void registerBytecodeBuilder(TR::BytecodeBuilder *handler, int32_t opcodeLength);
 
 protected:
    void getNextOpcode(TR::IlBuilder *builder);

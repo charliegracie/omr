@@ -54,7 +54,7 @@ static void handleBadOpcode(int32_t opcode, int32_t pc)
    }
 
 OMR::InterpreterBuilder::InterpreterBuilder(TR::TypeDictionary *d, const char *bytecodePtrName, TR::IlType *bytecodeElementType, const char *pcName, const char *opcodeName)
-   : TR::MethodBuilder(d),
+   : TR::RuntimeBuilder(d),
    _bytecodePtrName(bytecodePtrName),
    _bytecodeElementType(bytecodeElementType),
    _bytecodePtrType(NULL),
@@ -70,6 +70,20 @@ OMR::InterpreterBuilder::InterpreterBuilder(TR::TypeDictionary *d, const char *b
       {
       _opcodeBuilders[i] = NULL;
       }
+   }
+
+TR::IlValue *
+OMR::InterpreterBuilder::GetImmediate(TR::BytecodeBuilder *builder, int32_t pcOffset)
+   {
+   TR::IlValue *immediate =
+   builder->LoadAt(_bytecodePtrType,
+   builder->   IndexAt(_bytecodePtrType,
+   builder->      Load(_bytecodePtrName),
+   builder->      Add(
+   builder->         Load(_pcName),
+   builder->         ConstInt32(pcOffset))));
+
+   return immediate;
    }
 
 void
@@ -115,7 +129,6 @@ OMR::InterpreterBuilder::buildIL()
    registerBytecodeBuilders();
    completeBytecodeBuilderRegistration();
 
-   //doWhileBody->Switch("opcode", &_defaultHandler, OPCODES::BC_COUNT,
    Switch("opcode", doWhileBody, _defaultHandler, OPCODES::BC_COUNT,
                    OPCODES::BC_00, &_opcodeBuilders[OPCODES::BC_00], false,
                    OPCODES::BC_01, &_opcodeBuilders[OPCODES::BC_01], false,
@@ -140,7 +153,7 @@ OMR::InterpreterBuilder::buildIL()
 
    incrementPC(doWhileBody, 2);
 
-   handleReturn(this);
+   handleInterpreterExit(this);
 
    return true;
    }

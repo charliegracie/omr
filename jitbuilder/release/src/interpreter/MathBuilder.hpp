@@ -33,11 +33,11 @@ namespace TR { class InterpreterBuilder; }
 class MathBuilder : public TR::BytecodeBuilder
    {
    public:
-   MathBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, MathFuncType mathFunction);
+   MathBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex, MathFuncType mathFunction);
 
    virtual void execute();
 
-   static MathBuilder *OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, MathFuncType mathFunction);
+   static MathBuilder *OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex, MathFuncType mathFunction);
 
    static TR::IlValue *add(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
    static TR::IlValue *sub(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);

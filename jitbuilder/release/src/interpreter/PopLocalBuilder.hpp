@@ -31,15 +31,16 @@ namespace TR { class InterpreterBuilder; }
 class PopLocalBuilder : public TR::BytecodeBuilder
    {
    public:
-   PopLocalBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
+   PopLocalBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex);
 
    virtual void execute();
 
-   static PopLocalBuilder *OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex);
+   static PopLocalBuilder *OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex);
 
    protected:
 
    private:
+   TR::RuntimeBuilder *_runtimeBuilder;
    };
 
 #endif // !defined(POPLOCALBUILDER_INCL)

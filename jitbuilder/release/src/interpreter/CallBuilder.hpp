@@ -26,21 +26,22 @@
 
 #include "ilgen/BytecodeBuilder.hpp"
 
-namespace TR { class InterpreterBuilder; }
+namespace TR { class RuntimeBuilder; }
 
 class CallBuilder : public TR::BytecodeBuilder
    {
    public:
-   CallBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, TR::IlType *frameType);
+   CallBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex, TR::IlType *frameType);
 
    virtual void execute();
 
-   static void DefineFunctions(TR::MethodBuilder *methodBuilder, TR::IlType *interpType, TR::IlType *frameType);
-   static CallBuilder *OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, TR::IlType *interpType, TR::IlType *frameType);
+   static void DefineFunctions(TR::RuntimeBuilder *runtimeBuilder, TR::IlType *interpType, TR::IlType *frameType);
+   static CallBuilder *OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex, TR::IlType *interpType, TR::IlType *frameType);
 
    protected:
 
    private:
+   TR::RuntimeBuilder *_runtimeBuilder;
    TR::IlType *_frameType;
    };
 

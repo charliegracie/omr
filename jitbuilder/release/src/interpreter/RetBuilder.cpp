@@ -22,7 +22,7 @@
 
 #include <new>
 
-#include "ilgen/MethodBuilder.hpp"
+#include "ilgen/RuntimeBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/VirtualMachineInterpreterStack.hpp"
 
@@ -67,30 +67,30 @@ static void i2jReturn(Interpreter *interp, Frame *frame, int64_t retVal)
    *x = 0;
    }
 
-RetBuilder::RetBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, TR::IlType *frameType)
-   : BytecodeBuilder(methodBuilder, bcIndex, "RET"),
+RetBuilder::RetBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex, TR::IlType *frameType)
+   : BytecodeBuilder(runtimeBuilder, bcIndex, "RET"),
    _frameType(frameType)
    {
    }
 
 void
-RetBuilder::DefineFunctions(TR::MethodBuilder *methodBuilder, TR::IlType *interpType, TR::IlType *frameType)
+RetBuilder::DefineFunctions(TR::RuntimeBuilder *runtimeBuilder, TR::IlType *interpType, TR::IlType *frameType)
    {
-   TR::IlType *voidType = methodBuilder->typeDictionary()->toIlType<void>();
-   TR::IlType *Int64Type = methodBuilder->typeDictionary()->toIlType<int64_t>();
+   TR::IlType *voidType = runtimeBuilder->typeDictionary()->toIlType<void>();
+   TR::IlType *Int64Type = runtimeBuilder->typeDictionary()->toIlType<int64_t>();
 
-   methodBuilder->DefineFunction((char *)"freeFrame", (char *)__FILE__, (char *)FREEFRAME_LINE, (void *)&freeFrame, voidType, 1, frameType);
-   methodBuilder->DefineFunction((char *)"j2iReturn", (char *)__FILE__, (char *)J2IRETURN_LINE, (void *)&j2iReturn, voidType, 3, interpType, frameType, Int64Type);
-   methodBuilder->DefineFunction((char *)"j2jReturn", (char *)__FILE__, (char *)J2JRETURN_LINE, (void *)&j2jReturn, voidType, 3, interpType, frameType, Int64Type);
-   methodBuilder->DefineFunction((char *)"i2iReturn", (char *)__FILE__, (char *)I2IRETURN_LINE, (void *)&i2iReturn, voidType, 3, interpType, frameType, Int64Type);
-   methodBuilder->DefineFunction((char *)"i2jReturn", (char *)__FILE__, (char *)I2JRETURN_LINE, (void *)&i2jReturn, voidType, 3, interpType, frameType, Int64Type);
+   runtimeBuilder->DefineFunction((char *)"freeFrame", (char *)__FILE__, (char *)FREEFRAME_LINE, (void *)&freeFrame, voidType, 1, frameType);
+   runtimeBuilder->DefineFunction((char *)"j2iReturn", (char *)__FILE__, (char *)J2IRETURN_LINE, (void *)&j2iReturn, voidType, 3, interpType, frameType, Int64Type);
+   runtimeBuilder->DefineFunction((char *)"j2jReturn", (char *)__FILE__, (char *)J2JRETURN_LINE, (void *)&j2jReturn, voidType, 3, interpType, frameType, Int64Type);
+   runtimeBuilder->DefineFunction((char *)"i2iReturn", (char *)__FILE__, (char *)I2IRETURN_LINE, (void *)&i2iReturn, voidType, 3, interpType, frameType, Int64Type);
+   runtimeBuilder->DefineFunction((char *)"i2jReturn", (char *)__FILE__, (char *)I2JRETURN_LINE, (void *)&i2jReturn, voidType, 3, interpType, frameType, Int64Type);
    }
 
 RetBuilder *
-RetBuilder::OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, TR::IlType *frameType)
+RetBuilder::OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex, TR::IlType *frameType)
    {
-   RetBuilder *orphan = new RetBuilder(methodBuilder, bcIndex, frameType);
-   methodBuilder->InitializeBytecodeBuilder(orphan);
+   RetBuilder *orphan = new RetBuilder(runtimeBuilder, bcIndex, frameType);
+   runtimeBuilder->InitializeBytecodeBuilder(orphan);
    return orphan;
    }
 

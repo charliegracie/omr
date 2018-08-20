@@ -200,7 +200,7 @@ InterpreterMethod::registerBytecodeBuilders()
    }
 
 void
-InterpreterMethod::handleReturn(TR::IlBuilder *builder)
+InterpreterMethod::handleInterpreterExit(TR::IlBuilder *builder)
    {
    builder->Return(
    builder->   ConstInt64(-1));

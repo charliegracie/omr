@@ -33,7 +33,7 @@ class InterpreterMethod : public TR::InterpreterBuilder
    public:
    InterpreterMethod(InterpreterTypeDictionary *d);
    virtual void registerBytecodeBuilders();
-   virtual void handleReturn(TR::IlBuilder *builder);
+   virtual void handleInterpreterExit(TR::IlBuilder *builder);
    virtual TR::VirtualMachineState *createVMState();
    virtual void loadOpcodeArray();
 

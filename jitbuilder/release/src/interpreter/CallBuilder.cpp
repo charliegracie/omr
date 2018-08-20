@@ -23,7 +23,7 @@
 #include <new>
 
 #include "Jit.hpp"
-#include "ilgen/MethodBuilder.hpp"
+#include "ilgen/RuntimeBuilder.hpp"
 #include "ilgen/VirtualMachineInterpreterStack.hpp"
 
 #include "InterpreterTypes.h"
@@ -123,36 +123,37 @@ static void debug(Interpreter *interp, Frame *frame, int8_t *bytecodes, int8_t m
    fprintf(stderr, "debug interp %p frame %p bytecodesFromSender %p methodIndex %d bytecodesInFrame %p previousPC %d frame->stack[0] %lld method->name %s\n", interp, frame, bytecodes, methodIndex, frame->bytecodes, frame->previous->savedPC, frame->stack[0], interp->methods[methodIndex].name);
    }
 
-CallBuilder::CallBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, TR::IlType *frameType)
-   : BytecodeBuilder(methodBuilder, bcIndex, "CALL"),
+CallBuilder::CallBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex, TR::IlType *frameType)
+   : BytecodeBuilder(runtimeBuilder, bcIndex, "CALL"),
+   _runtimeBuilder(runtimeBuilder),
    _frameType(frameType)
    {
    }
 
 void
-CallBuilder::DefineFunctions(TR::MethodBuilder *methodBuilder, TR::IlType *interpType, TR::IlType *frameType)
+CallBuilder::DefineFunctions(TR::RuntimeBuilder *runtimeBuilder, TR::IlType *interpType, TR::IlType *frameType)
    {
-   TR::IlType *voidType = methodBuilder->typeDictionary()->toIlType<void>();
-   TR::IlType *pVoidType = methodBuilder->typeDictionary()->PointerTo(voidType);
-   TR::IlType *Int8 = methodBuilder->typeDictionary()->PrimitiveType(TR::Int8);
-   TR::IlType *pInt8 = methodBuilder->typeDictionary()->PointerTo(Int8);
+   TR::IlType *voidType = runtimeBuilder->typeDictionary()->toIlType<void>();
+   TR::IlType *pVoidType = runtimeBuilder->typeDictionary()->PointerTo(voidType);
+   TR::IlType *Int8 = runtimeBuilder->typeDictionary()->PrimitiveType(TR::Int8);
+   TR::IlType *pInt8 = runtimeBuilder->typeDictionary()->PointerTo(Int8);
 
-   methodBuilder->DefineFunction((char *)"allocateFrame", (char *)__FILE__, (char *)ALLOCATEFRAME_LINE, (void *)&allocateFrame, frameType, 0);
-   methodBuilder->DefineFunction((char *)"setupArgs", (char *)__FILE__, (char *)SETUPARGS_LINE, (void *)&setupArgs, voidType, 3, frameType, frameType, Int8);
-   methodBuilder->DefineFunction((char *)"j2iTransition", (char *)__FILE__, (char *)J2ITRANSITION_LINE, (void *)&j2iTransition, frameType, 1, interpType);
-   methodBuilder->DefineFunction((char *)"j2jTransition", (char *)__FILE__, (char *)J2JTRANSITION_LINE, (void *)&j2jTransition, frameType, 2, interpType, pVoidType);
-   methodBuilder->DefineFunction((char *)"i2jTransition", (char *)__FILE__, (char *)I2JTRANSITION_LINE, (void *)&i2jTransition, frameType, 2, interpType, pVoidType);
-   methodBuilder->DefineFunction((char *)"i2iTransition", (char *)__FILE__, (char *)I2ITRANSITION_LINE, (void *)&i2iTransition, frameType, 2, interpType, Int8);
-   methodBuilder->DefineFunction((char *)"compileMethod", (char *)__FILE__, (char *)COMPILEMETHOD_LINE, (void *)&compileMethod, voidType, 2, interpType, Int8);
+   runtimeBuilder->DefineFunction((char *)"allocateFrame", (char *)__FILE__, (char *)ALLOCATEFRAME_LINE, (void *)&allocateFrame, frameType, 0);
+   runtimeBuilder->DefineFunction((char *)"setupArgs", (char *)__FILE__, (char *)SETUPARGS_LINE, (void *)&setupArgs, voidType, 3, frameType, frameType, Int8);
+   runtimeBuilder->DefineFunction((char *)"j2iTransition", (char *)__FILE__, (char *)J2ITRANSITION_LINE, (void *)&j2iTransition, frameType, 1, interpType);
+   runtimeBuilder->DefineFunction((char *)"j2jTransition", (char *)__FILE__, (char *)J2JTRANSITION_LINE, (void *)&j2jTransition, frameType, 2, interpType, pVoidType);
+   runtimeBuilder->DefineFunction((char *)"i2jTransition", (char *)__FILE__, (char *)I2JTRANSITION_LINE, (void *)&i2jTransition, frameType, 2, interpType, pVoidType);
+   runtimeBuilder->DefineFunction((char *)"i2iTransition", (char *)__FILE__, (char *)I2ITRANSITION_LINE, (void *)&i2iTransition, frameType, 2, interpType, Int8);
+   runtimeBuilder->DefineFunction((char *)"compileMethod", (char *)__FILE__, (char *)COMPILEMETHOD_LINE, (void *)&compileMethod, voidType, 2, interpType, Int8);
 
-   methodBuilder->DefineFunction((char *)"debug", (char *)__FILE__, (char *)DEBUG_LINE, (void *)&debug, voidType, 4, interpType, frameType, pInt8, Int8);
+   runtimeBuilder->DefineFunction((char *)"debug", (char *)__FILE__, (char *)DEBUG_LINE, (void *)&debug, voidType, 4, interpType, frameType, pInt8, Int8);
    }
 
 CallBuilder *
-CallBuilder::OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, TR::IlType *interpType, TR::IlType *frameType)
+CallBuilder::OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex, TR::IlType *interpType, TR::IlType *frameType)
    {
-   CallBuilder *orphan = new CallBuilder(methodBuilder, bcIndex, frameType);
-   methodBuilder->InitializeBytecodeBuilder(orphan);
+   CallBuilder *orphan = new CallBuilder(runtimeBuilder, bcIndex, frameType);
+   runtimeBuilder->InitializeBytecodeBuilder(orphan);
    return orphan;
    }
 
@@ -160,24 +161,9 @@ void
 CallBuilder::execute()
    {
    InterpreterVMState *state = (InterpreterVMState*)vmState();
-   TR::IlType *pInt8 = _types->PointerTo(Int8);
    TR::IlValue *pc = Load("pc");
-
-   TR::IlValue *methodIndex =
-   LoadAt(pInt8,
-      IndexAt(pInt8,
-         Load("bytecodes"),
-         Add(
-            pc,
-            ConstInt32(1))));
-
-   TR::IlValue *argCount =
-   LoadAt(pInt8,
-      IndexAt(pInt8,
-         Load("bytecodes"),
-         Add(
-            pc,
-            ConstInt32(2))));
+   TR::IlValue *methodIndex = _runtimeBuilder->GetImmediate(this, 1);
+   TR::IlValue *argCount = _runtimeBuilder->GetImmediate(this, 2);
 
    state->Commit(this);
 

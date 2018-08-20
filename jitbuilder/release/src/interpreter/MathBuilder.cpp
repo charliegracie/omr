@@ -22,24 +22,24 @@
 
 #include <new>
 
-#include "ilgen/MethodBuilder.hpp"
+#include "ilgen/RuntimeBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/VirtualMachineInterpreterStack.hpp"
 
 #include "InterpreterTypes.h"
 #include "MathBuilder.hpp"
 
-MathBuilder::MathBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, MathFuncType mathFunction)
-   : BytecodeBuilder(methodBuilder, bcIndex, "MATH"),
+MathBuilder::MathBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex, MathFuncType mathFunction)
+   : BytecodeBuilder(runtimeBuilder, bcIndex, "MATH"),
    _mathFunction(mathFunction)
    {
    }
 
 MathBuilder *
-MathBuilder::OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, MathFuncType mathFunction)
+MathBuilder::OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex, MathFuncType mathFunction)
    {
-   MathBuilder *orphan = new MathBuilder(methodBuilder, bcIndex, mathFunction);
-   methodBuilder->InitializeBytecodeBuilder(orphan);
+   MathBuilder *orphan = new MathBuilder(runtimeBuilder, bcIndex, mathFunction);
+   runtimeBuilder->InitializeBytecodeBuilder(orphan);
    return orphan;
    }
 

@@ -22,22 +22,23 @@
 
 #include <new>
 
-#include "ilgen/MethodBuilder.hpp"
+#include "ilgen/RuntimeBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/VirtualMachineInterpreterStack.hpp"
 #include "InterpreterTypes.h"
 #include "JumpBuilder.hpp"
 
-JumpBuilder::JumpBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
-   : BytecodeBuilder(methodBuilder, bcIndex, "JUMP")
+JumpBuilder::JumpBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex)
+   : BytecodeBuilder(runtimeBuilder, bcIndex, "JUMP"),
+   _runtimeBuilder(runtimeBuilder)
    {
    }
 
 JumpBuilder *
-JumpBuilder::OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
+JumpBuilder::OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex)
    {
-   JumpBuilder *orphan = new JumpBuilder(methodBuilder, bcIndex);
-   methodBuilder->InitializeBytecodeBuilder(orphan);
+   JumpBuilder *orphan = new JumpBuilder(runtimeBuilder, bcIndex);
+   runtimeBuilder->InitializeBytecodeBuilder(orphan);
    return orphan;
    }
 
@@ -46,17 +47,8 @@ JumpBuilder::execute()
    {
    InterpreterVMState *state = (InterpreterVMState*)vmState();
    TR::VirtualMachineStack *stack = state->_stack;
-   TR::IlType *pInt8 = _types->PointerTo(Int8);
-
    TR::IlValue *pc = Load("pc");
-
-   TR::IlValue *value =
-   LoadAt(pInt8,
-      IndexAt(pInt8,
-         Load("bytecodes"),
-         Add(
-            pc,
-            ConstInt32(1))));
+   TR::IlValue *value = _runtimeBuilder->GetImmediate(this, 1);
 
    TR::IlValue *right = stack->Pop(this);
    TR::IlValue *left = stack->Pop(this);

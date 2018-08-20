@@ -22,43 +22,36 @@
 
 #include <new>
 
-#include "ilgen/MethodBuilder.hpp"
+#include "ilgen/RuntimeBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/VirtualMachineInterpreterStack.hpp"
 
 #include "InterpreterTypes.h"
 #include "PushLocalBuilder.hpp"
 
-PushLocalBuilder::PushLocalBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
-   : BytecodeBuilder(methodBuilder, bcIndex, "PUSH_LOCAL")
+PushLocalBuilder::PushLocalBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex)
+   : BytecodeBuilder(runtimeBuilder, bcIndex, "PUSH_LOCAL"),
+   _runtimeBuilder(runtimeBuilder)
    {
    }
 
 PushLocalBuilder *
-PushLocalBuilder::OrphanBytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex)
+PushLocalBuilder::OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex)
    {
-   PushLocalBuilder *orphan = new PushLocalBuilder(methodBuilder, bcIndex);
-   methodBuilder->InitializeBytecodeBuilder(orphan);
+   PushLocalBuilder *orphan = new PushLocalBuilder(runtimeBuilder, bcIndex);
+   runtimeBuilder->InitializeBytecodeBuilder(orphan);
    return orphan;
    }
 
 void
 PushLocalBuilder::execute()
    {
-   TR::VirtualMachineStack *state = ((InterpreterVMState*)vmState())->_stack;
-   TR::IlType *pInt8 = _types->PointerTo(Int8);
-   TR::IlType *pStackType = _types->PointerTo(STACKVALUEILTYPE);
+   TR::VirtualMachineStack *stack = ((InterpreterVMState*)vmState())->_stack;
    TR::IlValue *frame = Load("frame");
-
-   TR::IlValue *localIndex =
-   LoadAt(pInt8,
-      IndexAt(pInt8,
-         Load("bytecodes"),
-         Add(
-            Load("pc"),
-            ConstInt32(1))));
-
    TR::IlValue *locals = LoadIndirect("Frame", "locals", frame);
+   TR::IlType *pStackType = _types->PointerTo(STACKVALUEILTYPE);
+
+   TR::IlValue *localIndex = _runtimeBuilder->GetImmediate(this, 1);
 
    TR::IlValue *localValue =
    LoadAt(pStackType,
@@ -66,6 +59,6 @@ PushLocalBuilder::execute()
          locals,
          localIndex));
 
-   state->Push(this, localValue);
+   stack->Push(this, localValue);
    }
 
