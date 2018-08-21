@@ -128,8 +128,6 @@ RetBuilder::execute()
    TR::IlValue *previousFrameFrameTypeAddress = StructFieldInstanceAddress("Frame", "frameType", previous);
    TR::IlValue *previousFrameFrameType = LoadAt(_types->PointerTo(Int32), previousFrameFrameTypeAddress);
 
-   //state->Reload(this);
-
    TR::IlBuilder *i2_Transition = NULL;
    TR::IlBuilder *j2_Transition = NULL;
    IfThenElse(&i2_Transition, &j2_Transition,

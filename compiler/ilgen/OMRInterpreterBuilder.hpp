@@ -63,6 +63,7 @@ enum OPCODES
    InterpreterBuilder(TR::TypeDictionary *d, const char *bytecodePtrName, TR::IlType *bytecodeElementType, const char *pcName, const char *opcodeName);
 
    virtual TR::IlValue *GetImmediate(TR::BytecodeBuilder *builder, int32_t pcOffset);
+   virtual void SetJumpTarget(TR::BytecodeBuilder *builder, TR::IlValue *condition, TR::IlValue *jumpTarget);
 
    virtual bool buildIL();
    virtual void registerBytecodeBuilders() = 0;

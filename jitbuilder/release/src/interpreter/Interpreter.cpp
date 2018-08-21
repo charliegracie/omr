@@ -161,6 +161,10 @@ InterpreterMethod::InterpreterMethod(InterpreterTypeDictionary *d)
    _methods[6].name = "IterFib";
    _methods[6].bytecodeLength = sizeof(_iterFib);
    _methods[6].argCount = 1;
+   _methods[7].bytecodes = _testJMPGMethod;
+   _methods[7].name = "TestJMPGMethod";
+   _methods[7].bytecodeLength = sizeof(_testJMPGMethod);
+   _methods[7].argCount = 1;
    }
 
 TR::VirtualMachineState *
@@ -198,7 +202,8 @@ InterpreterMethod::registerBytecodeBuilders()
    registerBytecodeBuilder(MathBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::DIV, &MathBuilder::div), 1);
    registerBytecodeBuilder(RetBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::RET, _interpTypes->getTypes().pFrame), 3); //PC increment of 3 to handle previous call
    registerBytecodeBuilder(CallBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::CALL, _interpTypes->getTypes().pInterpreter, _interpTypes->getTypes().pFrame), 0); //PC increment of 0 to handle starting at pc 0
-   registerBytecodeBuilder(JumpBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::JMPL), 0); //PC increment of 0 since Jump sets PC
+   registerBytecodeBuilder(JumpBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::JMPL, &JumpBuilder::lessThan), 0); //PC increment of 0 since Jump sets PC
+   registerBytecodeBuilder(JumpBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::JMPG, &JumpBuilder::greaterThan), 0); //PC increment of 0 since Jump sets PC
    registerBytecodeBuilder(PopLocalBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::POP_LOCAL), 2);
    registerBytecodeBuilder(PushLocalBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::PUSH_LOCAL), 2);
    registerBytecodeBuilder(ExitBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::EXIT), 2);

@@ -87,6 +87,15 @@ OMR::InterpreterBuilder::GetImmediate(TR::BytecodeBuilder *builder, int32_t pcOf
    }
 
 void
+OMR::InterpreterBuilder::SetJumpTarget(TR::BytecodeBuilder *builder, TR::IlValue *condition, TR::IlValue *jumpTarget)
+   {
+   TR::IlBuilder *doJump = NULL;
+   builder->IfThen(&doJump, condition);
+
+   doJump->Store("pc", doJump->ConvertTo(Int32, jumpTarget));
+   }
+
+void
 OMR::InterpreterBuilder::registerBytecodeBuilder(TR::BytecodeBuilder *handler, int32_t opcodeLength)
    {
    TR_ASSERT(handler != NULL, "Can not register a NULL bytecodeBuilder");

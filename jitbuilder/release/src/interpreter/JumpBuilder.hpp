@@ -31,16 +31,20 @@ namespace TR { class InterpreterBuilder; }
 class JumpBuilder : public TR::BytecodeBuilder
    {
    public:
-   JumpBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex);
+   JumpBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex, BooleanFuncType boolFunction);
 
    virtual void execute();
 
-   static JumpBuilder *OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex);
+   static JumpBuilder *OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex, BooleanFuncType boolFunction);
+
+   static TR::IlValue *lessThan(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
+   static TR::IlValue *greaterThan(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
 
    protected:
 
    private:
    TR::RuntimeBuilder *_runtimeBuilder;
+   BooleanFuncType _boolFunction;
    };
 
 #endif // !defined(JUMPBUILDER_INCL)

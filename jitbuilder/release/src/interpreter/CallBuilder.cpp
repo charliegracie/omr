@@ -161,13 +161,12 @@ void
 CallBuilder::execute()
    {
    InterpreterVMState *state = (InterpreterVMState*)vmState();
-   TR::IlValue *pc = Load("pc");
    TR::IlValue *methodIndex = _runtimeBuilder->GetImmediate(this, 1);
    TR::IlValue *argCount = _runtimeBuilder->GetImmediate(this, 2);
+   TR::IlValue *pc = Load("pc");
+   TR::IlValue *interp = Load("interp");
 
    state->Commit(this);
-
-   TR::IlValue *interp = Load("interp");
 
    //Get interp->currentFrame
    TR::IlValue *currentFrameAddress = StructFieldInstanceAddress("Interpreter", "currentFrame", interp);
@@ -195,8 +194,6 @@ CallBuilder::execute()
 
    //Pop the argCount values from currentFrame->sp into newFrame->sp
    Call("setupArgs", 3, newFrame, currentFrame, argCount);
-
-   //TR::IlValue *bogusBytecodes = Load("bytecodes");
 
    //Set frame->bytecodes = methodBytecodes
    TR::IlValue *bytecodesAddress = StructFieldInstanceAddress("Frame", "bytecodes", newFrame);
@@ -239,8 +236,6 @@ CallBuilder::execute()
    TR::IlValue *currentFrameFrameType = LoadAt(_types->PointerTo(Int32), currentFrameFrameTypeAddress);
 
    TR::IlValue *newFrameFrameTypeAddress = StructFieldInstanceAddress("Frame", "frameType", newFrame);
-
-   //Call("debug", 4, interp, newFrame, bogusBytecodes, methodIndex);
 
    TR::IlBuilder *methodCompiled = NULL;
    TR::IlBuilder *methodNotCompiled = NULL;

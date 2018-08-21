@@ -48,7 +48,6 @@ PushConstantBuilder::execute()
    {
    TR::VirtualMachineStack *state = ((InterpreterVMState*)vmState())->_stack;
    TR::IlValue *value = _runtimeBuilder->GetImmediate(this, 1);
-
    value = ConvertTo(Int64, value);
 
    state->Push(this, value);

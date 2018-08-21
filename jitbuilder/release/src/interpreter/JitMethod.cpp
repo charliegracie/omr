@@ -94,6 +94,13 @@ JitMethod::GetImmediate(TR::BytecodeBuilder *builder, int32_t pcOffset)
    return builder->ConstInt8(immediate);
    }
 
+void
+JitMethod::SetJumpTarget(TR::BytecodeBuilder *builder, TR::IlValue *condition, TR::IlValue *jumpTarget)
+   {
+   TR::BytecodeBuilder *target = _builders[jumpTarget->getConstValue()];
+   builder->IfCmpNotEqualZero(target, condition);
+   }
+
 bool
 JitMethod::buildIL()
    {
@@ -189,14 +196,11 @@ JitMethod::buildIL()
             builder->execute();
             break;
          case JMPL:
-         {
-            TR::IlValue *pc = builder->Load("pc");
-            pc = builder->Add(builder->Load("pc"), builder->ConstInt32(2));
             builder->execute();
-            int8_t index = _method->bytecodes[bytecodeIndex + 1];
-            builder->IfCmpNotEqual(_builders[index], builder->Load("pc"), pc);
             break;
-         }
+         case JMPG:
+            builder->execute();
+            break;
          case EXIT:
          default:
             canHandle = false;

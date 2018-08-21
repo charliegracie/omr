@@ -46,6 +46,7 @@ class JitMethod : public TR::RuntimeBuilder
    public:
    JitMethod(InterpreterTypeDictionary *d, Method *method);
    virtual TR::IlValue *GetImmediate(TR::BytecodeBuilder *builder, int32_t pcOffset);
+   virtual void SetJumpTarget(TR::BytecodeBuilder *builder, TR::IlValue *condition, TR::IlValue *jumpTarget);
    virtual bool buildIL();
 
    protected:
@@ -79,6 +80,8 @@ class JitMethod : public TR::RuntimeBuilder
             return "EXIT";
          case JMPL:
             return "JMPL";
+         case JMPG:
+            return "JMPG";
          case PUSH_LOCAL:
             return "PUSH_LOCAL";
          case POP_LOCAL:
@@ -117,6 +120,8 @@ class JitMethod : public TR::RuntimeBuilder
             return 2;
          case JMPL:
             return 2;
+         case JMPG:
+            return 2;
          case PUSH_LOCAL:
             return 2;
          case POP_LOCAL:
@@ -150,7 +155,9 @@ class JitMethod : public TR::RuntimeBuilder
          case RET:
             return RetBuilder::OrphanBytecodeBuilder(this, bcIndex, _interpTypes->getTypes().pFrame);
          case JMPL:
-            return JumpBuilder::OrphanBytecodeBuilder(this, bcIndex);
+            return JumpBuilder::OrphanBytecodeBuilder(this, bcIndex, &JumpBuilder::lessThan);
+         case JMPG:
+            return JumpBuilder::OrphanBytecodeBuilder(this, bcIndex, &JumpBuilder::greaterThan);
          case PUSH_LOCAL:
             return PushLocalBuilder::OrphanBytecodeBuilder(this, bcIndex);
          case POP_LOCAL:

@@ -84,10 +84,11 @@ enum interpreter_opcodes
    CALL = OMR::InterpreterBuilder::OPCODES::BC_07,
    EXIT = OMR::InterpreterBuilder::OPCODES::BC_08,
    JMPL = OMR::InterpreterBuilder::OPCODES::BC_09,
-   PUSH_LOCAL = OMR::InterpreterBuilder::OPCODES::BC_10,
-   POP_LOCAL = OMR::InterpreterBuilder::OPCODES::BC_11,
-   FAIL = OMR::InterpreterBuilder::OPCODES::BC_12,
-   COUNT = OMR::InterpreterBuilder::OPCODES::BC_13
+   JMPG = OMR::InterpreterBuilder::OPCODES::BC_10,
+   PUSH_LOCAL = OMR::InterpreterBuilder::OPCODES::BC_11,
+   POP_LOCAL = OMR::InterpreterBuilder::OPCODES::BC_12,
+   FAIL = OMR::InterpreterBuilder::OPCODES::BC_13,
+   COUNT = OMR::InterpreterBuilder::OPCODES::BC_14
    };
 
 class InterpreterVMState : public TR::VirtualMachineState

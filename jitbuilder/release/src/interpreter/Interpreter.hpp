@@ -46,7 +46,7 @@ class InterpreterMethod : public TR::InterpreterBuilder
    public:
    //const int8_t _mainMethod[52] =
    //const int8_t _mainMethod[102] =
-   const int8_t _mainMethod[138] =
+   const int8_t _mainMethod[170] =
       {
       interpreter_opcodes::PUSH_CONSTANT,3, // push 3
       interpreter_opcodes::PUSH_CONSTANT,5, // push 5
@@ -120,7 +120,21 @@ class InterpreterMethod : public TR::InterpreterBuilder
 #endif
       //interpreter_opcodes::FAIL,-1,
 
-      interpreter_opcodes::EXIT,-1, // return 144 (call result)
+      interpreter_opcodes::CALL,7,1, // call _testJMPGMethod with arg 34 store 1
+      interpreter_opcodes::CALL,7,1, // call _testJMPGMethod with arg 1 store 3
+      interpreter_opcodes::CALL,7,1, // call _testJMPGMethod with arg 1 store 3
+      interpreter_opcodes::CALL,7,1, // call _testJMPGMethod with arg 1 store 3
+      interpreter_opcodes::CALL,7,1, // call _testJMPGMethod with arg 1 store 3
+      interpreter_opcodes::CALL,7,1, // call _testJMPGMethod with arg 1 store 3
+      interpreter_opcodes::CALL,7,1, // call _testJMPGMethod with arg 1 store 3
+      interpreter_opcodes::CALL,7,1, // call _testJMPGMethod with arg 1 store 3
+      interpreter_opcodes::CALL,7,1, // call _testJMPGMethod with arg 1 store 3
+      interpreter_opcodes::CALL,7,1, // call _testJMPGMethod with arg 1 store 3
+      interpreter_opcodes::PUSH_CONSTANT,5, // push 5
+      interpreter_opcodes::ADD,             // add 3 + 5 store 8
+      interpreter_opcodes::CALL,7,1, // call _testJMPGMethod with arg 8 store 1
+
+      interpreter_opcodes::EXIT,-1, // return 1 (call result)
       };
 
    const int8_t _testCallMethod[9] =
@@ -150,6 +164,17 @@ class InterpreterMethod : public TR::InterpreterBuilder
       //Expecting 1 arg
       interpreter_opcodes::PUSH_CONSTANT,5, // push 5
       interpreter_opcodes::JMPL,8,          // if arg < 5
+      interpreter_opcodes::PUSH_CONSTANT,3, // push 3
+      interpreter_opcodes::RET,1,           // ret 3
+      interpreter_opcodes::PUSH_CONSTANT,1, // push 1
+      interpreter_opcodes::RET,1,           // ret 1
+      };
+
+   const int8_t _testJMPGMethod[12] =
+      {
+      //Expecting 1 arg
+      interpreter_opcodes::PUSH_CONSTANT,5, // push 5
+      interpreter_opcodes::JMPG,8,          // if arg > 5
       interpreter_opcodes::PUSH_CONSTANT,3, // push 3
       interpreter_opcodes::RET,1,           // ret 3
       interpreter_opcodes::PUSH_CONSTANT,1, // push 1
@@ -230,7 +255,7 @@ class InterpreterMethod : public TR::InterpreterBuilder
       };
 
 
-    static const int32_t _methodCount = 7;
+    static const int32_t _methodCount = 8;
     Method _methods[_methodCount];
 
    };
