@@ -92,7 +92,7 @@ OMR::InterpreterBuilder::SetJumpTarget(TR::BytecodeBuilder *builder, TR::IlValue
    TR::IlBuilder *doJump = NULL;
    builder->IfThen(&doJump, condition);
 
-   doJump->Store("pc", doJump->ConvertTo(Int32, jumpTarget));
+   doJump->Store(_pcName, doJump->ConvertTo(Int32, jumpTarget));
    }
 
 void
@@ -122,7 +122,7 @@ OMR::InterpreterBuilder::buildIL()
 
    loadOpcodeArray();
 
-   setPC(this, 0);
+   setPC(this, ConstInt32(0));
 
    Store("exitLoop",
       EqualTo(
@@ -160,7 +160,7 @@ OMR::InterpreterBuilder::buildIL()
    _defaultHandler->Call("handleBadOpcode", 2, _defaultHandler->Load("opcode"), _defaultHandler->Load("pc"));
    _defaultHandler->Goto(&breakBody);
 
-   incrementPC(doWhileBody, 2);
+   incrementPC(doWhileBody);
 
    handleInterpreterExit(this);
 
@@ -179,19 +179,13 @@ OMR::InterpreterBuilder::getNextOpcode(TR::IlBuilder *builder)
    }
 
 void
-OMR::InterpreterBuilder::setPC(TR::IlBuilder *builder, int32_t value)
-   {
-   setPC(builder, builder->ConstInt32(value));
-   }
-
-void
 OMR::InterpreterBuilder::setPC(TR::IlBuilder *builder, TR::IlValue *value)
    {
-   builder->Store("pc", value);
+   builder->Store(_pcName, value);
    }
 
 void
-OMR::InterpreterBuilder::incrementPC(TR::IlBuilder *builder, int32_t increment)
+OMR::InterpreterBuilder::incrementPC(TR::IlBuilder *builder)
    {
    TR::IlValue *pc = getPC(builder);
    TR::IlValue *incrementValue = builder->Load("_pcIncrementAmount_");
@@ -204,7 +198,7 @@ OMR::InterpreterBuilder::incrementPC(TR::IlBuilder *builder, int32_t increment)
 TR::IlValue *
 OMR::InterpreterBuilder::getPC(TR::IlBuilder *builder)
    {
-   return builder->Load("pc");
+   return builder->Load(_pcName);
    }
 
 void

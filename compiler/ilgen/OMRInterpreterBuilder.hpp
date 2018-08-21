@@ -76,9 +76,8 @@ enum OPCODES
 protected:
    void getNextOpcode(TR::IlBuilder *builder);
 
-   void setPC(TR::IlBuilder *builder, int32_t value);
    void setPC(TR::IlBuilder *builder, TR::IlValue *value);
-   void incrementPC(TR::IlBuilder *builder, int32_t increment);
+   void incrementPC(TR::IlBuilder *builder);
    TR::IlValue *getPC(TR::IlBuilder *builder);
 
    void completeBytecodeBuilderRegistration();
@@ -106,13 +105,8 @@ private:
    TR::IlType *_bytecodePtrType;
    const char *_pcName;
    const char *_opcodeName;
-#if LOOP == 0
-   TR::IlBuilder *_defaultHandler;
-   TR::IlBuilder *_opcodeBuilders[OPCODES::BC_COUNT];
-#else
    TR::BytecodeBuilder *_defaultHandler;
    TR::BytecodeBuilder *_opcodeBuilders[OPCODES::BC_COUNT];
-#endif
    int32_t _opcodeLengths[OPCODES::BC_COUNT];
    };
 

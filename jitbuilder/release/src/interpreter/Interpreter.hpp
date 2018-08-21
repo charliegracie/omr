@@ -119,7 +119,7 @@ class InterpreterMethod : public TR::InterpreterBuilder
 #endif
 #endif
       //interpreter_opcodes::FAIL,-1,
-
+#if 0
       interpreter_opcodes::CALL,7,1, // call _testJMPGMethod with arg 34 store 1
       interpreter_opcodes::CALL,7,1, // call _testJMPGMethod with arg 1 store 3
       interpreter_opcodes::CALL,7,1, // call _testJMPGMethod with arg 1 store 3
@@ -133,6 +133,7 @@ class InterpreterMethod : public TR::InterpreterBuilder
       interpreter_opcodes::PUSH_CONSTANT,5, // push 5
       interpreter_opcodes::ADD,             // add 3 + 5 store 8
       interpreter_opcodes::CALL,7,1, // call _testJMPGMethod with arg 8 store 1
+#endif
 
       interpreter_opcodes::EXIT,-1, // return 1 (call result)
       };
