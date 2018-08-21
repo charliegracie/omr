@@ -45,19 +45,16 @@ OMR::VirtualMachineInterpreterStack::VirtualMachineInterpreterStack(TR::MethodBu
 void
 OMR::VirtualMachineInterpreterStack::Commit(TR::IlBuilder *b)
    {
-   //_stackTopRegister->Commit(b);
    }
 
 void
 OMR::VirtualMachineInterpreterStack::Reload(TR::IlBuilder* b)
    {
-   //_stackTopRegister->Reload(b);
    }
 
 void
 OMR::VirtualMachineInterpreterStack::MergeInto(TR::VirtualMachineInterpreterStack* other, TR::IlBuilder* b)
    {
-   // Nothing to do for MergeInto
    }
 
 // Update the OperandStack_base and _stackTopRegister after the Virtual Machine moves the stack.

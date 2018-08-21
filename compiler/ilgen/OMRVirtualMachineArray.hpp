@@ -19,18 +19,18 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#ifndef OMR_VIRTUALMACHINEOPERANDARRAY_INCL
-#define OMR_VIRTUALMACHINEOPERANDARRAY_INCL
+#ifndef OMR_VIRTUALMACHINEARRAY_INCL
+#define OMR_VIRTUALMACHINEARRAY_INCL
 
 #include <stdint.h>
-#include "ilgen/VirtualMachineArray.hpp"
+#include "ilgen/VirtualMachineState.hpp"
 
 namespace TR { class IlBuilder; }
 namespace TR { class IlType; }
 namespace TR { class IlValue; }
 namespace TR { class MethodBuilder; }
 namespace TR { class VirtualMachineRegister; }
-namespace TR { class VirtualMachineOperandArray; }
+namespace TR { class VirtualMachineArray; }
 
 namespace OMR
 {
@@ -64,7 +64,7 @@ namespace OMR
  *
  */
 
-class VirtualMachineOperandArray : public TR::VirtualMachineArray
+class VirtualMachineArray : public TR::VirtualMachineState
    {
    public:
    /**
@@ -74,93 +74,57 @@ class VirtualMachineOperandArray : public TR::VirtualMachineArray
     * @param elementType TR::IlType representing the underlying type of the virtual machine's operand array entries
     * @param arrayBase previously allocated and initialized VirtualMachineRegister representing the base of the array
     */
-   VirtualMachineOperandArray(TR::MethodBuilder *mb, int32_t numOfElements, TR::IlType *elementType, TR::VirtualMachineRegister *arrayBase);
-
-   /**
-    * @brief constructor used to copy the array from another state
-    * @param other the operand array whose values should be used to initialize this object
-    */
-   VirtualMachineOperandArray(TR::VirtualMachineOperandArray *other);
-
-   /**
-    * @brief write the simulated operand array to the virtual machine
-    * @param b the builder where the operations will be placed to recreate the virtual machine operand array
-    */
-   virtual void Commit(TR::IlBuilder *b);
-   
-   /**
-    * @brief read the virtual machine array back into the simulated operand array
-    * @param b the builder where the operations will be placed to recreate the simulated operand array
-    * stack accounts for new or dropped virtual machine stack elements. 
-    */
-   virtual void Reload(TR::IlBuilder *b);
-
-   /**
-    * @brief create an identical copy of the current object.
-    * @returns the copy of the current object
-    */
-   virtual TR::VirtualMachineState *MakeCopy();
-
-   /**
-    * @brief emit operands to store current operand array values into same variables as used in another operand array
-    * @param other operand array for the builder object control is merging into
-    * @param b builder object where the operations will be added to make the current operand array the same as the other
-    */
-   virtual void MergeInto(TR::VirtualMachineState *other, TR::IlBuilder *b);
+   VirtualMachineArray()
+      : TR::VirtualMachineState()
+      {
+      }
    
    /**
     * @brief update the values used to read and write the virtual machine array
     * @param b the builder where the values will be placed
     * @param array the new array base address.
     */
-   virtual void UpdateArray(TR::IlBuilder *b, TR::IlValue *array);
+   virtual void UpdateArray(TR::IlBuilder *b, TR::IlValue *array) = 0;
 
    /**
     * @brief Returns the expression at the given index of the simulated operand array
     * @param index the location of the expression to return
     * @returns the expression at the given index
     */
-   virtual TR::IlValue *Get(TR::IlBuilder *b, int32_t index);
+   virtual TR::IlValue *Get(TR::IlBuilder *b, int32_t index) = 0;
    
    /**
     * @brief Returns the expression at the given index of the simulated operand array
     * @param index the location of the expression to return
     * @returns the expression at the given index
     */
-   virtual TR::IlValue *Get(TR::IlBuilder *b, TR::IlValue *index);
+   virtual TR::IlValue *Get(TR::IlBuilder *b, TR::IlValue *index) = 0;
 
    /**
     * @brief Set the expression into the simulated operand array at the given index
     * @param index the location to store the expression
     * @param value expression to store into the simulated operand array
     */
-   virtual void Set(TR::IlBuilder *b, int32_t index, TR::IlValue *value);
+   virtual void Set(TR::IlBuilder *b, int32_t index, TR::IlValue *value) = 0;
 
    /**
     * @brief Set the expression into the simulated operand array at the given index
     * @param index the location to store the expression
     * @param value expression to store into the simulated operand array
     */
-   virtual void Set(TR::IlBuilder *b, TR::IlValue *index, TR::IlValue *value);
+   virtual void Set(TR::IlBuilder *b, TR::IlValue *index, TR::IlValue *value) = 0;
   
    /**
     * @brief Move the expression from one index to another index in the simulated operand array
     * @param dstIndex the location to store the expression
     * @param srcIndex the location to copy the expression from
     */ 
-   virtual void Move(TR::IlBuilder *b, int32_t dstIndex, int32_t srcIndex);
+   virtual void Move(TR::IlBuilder *b, int32_t dstIndex, int32_t srcIndex) = 0;
 
    protected:
-   void init();
 
    private:
-   TR::MethodBuilder *_mb;
-   int32_t _numberOfElements;
-   TR::VirtualMachineRegister *_arrayBaseRegister;
-   TR::IlType *_elementType;
-   TR::IlValue **_values;
-   const char *_arrayBaseName;
    };
 }
 
-#endif // !defined(OMR_VIRTUALMACHINEOPERANDARRAY_INCL)
+#endif // !defined(OMR_VIRTUALMACHINEARRAY_INCL)

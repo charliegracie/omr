@@ -19,8 +19,8 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#ifndef OMR_VIRTUALMACHINEOPERANDARRAY_INCL
-#define OMR_VIRTUALMACHINEOPERANDARRAY_INCL
+#ifndef OMR_VIRTUALMACHINEINTERPRETERARRAY_INCL
+#define OMR_VIRTUALMACHINEINTERPRETERARRAY_INCL
 
 #include <stdint.h>
 #include "ilgen/VirtualMachineArray.hpp"
@@ -30,7 +30,7 @@ namespace TR { class IlType; }
 namespace TR { class IlValue; }
 namespace TR { class MethodBuilder; }
 namespace TR { class VirtualMachineRegister; }
-namespace TR { class VirtualMachineOperandArray; }
+namespace TR { class VirtualMachineInterpreterArray; }
 
 namespace OMR
 {
@@ -64,7 +64,7 @@ namespace OMR
  *
  */
 
-class VirtualMachineOperandArray : public TR::VirtualMachineArray
+class VirtualMachineInterpreterArray : public TR::VirtualMachineArray
    {
    public:
    /**
@@ -74,13 +74,13 @@ class VirtualMachineOperandArray : public TR::VirtualMachineArray
     * @param elementType TR::IlType representing the underlying type of the virtual machine's operand array entries
     * @param arrayBase previously allocated and initialized VirtualMachineRegister representing the base of the array
     */
-   VirtualMachineOperandArray(TR::MethodBuilder *mb, int32_t numOfElements, TR::IlType *elementType, TR::VirtualMachineRegister *arrayBase);
+   VirtualMachineInterpreterArray(TR::MethodBuilder *mb, int32_t numOfElements, TR::IlType *elementType, TR::VirtualMachineRegister *arrayBase);
 
    /**
     * @brief constructor used to copy the array from another state
     * @param other the operand array whose values should be used to initialize this object
     */
-   VirtualMachineOperandArray(TR::VirtualMachineOperandArray *other);
+   VirtualMachineInterpreterArray(TR::VirtualMachineInterpreterArray *other);
 
    /**
     * @brief write the simulated operand array to the virtual machine
@@ -124,7 +124,7 @@ class VirtualMachineOperandArray : public TR::VirtualMachineArray
    
    /**
     * @brief Returns the expression at the given index of the simulated operand array
-    * @param index the location of the expression to return
+    * @param index an IlValue representing the location of the expression to return
     * @returns the expression at the given index
     */
    virtual TR::IlValue *Get(TR::IlBuilder *b, TR::IlValue *index);
@@ -155,12 +155,10 @@ class VirtualMachineOperandArray : public TR::VirtualMachineArray
 
    private:
    TR::MethodBuilder *_mb;
-   int32_t _numberOfElements;
    TR::VirtualMachineRegister *_arrayBaseRegister;
    TR::IlType *_elementType;
-   TR::IlValue **_values;
    const char *_arrayBaseName;
    };
 }
 
-#endif // !defined(OMR_VIRTUALMACHINEOPERANDARRAY_INCL)
+#endif // !defined(OMR_VIRTUALMACHINEINTERPRETERARRAY_INCL)

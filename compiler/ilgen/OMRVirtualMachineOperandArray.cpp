@@ -34,7 +34,7 @@
 #define TraceIL(m, ...) {if (TraceEnabled) {traceMsg(TR::comp(), m, ##__VA_ARGS__);}}
 
 OMR::VirtualMachineOperandArray::VirtualMachineOperandArray(TR::MethodBuilder *mb, int32_t numOfElements, TR::IlType *elementType, TR::VirtualMachineRegister *arrayBaseRegister)
-   : TR::VirtualMachineState(),
+   : TR::VirtualMachineArray(),
    _mb(mb),
    _numberOfElements(numOfElements),
    _elementType(elementType),
@@ -44,7 +44,7 @@ OMR::VirtualMachineOperandArray::VirtualMachineOperandArray(TR::MethodBuilder *m
    }
 
 OMR::VirtualMachineOperandArray::VirtualMachineOperandArray(TR::VirtualMachineOperandArray *other)
-   : TR::VirtualMachineState(),
+   : TR::VirtualMachineArray(),
    _mb(other->_mb),
    _numberOfElements(other->_numberOfElements),
    _elementType(other->_elementType),
@@ -139,15 +139,24 @@ OMR::VirtualMachineOperandArray::MakeCopy()
    }
 
 TR::IlValue *
-OMR::VirtualMachineOperandArray::Get(int32_t index)
+OMR::VirtualMachineOperandArray::Get(TR::IlBuilder *b, int32_t index)
    {
    TR_ASSERT(index < _numberOfElements, "index has to be less than the number of elements");
    TR_ASSERT(index >= 0, "index can not be negative");
    return _values[index];
    }
 
+TR::IlValue *
+OMR::VirtualMachineOperandArray::Get(TR::IlBuilder *b, TR::IlValue *index)
+   {
+   TR_ASSERT(NULL != index, "index can not be NULL");
+   TR_ASSERT(index->isConstant(), "index has to be a constant value");
+   int32_t i = (int32_t)index->getConstValue();
+   return Get(b, i);
+   }
+
 void
-OMR::VirtualMachineOperandArray::Set(int32_t index, TR::IlValue *value)
+OMR::VirtualMachineOperandArray::Set(TR::IlBuilder *b, int32_t index, TR::IlValue *value)
    {
    TR_ASSERT(index < _numberOfElements, "index has to be less than the number of elements");
    TR_ASSERT(index >= 0, "index can not be negative");
@@ -164,6 +173,14 @@ OMR::VirtualMachineOperandArray::Set(int32_t index, TR::IlValue *value)
    _values[index] = value;
    }
 
+void
+OMR::VirtualMachineOperandArray::Set(TR::IlBuilder *b, TR::IlValue *index, TR::IlValue *value)
+   {
+   TR_ASSERT(NULL != index, "index can not be NULL");
+   TR_ASSERT(index->isConstant(), "index has to be a constant value");
+   int32_t i = (int32_t)index->getConstValue();
+   Set(b, i, value);
+   }
 
 void
 OMR::VirtualMachineOperandArray::Move(TR::IlBuilder *b, int32_t dstIndex, int32_t srcIndex)

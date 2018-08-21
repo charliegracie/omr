@@ -374,8 +374,8 @@ OperandArrayTestMethod::OperandArrayTestMethod(TR::TypeDictionary *d)
 #define UPDATEARRAY(b,s) (STACK(b)->UpdateArray(b, s))
 #define COMMIT(b)        (STACK(b)->Commit(b))
 #define RELOAD(b)        (STACK(b)->Reload(b))
-#define SET(b,i,v)       (STACK(b)->Set((i),(v)))
-#define GET(b,i)         (STACK(b)->Get((i)))
+#define SET(b,i,v)       (STACK(b)->Set((b),(i),(v)))
+#define GET(b,i)         (STACK(b)->Get((b),(i)))
 #define MOVE(b, d, s)    (STACK(b)->Move(b, d, s))
 
 bool
