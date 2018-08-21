@@ -46,6 +46,19 @@ OMR::IlValue::getDataType()
    return _nodeThatComputesValue->getDataType();
    }
 
+bool
+OMR::IlValue::isConstant()
+   {
+   return _nodeThatComputesValue->getOpCode().isLoadConst();
+   }
+
+int64_t
+OMR::IlValue::getConstValue()
+   {
+
+   return _nodeThatComputesValue->getConstValue();
+   }
+
 void
 OMR::IlValue::storeToAuto()
    {
