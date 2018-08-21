@@ -30,7 +30,7 @@
 #include "PushConstantBuilder.hpp"
 
 PushConstantBuilder::PushConstantBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex)
-   : BytecodeBuilder(runtimeBuilder, bcIndex, "PUSH_CONSTANT"),
+   : BytecodeBuilder(runtimeBuilder, bcIndex, "PUSH_CONSTANT", 2),
    _runtimeBuilder(runtimeBuilder)
    {
    }
@@ -51,5 +51,7 @@ PushConstantBuilder::execute()
    value = ConvertTo(STACKVALUEILTYPE, value);
 
    state->Push(this, value);
+
+   _runtimeBuilder->DefaultFallthroughTarget(this);
    }
 

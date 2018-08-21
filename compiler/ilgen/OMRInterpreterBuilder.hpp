@@ -63,7 +63,9 @@ enum OPCODES
    InterpreterBuilder(TR::TypeDictionary *d, const char *bytecodePtrName, TR::IlType *bytecodeElementType, const char *pcName, const char *opcodeName);
 
    virtual TR::IlValue *GetImmediate(TR::BytecodeBuilder *builder, int32_t pcOffset);
-   virtual void SetJumpTarget(TR::BytecodeBuilder *builder, TR::IlValue *condition, TR::IlValue *jumpTarget);
+   virtual void DefaultFallthroughTarget(TR::BytecodeBuilder *builder);
+   virtual void SetJumpIfTarget(TR::BytecodeBuilder *builder, TR::IlValue *condition, TR::IlValue *jumpTarget);
+   virtual void ReturnTarget(TR::BytecodeBuilder *builder);
 
    virtual bool buildIL();
    virtual void registerBytecodeBuilders() = 0;
@@ -71,13 +73,12 @@ enum OPCODES
    virtual TR::VirtualMachineState *createVMState() {return NULL;}
    virtual void loadOpcodeArray() {}
 
-   void registerBytecodeBuilder(TR::BytecodeBuilder *handler, int32_t opcodeLength);
+   void registerBytecodeBuilder(TR::BytecodeBuilder *handler);
 
 protected:
    void getNextOpcode(TR::IlBuilder *builder);
 
    void setPC(TR::IlBuilder *builder, TR::IlValue *value);
-   void incrementPC(TR::IlBuilder *builder);
    TR::IlValue *getPC(TR::IlBuilder *builder);
 
    void completeBytecodeBuilderRegistration();
@@ -107,7 +108,6 @@ private:
    const char *_opcodeName;
    TR::BytecodeBuilder *_defaultHandler;
    TR::BytecodeBuilder *_opcodeBuilders[OPCODES::BC_COUNT];
-   int32_t _opcodeLengths[OPCODES::BC_COUNT];
    };
 
 } // namespace OMR

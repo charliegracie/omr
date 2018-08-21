@@ -45,7 +45,7 @@
 #include "RetBuilder.hpp"
 #include "ExitBuilder.hpp"
 #include "CallBuilder.hpp"
-#include "JumpBuilder.hpp"
+#include "JumpIfBuilder.hpp"
 #include "PopLocalBuilder.hpp"
 #include "PushLocalBuilder.hpp"
 
@@ -95,10 +95,23 @@ JitMethod::GetImmediate(TR::BytecodeBuilder *builder, int32_t pcOffset)
    }
 
 void
-JitMethod::SetJumpTarget(TR::BytecodeBuilder *builder, TR::IlValue *condition, TR::IlValue *jumpTarget)
+JitMethod::DefaultFallthroughTarget(TR::BytecodeBuilder *builder)
+   {
+   builder->AddFallThroughBuilder(_builders[builder->bcIndex() + builder->bcLength()]);
+   }
+
+void
+JitMethod::SetJumpIfTarget(TR::BytecodeBuilder *builder, TR::IlValue *condition, TR::IlValue *jumpTarget)
    {
    TR::BytecodeBuilder *target = _builders[jumpTarget->getConstValue()];
    builder->IfCmpNotEqualZero(target, condition);
+   builder->AddFallThroughBuilder(_builders[builder->bcIndex() + builder->bcLength()]);
+   }
+
+void
+JitMethod::ReturnTarget(TR::BytecodeBuilder *builder)
+   {
+   builder->Return(builder->ConstInt64(-1));
    }
 
 bool
@@ -120,7 +133,7 @@ JitMethod::buildIL()
       {
       interpreter_opcodes opcode = (interpreter_opcodes)_method->bytecodes[i];
       _builders[i] = createBuilder(opcode, i);
-      i += getBytecodeLength(opcode);
+      i += _builders[i]->bcLength();
       }
 
    TR::VirtualMachineRegisterInStruct *stackRegister = new TR::VirtualMachineRegisterInStruct(this, "Frame", "frame", "sp", "SP");
@@ -150,63 +163,35 @@ JitMethod::buildIL()
    while (canHandle && (-1 != bytecodeIndex))
       {
       interpreter_opcodes opcode = (interpreter_opcodes)_method->bytecodes[bytecodeIndex];
-      int32_t nextBCIndex = bytecodeIndex + getBytecodeLength(opcode);
       TR::BytecodeBuilder *builder = _builders[bytecodeIndex];
-      TR::BytecodeBuilder *fallThroughBuilder = nullptr;
-
-      if (nextBCIndex < bytecodeLength)
-         {
-         fallThroughBuilder = _builders[nextBCIndex];
-         }
+      int32_t nextBCIndex = bytecodeIndex + builder->bcLength();
 
       builder->Store("pc", builder->ConstInt32(bytecodeIndex));
 
       switch(opcode)
          {
-         case PUSH_CONSTANT:
-            builder->execute();
-            break;
-         case DUP:
-            builder->execute();
-            break;
-         case ADD:
-            builder->execute();
-            break;
-         case SUB:
-            builder->execute();
-            break;
-         case MUL:
-            builder->execute();
-            break;
-         case DIV:
-            builder->execute();
-            break;
-         case RET:
-            builder->execute();
-            builder->Return(builder->ConstInt64(-1));
-            fallThroughBuilder = NULL;
-            break;
          case CALL:
             builder->execute();
+            if (nextBCIndex < bytecodeLength)
+               builder->AddFallThroughBuilder(_builders[nextBCIndex]);
             break;
+         case PUSH_CONSTANT:
+         case DUP:
+         case ADD:
+         case SUB:
+         case MUL:
+         case DIV:
          case PUSH_LOCAL:
-            builder->execute();
-            break;
          case POP_LOCAL:
-            builder->execute();
-            break;
          case JMPL:
-            builder->execute();
-            break;
          case JMPG:
+         case RET:
             builder->execute();
             break;
          case EXIT:
          default:
             canHandle = false;
          }
-      if (NULL != fallThroughBuilder)
-         builder->AddFallThroughBuilder(fallThroughBuilder);
 
       bytecodeIndex = GetNextBytecodeFromWorklist();
       }

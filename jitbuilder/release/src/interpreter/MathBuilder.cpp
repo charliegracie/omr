@@ -30,7 +30,8 @@
 #include "MathBuilder.hpp"
 
 MathBuilder::MathBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex, MathFuncType mathFunction)
-   : BytecodeBuilder(runtimeBuilder, bcIndex, "MATH"),
+   : BytecodeBuilder(runtimeBuilder, bcIndex, "MATH", 1),
+   _runtimeBuilder(runtimeBuilder),
    _mathFunction(mathFunction)
    {
    }
@@ -54,6 +55,8 @@ MathBuilder::execute()
    TR::IlValue *value = (*_mathFunction)(this, left, right);
 
    state->Push(this, value);
+
+   _runtimeBuilder->DefaultFallthroughTarget(this);
    }
 
 TR::IlValue *

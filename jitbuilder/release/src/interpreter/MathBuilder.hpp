@@ -47,6 +47,7 @@ class MathBuilder : public TR::BytecodeBuilder
    protected:
 
    private:
+   TR::RuntimeBuilder *_runtimeBuilder;
    MathFuncType _mathFunction;
    };
 

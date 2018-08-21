@@ -35,7 +35,7 @@
 #include "RetBuilder.hpp"
 #include "ExitBuilder.hpp"
 #include "CallBuilder.hpp"
-#include "JumpBuilder.hpp"
+#include "JumpIfBuilder.hpp"
 #include "PopLocalBuilder.hpp"
 #include "PushLocalBuilder.hpp"
 
@@ -46,7 +46,9 @@ class JitMethod : public TR::RuntimeBuilder
    public:
    JitMethod(InterpreterTypeDictionary *d, Method *method);
    virtual TR::IlValue *GetImmediate(TR::BytecodeBuilder *builder, int32_t pcOffset);
-   virtual void SetJumpTarget(TR::BytecodeBuilder *builder, TR::IlValue *condition, TR::IlValue *jumpTarget);
+   virtual void DefaultFallthroughTarget(TR::BytecodeBuilder *builder);
+   virtual void SetJumpIfTarget(TR::BytecodeBuilder *builder, TR::IlValue *condition, TR::IlValue *jumpTarget);
+   virtual void ReturnTarget(TR::BytecodeBuilder *builder);
    virtual bool buildIL();
 
    protected:
@@ -55,86 +57,6 @@ class JitMethod : public TR::RuntimeBuilder
    Method *_method;
    InterpreterTypeDictionary *_interpTypes;
    TR::BytecodeBuilder **_builders;
-
-   char* getBytecodeName(interpreter_opcodes opcode)
-      {
-      switch(opcode)
-         {
-         case PUSH_CONSTANT:
-            return "PUSH_CONSTANT";
-         case DUP:
-            return "DUP";
-         case ADD:
-            return "ADD";
-         case SUB:
-            return "SUB";
-         case MUL:
-            return "MUL";
-         case DIV:
-            return "DIV";
-         case RET:
-            return "RET";
-         case CALL:
-            return "CALL";
-         case EXIT:
-            return "EXIT";
-         case JMPL:
-            return "JMPL";
-         case JMPG:
-            return "JMPG";
-         case PUSH_LOCAL:
-            return "PUSH_LOCAL";
-         case POP_LOCAL:
-            return "POP_LOCAL";
-         default:
-            {
-            int *x = 0;
-            fprintf(stderr, "unknown bytecode\n");
-            *x = 0;
-            return NULL;
-            }
-         }
-      }
-
-   int32_t getBytecodeLength(interpreter_opcodes opcode)
-      {
-      switch(opcode)
-         {
-         case PUSH_CONSTANT:
-            return 2;
-         case DUP:
-            return 1;
-         case ADD:
-            return 1;
-         case SUB:
-            return 1;
-         case MUL:
-            return 1;
-         case DIV:
-            return 1;
-         case RET:
-            return 2;
-         case CALL:
-            return 3;
-         case EXIT:
-            return 2;
-         case JMPL:
-            return 2;
-         case JMPG:
-            return 2;
-         case PUSH_LOCAL:
-            return 2;
-         case POP_LOCAL:
-            return 2;
-         default:
-            {
-            int *x = 0;
-            fprintf(stderr, "unknown bytecode\n");
-            *x = 0;
-            return 0;
-            }
-         }
-      }
 
    TR::BytecodeBuilder* createBuilder(interpreter_opcodes opcode, int32_t bcIndex)
       {
@@ -155,9 +77,9 @@ class JitMethod : public TR::RuntimeBuilder
          case RET:
             return RetBuilder::OrphanBytecodeBuilder(this, bcIndex, _interpTypes->getTypes().pFrame);
          case JMPL:
-            return JumpBuilder::OrphanBytecodeBuilder(this, bcIndex, &JumpBuilder::lessThan);
+            return JumpIfBuilder::OrphanBytecodeBuilder(this, bcIndex, &JumpIfBuilder::lessThan);
          case JMPG:
-            return JumpBuilder::OrphanBytecodeBuilder(this, bcIndex, &JumpBuilder::greaterThan);
+            return JumpIfBuilder::OrphanBytecodeBuilder(this, bcIndex, &JumpIfBuilder::greaterThan);
          case PUSH_LOCAL:
             return PushLocalBuilder::OrphanBytecodeBuilder(this, bcIndex);
          case POP_LOCAL:

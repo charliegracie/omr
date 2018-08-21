@@ -41,6 +41,7 @@ class RetBuilder : public TR::BytecodeBuilder
    protected:
 
    private:
+   TR::RuntimeBuilder *_runtimeBuilder;
    TR::IlType *_frameType;
    };
 

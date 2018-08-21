@@ -68,7 +68,8 @@ static void i2jReturn(Interpreter *interp, Frame *frame, int64_t retVal)
    }
 
 RetBuilder::RetBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex, TR::IlType *frameType)
-   : BytecodeBuilder(runtimeBuilder, bcIndex, "RET"),
+   : BytecodeBuilder(runtimeBuilder, bcIndex, "RET", 2),
+   _runtimeBuilder(runtimeBuilder),
    _frameType(frameType)
    {
    }
@@ -161,5 +162,7 @@ RetBuilder::execute()
    j2jTransition->Call("j2jReturn", 3, j2jTransition->Load("interp"), j2jTransition->Load("frame"), retVal);
 
    state->Reload(this);
+
+   _runtimeBuilder->ReturnTarget(this);
    }
 

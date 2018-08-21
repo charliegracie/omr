@@ -30,7 +30,7 @@
 #include "PushLocalBuilder.hpp"
 
 PushLocalBuilder::PushLocalBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex)
-   : BytecodeBuilder(runtimeBuilder, bcIndex, "PUSH_LOCAL"),
+   : BytecodeBuilder(runtimeBuilder, bcIndex, "PUSH_LOCAL", 2),
    _runtimeBuilder(runtimeBuilder)
    {
    }
@@ -52,5 +52,7 @@ PushLocalBuilder::execute()
    TR::IlValue *localValue = locals->Get(this, localIndex);
 
    stack->Push(this, localValue);
+
+   _runtimeBuilder->DefaultFallthroughTarget(this);
    }
 

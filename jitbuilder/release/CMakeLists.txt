@@ -35,7 +35,7 @@ endmacro(create_jitbuilder_test)
 
 # Basic Tests: These should run properly on all platforms.
 create_jitbuilder_test(conditionals    src/Conditionals.cpp)
-create_jitbuilder_test(interpreter     src/interpreter/Interpreter.cpp src/interpreter/PushConstantBuilder.cpp src/interpreter/DupBuilder.cpp src/interpreter/MathBuilder.cpp src/interpreter/RetBuilder.cpp src/interpreter/ExitBuilder.cpp src/interpreter/CallBuilder.cpp src/interpreter/JumpBuilder.cpp src/interpreter/PopLocalBuilder.cpp src/interpreter/PushLocalBuilder.cpp src/interpreter/JitMethod.cpp src/interpreter/InterpreterTypeDictionary.cpp)
+create_jitbuilder_test(interpreter     src/interpreter/Interpreter.cpp src/interpreter/PushConstantBuilder.cpp src/interpreter/DupBuilder.cpp src/interpreter/MathBuilder.cpp src/interpreter/RetBuilder.cpp src/interpreter/ExitBuilder.cpp src/interpreter/CallBuilder.cpp src/interpreter/JumpIfBuilder.cpp src/interpreter/PopLocalBuilder.cpp src/interpreter/PushLocalBuilder.cpp src/interpreter/JitMethod.cpp src/interpreter/InterpreterTypeDictionary.cpp)
 create_jitbuilder_test(isSupportedType src/IsSupportedType.cpp)
 create_jitbuilder_test(iterfib         src/IterativeFib.cpp)
 create_jitbuilder_test(nestedloop      src/NestedLoop.cpp)

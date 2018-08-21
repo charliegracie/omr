@@ -30,7 +30,7 @@
 #include "PopLocalBuilder.hpp"
 
 PopLocalBuilder::PopLocalBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex)
-   : BytecodeBuilder(runtimeBuilder, bcIndex, "POP_LOCAL"),
+   : BytecodeBuilder(runtimeBuilder, bcIndex, "POP_LOCAL", 2),
    _runtimeBuilder(runtimeBuilder)
    {
    }
@@ -53,5 +53,7 @@ PopLocalBuilder::execute()
    TR::IlValue *poppedValue = stack->Pop(this);
 
    locals->Set(this, localIndex, poppedValue);
+
+   _runtimeBuilder->DefaultFallthroughTarget(this);
    }
 

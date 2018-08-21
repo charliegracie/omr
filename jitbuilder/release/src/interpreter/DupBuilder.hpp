@@ -40,6 +40,7 @@ class DupBuilder : public TR::BytecodeBuilder
    protected:
 
    private:
+   TR::RuntimeBuilder *_runtimeBuilder;
    };
 
 #endif // !defined(DUPBUILDER_INCL)

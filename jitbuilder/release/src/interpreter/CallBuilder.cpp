@@ -124,7 +124,7 @@ static void debug(Interpreter *interp, Frame *frame, int8_t *bytecodes, int8_t m
    }
 
 CallBuilder::CallBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex, TR::IlType *frameType)
-   : BytecodeBuilder(runtimeBuilder, bcIndex, "CALL"),
+   : BytecodeBuilder(runtimeBuilder, bcIndex, "CALL", 3),
    _runtimeBuilder(runtimeBuilder),
    _frameType(frameType)
    {

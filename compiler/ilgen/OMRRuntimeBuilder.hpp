@@ -43,7 +43,9 @@ public:
    }
 
    virtual TR::IlValue *GetImmediate(TR::BytecodeBuilder *builder, int32_t pcOffset) = 0;
-   virtual void SetJumpTarget(TR::BytecodeBuilder *builder, TR::IlValue *condition, TR::IlValue *jumpTarget) = 0;
+   virtual void DefaultFallthroughTarget(TR::BytecodeBuilder *builder) = 0;
+   virtual void SetJumpIfTarget(TR::BytecodeBuilder *builder, TR::IlValue *condition, TR::IlValue *jumpTarget) = 0;
+   virtual void ReturnTarget(TR::BytecodeBuilder *builder) = 0;
 
 protected:
 

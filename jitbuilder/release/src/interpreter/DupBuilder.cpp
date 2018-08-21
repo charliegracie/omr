@@ -29,7 +29,8 @@
 #include "DupBuilder.hpp"
 
 DupBuilder::DupBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex)
-   : BytecodeBuilder(runtimeBuilder, bcIndex, "DUP")
+   : BytecodeBuilder(runtimeBuilder, bcIndex, "DUP", 1),
+   _runtimeBuilder(runtimeBuilder)
    {
    }
 
@@ -46,5 +47,7 @@ DupBuilder::execute()
    {
    TR::VirtualMachineStack *state = ((InterpreterVMState*)vmState())->_stack;
    state->Dup(this);
+
+   _runtimeBuilder->DefaultFallthroughTarget(this);
    }
 

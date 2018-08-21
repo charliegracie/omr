@@ -29,7 +29,7 @@
 #include "ExitBuilder.hpp"
 
 ExitBuilder::ExitBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex)
-   : BytecodeBuilder(runtimeBuilder, bcIndex, "EXIT")
+   : BytecodeBuilder(runtimeBuilder, bcIndex, "EXIT", 2)
    {
    }
 

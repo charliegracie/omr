@@ -87,16 +87,34 @@ OMR::InterpreterBuilder::GetImmediate(TR::BytecodeBuilder *builder, int32_t pcOf
    }
 
 void
-OMR::InterpreterBuilder::SetJumpTarget(TR::BytecodeBuilder *builder, TR::IlValue *condition, TR::IlValue *jumpTarget)
+OMR::InterpreterBuilder::DefaultFallthroughTarget(TR::BytecodeBuilder *builder)
    {
-   TR::IlBuilder *doJump = NULL;
-   builder->IfThen(&doJump, condition);
-
-   doJump->Store(_pcName, doJump->ConvertTo(Int32, jumpTarget));
+   builder->Store(_pcName, builder->Add(builder->Load(_pcName), builder->ConstInt32(builder->bcLength())));
    }
 
 void
-OMR::InterpreterBuilder::registerBytecodeBuilder(TR::BytecodeBuilder *handler, int32_t opcodeLength)
+OMR::InterpreterBuilder::SetJumpIfTarget(TR::BytecodeBuilder *builder, TR::IlValue *condition, TR::IlValue *jumpTarget)
+   {
+   TR::IlBuilder *doJump = NULL;
+   TR::IlBuilder *noJump = NULL;
+   builder->IfThenElse(&doJump, &noJump, condition);
+
+   doJump->Store(_pcName, doJump->ConvertTo(Int32, jumpTarget));
+
+   noJump->Store(_pcName, noJump->Add(noJump->Load(_pcName), noJump->ConstInt32(builder->bcLength())));
+   }
+
+void
+OMR::InterpreterBuilder::ReturnTarget(TR::BytecodeBuilder *builder)
+   {
+   TR::IlValue *pcAddress = builder->StructFieldInstanceAddress("Frame", "savedPC", builder->Load("frame"));
+   TR::IlValue *pc = builder->LoadAt(_types->PointerTo(Int32), pcAddress);
+   pc = builder->Add(pc, builder->ConstInt32(3));
+   builder->Store(_pcName, pc);
+   }
+
+void
+OMR::InterpreterBuilder::registerBytecodeBuilder(TR::BytecodeBuilder *handler)
    {
    TR_ASSERT(handler != NULL, "Can not register a NULL bytecodeBuilder");
 
@@ -104,7 +122,6 @@ OMR::InterpreterBuilder::registerBytecodeBuilder(TR::BytecodeBuilder *handler, i
    TR_ASSERT(index < OPCODES::BC_COUNT, "Can not register an index (%d) larger than %d", index, OPCODES::BC_COUNT);
 
    _opcodeBuilders[index] = handler;
-   _opcodeLengths[index] = opcodeLength;
 
    handler->propagateVMState(vmState());
 
@@ -160,8 +177,6 @@ OMR::InterpreterBuilder::buildIL()
    _defaultHandler->Call("handleBadOpcode", 2, _defaultHandler->Load("opcode"), _defaultHandler->Load("pc"));
    _defaultHandler->Goto(&breakBody);
 
-   incrementPC(doWhileBody);
-
    handleInterpreterExit(this);
 
    return true;
@@ -184,17 +199,6 @@ OMR::InterpreterBuilder::setPC(TR::IlBuilder *builder, TR::IlValue *value)
    builder->Store(_pcName, value);
    }
 
-void
-OMR::InterpreterBuilder::incrementPC(TR::IlBuilder *builder)
-   {
-   TR::IlValue *pc = getPC(builder);
-   TR::IlValue *incrementValue = builder->Load("_pcIncrementAmount_");
-
-   pc = builder->Add(pc, incrementValue);
-
-   setPC(builder, pc);
-   }
-
 TR::IlValue *
 OMR::InterpreterBuilder::getPC(TR::IlBuilder *builder)
    {
@@ -211,10 +215,6 @@ OMR::InterpreterBuilder::completeBytecodeBuilderRegistration()
          _opcodeBuilders[i] = OrphanBytecodeBuilder(i, "Unknown opcode");
          _opcodeBuilders[i]->propagateVMState(vmState());
          _opcodeBuilders[i]->Goto(_defaultHandler);
-         }
-      else
-         {
-         _opcodeBuilders[i]->Store("_pcIncrementAmount_", _opcodeBuilders[i]->ConstInt32(_opcodeLengths[i]));
          }
       }
    }

@@ -26,25 +26,25 @@
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/VirtualMachineInterpreterStack.hpp"
 #include "InterpreterTypes.h"
-#include "JumpBuilder.hpp"
+#include "JumpIfBuilder.hpp"
 
-JumpBuilder::JumpBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex, BooleanFuncType boolFunction)
-   : BytecodeBuilder(runtimeBuilder, bcIndex, "JUMP"),
+JumpIfBuilder::JumpIfBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex, BooleanFuncType boolFunction)
+   : BytecodeBuilder(runtimeBuilder, bcIndex, "JUMP", 2),
    _runtimeBuilder(runtimeBuilder),
    _boolFunction(boolFunction)
    {
    }
 
-JumpBuilder *
-JumpBuilder::OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex, BooleanFuncType boolFunction)
+JumpIfBuilder *
+JumpIfBuilder::OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex, BooleanFuncType boolFunction)
    {
-   JumpBuilder *orphan = new JumpBuilder(runtimeBuilder, bcIndex, boolFunction);
+   JumpIfBuilder *orphan = new JumpIfBuilder(runtimeBuilder, bcIndex, boolFunction);
    runtimeBuilder->InitializeBytecodeBuilder(orphan);
    return orphan;
    }
 
 void
-JumpBuilder::execute()
+JumpIfBuilder::execute()
    {
    InterpreterVMState *state = (InterpreterVMState*)vmState();
    TR::VirtualMachineStack *stack = state->_stack;
@@ -56,20 +56,17 @@ JumpBuilder::execute()
 
    TR::IlValue *condition = (*_boolFunction)(this, left, right);
 
-   //TODO look into this
-   Store("pc", Add(pc, ConstInt32(2)));
-
-   _runtimeBuilder->SetJumpTarget(this, condition, jumpIndex);
+   _runtimeBuilder->SetJumpIfTarget(this, condition, jumpIndex);
    }
 
 TR::IlValue *
-JumpBuilder::lessThan(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right)
+JumpIfBuilder::lessThan(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right)
    {
    return builder->LessThan(left, right);
    }
 
 TR::IlValue *
-JumpBuilder::greaterThan(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right)
+JumpIfBuilder::greaterThan(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right)
    {
    return builder->GreaterThan(left, right);
    }
