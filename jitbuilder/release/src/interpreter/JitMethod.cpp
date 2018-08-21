@@ -29,6 +29,7 @@
 #include "Jit.hpp"
 #include "ilgen/InterpreterBuilder.hpp"
 #include "ilgen/MethodBuilder.hpp"
+#include "ilgen/VirtualMachineOperandArray.hpp"
 #include "ilgen/VirtualMachineOperandStack.hpp"
 #include "ilgen/VirtualMachineState.hpp"
 #include "ilgen/VirtualMachineRegister.hpp"
@@ -115,10 +116,13 @@ JitMethod::buildIL()
       i += getBytecodeLength(opcode);
       }
 
-   //TODO create / set proper vmstate
    TR::VirtualMachineRegisterInStruct *stackRegister = new TR::VirtualMachineRegisterInStruct(this, "Frame", "frame", "sp", "SP");
    TR::VirtualMachineOperandStack *stack = new TR::VirtualMachineOperandStack(this, 10, STACKVALUEILTYPE, stackRegister, true, 0);
-   InterpreterVMState *vmState = new InterpreterVMState(stack, stackRegister);
+
+   TR::VirtualMachineRegisterInStruct *localsRegister = new TR::VirtualMachineRegisterInStruct(this, "Frame", "frame", "locals", "LOCALS");
+   TR::VirtualMachineOperandArray *localsArray = new TR::VirtualMachineOperandArray(this, 10, STACKVALUEILTYPE, localsRegister);
+
+   InterpreterVMState *vmState = new InterpreterVMState(stack, stackRegister, localsArray, localsRegister);
    setVMState(vmState);
 
    //TODO fix this..... sp is too far along.... need to move sp back by param count then Drop(-paramCount) then Reload

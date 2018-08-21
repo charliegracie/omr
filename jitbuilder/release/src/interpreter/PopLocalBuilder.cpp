@@ -46,18 +46,12 @@ PopLocalBuilder::OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32
 void
 PopLocalBuilder::execute()
    {
-   TR::VirtualMachineStack *state = ((InterpreterVMState*)vmState())->_stack;
-   TR::IlType *pStackType = _types->PointerTo(STACKVALUEILTYPE);
+   TR::VirtualMachineStack *stack = ((InterpreterVMState*)vmState())->_stack;
+   TR::VirtualMachineArray *locals = ((InterpreterVMState*)vmState())->_array;
 
-   TR::IlValue *frame = Load("frame");
-   TR::IlValue *locals = LoadIndirect("Frame", "locals", frame);
    TR::IlValue *localIndex = _runtimeBuilder->GetImmediate(this, 1);
-   TR::IlValue *poppedValue = state->Pop(this);
+   TR::IlValue *poppedValue = stack->Pop(this);
 
-   StoreAt(
-      IndexAt(pStackType,
-         locals,
-         localIndex),
-      poppedValue);
+   locals->Set(this, localIndex, poppedValue);
    }
 

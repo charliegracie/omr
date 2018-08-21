@@ -30,6 +30,7 @@
 #include "ilgen/InterpreterBuilder.hpp"
 #include "ilgen/MethodBuilder.hpp"
 #include "ilgen/VirtualMachineInterpreterStack.hpp"
+#include "ilgen/VirtualMachineInterpreterArray.hpp"
 #include "ilgen/VirtualMachineState.hpp"
 #include "ilgen/VirtualMachineRegister.hpp"
 #include "ilgen/VirtualMachineRegisterInStruct.hpp"
@@ -167,7 +168,11 @@ InterpreterMethod::createVMState()
    {
    TR::VirtualMachineRegisterInStruct *stackRegister = new TR::VirtualMachineRegisterInStruct(this, "Frame", "frame", "sp", "SP");
    TR::VirtualMachineInterpreterStack *stack = new TR::VirtualMachineInterpreterStack(this, stackRegister, STACKVALUEILTYPE);
-   InterpreterVMState *vmState = new InterpreterVMState(stack, stackRegister);
+
+   TR::VirtualMachineRegisterInStruct *localsRegister = new TR::VirtualMachineRegisterInStruct(this, "Frame", "frame", "locals", "LOCALS");
+   TR::VirtualMachineInterpreterArray *localsArray = new TR::VirtualMachineInterpreterArray(this, 10, STACKVALUEILTYPE, localsRegister);
+
+   InterpreterVMState *vmState = new InterpreterVMState(stack, stackRegister, localsArray, localsRegister);
    return vmState;
    }
 

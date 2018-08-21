@@ -26,6 +26,7 @@
 #include "ilgen/InterpreterBuilder.hpp"
 #include "ilgen/VirtualMachineState.hpp"
 #include "ilgen/VirtualMachineRegister.hpp"
+#include "ilgen/VirtualMachineArray.hpp"
 #include "ilgen/VirtualMachineStack.hpp"
 
 #define STACKVALUEILTYPE Int64
@@ -94,14 +95,18 @@ class InterpreterVMState : public TR::VirtualMachineState
    public:
    InterpreterVMState()
       : TR::VirtualMachineState(),
-      _stack(nullptr),
-      _stackTop(nullptr)
+      _stack(NULL),
+      _stackTop(NULL),
+      _array(NULL),
+      _arrayBase(NULL)
       { }
 
-   InterpreterVMState(TR::VirtualMachineStack *stack, TR::VirtualMachineRegister *stackTop)
+   InterpreterVMState(TR::VirtualMachineStack *stack, TR::VirtualMachineRegister *stackTop, TR::VirtualMachineArray *array, TR::VirtualMachineRegister *arrayBase)
       : TR::VirtualMachineState(),
       _stack(stack),
-      _stackTop(stackTop)
+      _stackTop(stackTop),
+      _array(array),
+      _arrayBase(arrayBase)
       {
       }
 
@@ -109,12 +114,18 @@ class InterpreterVMState : public TR::VirtualMachineState
       {
       _stack->Commit(b);
       _stackTop->Commit(b);
+
+      _array->Commit(b);
+      _arrayBase->Commit(b);
       }
 
    virtual void Reload(TR::IlBuilder *b)
       {
       _stackTop->Reload(b);
       _stack->Reload(b);
+
+      _arrayBase->Reload(b);
+      _array->Reload(b);
       }
 
    virtual VirtualMachineState *MakeCopy()
@@ -122,6 +133,9 @@ class InterpreterVMState : public TR::VirtualMachineState
       InterpreterVMState *newState = new InterpreterVMState();
       newState->_stack = (TR::VirtualMachineStack *)_stack->MakeCopy();
       newState->_stackTop = (TR::VirtualMachineRegister *) _stackTop->MakeCopy();
+
+      newState->_array = (TR::VirtualMachineArray *)_array->MakeCopy();
+      newState->_arrayBase = (TR::VirtualMachineRegister *) _arrayBase->MakeCopy();
       return newState;
       }
 
@@ -130,10 +144,15 @@ class InterpreterVMState : public TR::VirtualMachineState
       InterpreterVMState *otherState = (InterpreterVMState *)other;
       _stack->MergeInto(otherState->_stack, b);
       _stackTop->MergeInto(otherState->_stackTop, b);
+      _array->MergeInto(otherState->_array, b);
+      _arrayBase->MergeInto(otherState->_arrayBase, b);
       }
 
    TR::VirtualMachineStack * _stack;
    TR::VirtualMachineRegister * _stackTop;
+
+   TR::VirtualMachineArray * _array;
+   TR::VirtualMachineRegister * _arrayBase;
    };
 
 #endif // !defined(INTERPRETERTYPES_INCL)
