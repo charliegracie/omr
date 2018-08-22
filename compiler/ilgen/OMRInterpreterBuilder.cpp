@@ -70,6 +70,9 @@ OMR::InterpreterBuilder::InterpreterBuilder(TR::TypeDictionary *d, const char *b
       {
       _opcodeBuilders[i] = NULL;
       }
+
+   DefineLocal(_pcName, Int32);
+   DefineLocal(_opcodeName, Int32);
    }
 
 TR::IlValue *
@@ -137,9 +140,8 @@ OMR::InterpreterBuilder::buildIL()
 
    _defaultHandler = OrphanBytecodeBuilder(OPCODES::BC_COUNT + 1, "default handler");
 
-   loadOpcodeArray();
-
-   setPC(this, ConstInt32(0));
+   loadBytecodes(this);
+   loadPC(this);
 
    Store("exitLoop",
       EqualTo(
@@ -174,7 +176,7 @@ OMR::InterpreterBuilder::buildIL()
                    OPCODES::BC_15, &_opcodeBuilders[OPCODES::BC_15], false
                    );
 
-   _defaultHandler->Call("handleBadOpcode", 2, _defaultHandler->Load("opcode"), _defaultHandler->Load("pc"));
+   _defaultHandler->Call("handleBadOpcode", 2, _defaultHandler->Load(_opcodeName), _defaultHandler->Load(_pcName));
    _defaultHandler->Goto(&breakBody);
 
    handleInterpreterExit(this);
@@ -185,12 +187,24 @@ OMR::InterpreterBuilder::buildIL()
 void
 OMR::InterpreterBuilder::getNextOpcode(TR::IlBuilder *builder)
    {
-   builder->Store("opcode",
+   builder->Store(_opcodeName,
    builder->   ConvertTo(Int32,
    builder->      LoadAt(_bytecodePtrType,
    builder->         IndexAt(_bytecodePtrType,
-   builder->            Load("bytecodes"),
+   builder->      Load(_bytecodePtrName),
                         getPC(builder)))));
+   }
+
+void
+OMR::InterpreterBuilder::setBytecodes(TR::IlBuilder *builder, TR::IlValue *value)
+   {
+   builder->Store(_bytecodePtrName, value);
+   }
+
+TR::IlValue *
+OMR::InterpreterBuilder::getBytecodes(TR::IlBuilder *builder)
+   {
+   return builder->Load(_bytecodePtrName);
    }
 
 void

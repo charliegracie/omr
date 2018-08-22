@@ -35,7 +35,8 @@ class InterpreterMethod : public TR::InterpreterBuilder
    virtual void registerBytecodeBuilders();
    virtual void handleInterpreterExit(TR::IlBuilder *builder);
    virtual TR::VirtualMachineState *createVMState();
-   virtual void loadOpcodeArray();
+   virtual void loadBytecodes(TR::IlBuilder *builder);
+   virtual void loadPC(TR::IlBuilder *builder);
 
    protected:
 
@@ -119,7 +120,7 @@ class InterpreterMethod : public TR::InterpreterBuilder
 #endif
 #endif
       //interpreter_opcodes::FAIL,-1,
-#if 1
+#if 0
       interpreter_opcodes::CALL,7,1, // call _testJMPGMethod with arg 34 store 1
       interpreter_opcodes::CALL,7,1, // call _testJMPGMethod with arg 1 store 3
       interpreter_opcodes::CALL,7,1, // call _testJMPGMethod with arg 1 store 3

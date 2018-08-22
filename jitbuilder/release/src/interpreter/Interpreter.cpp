@@ -122,9 +122,6 @@ InterpreterMethod::InterpreterMethod(InterpreterTypeDictionary *d)
    DefineParameter("interp", _interpTypes->getTypes().pInterpreter);
    DefineParameter("frame", _interpTypes->getTypes().pFrame);
 
-   DefineLocal("pc", Int32);
-   DefineLocal("opcode", Int32);
-
    DefineReturnType(Int64);
 
    for (int32_t i = 0; i < _methodCount; i++)
@@ -181,11 +178,25 @@ InterpreterMethod::createVMState()
    }
 
 void
-InterpreterMethod::loadOpcodeArray()
+InterpreterMethod::loadBytecodes(TR::IlBuilder *builder)
    {
-   TR::IlValue *bytecodesAddress = StructFieldInstanceAddress("Frame", "bytecodes", Load("frame"));
-   TR::IlValue *bytecodes = LoadAt(_types->PointerTo(pInt8), bytecodesAddress);
-   Store("bytecodes", bytecodes);
+   TR::IlValue *frame = builder->Load("frame");
+   TR::IlValue *bytecodesAddress = builder->StructFieldInstanceAddress("Frame", "bytecodes", frame);
+   TR::IlType *ppInt8 = _types->PointerTo(pInt8);
+   TR::IlValue *bytecodes = builder->LoadAt(ppInt8, bytecodesAddress);
+
+   setBytecodes(builder, bytecodes);
+   }
+
+void
+InterpreterMethod::loadPC(TR::IlBuilder *builder)
+   {
+   TR::IlValue *frame = builder->Load("frame");
+   TR::IlValue *pcAddress = builder->StructFieldInstanceAddress("Frame", "savedPC", frame);
+   TR::IlType *pInt32 = _types->PointerTo(Int32);
+   TR::IlValue *pc = builder->LoadAt(pInt32, pcAddress);
+
+   setPC(builder, pc);
    }
 
 void

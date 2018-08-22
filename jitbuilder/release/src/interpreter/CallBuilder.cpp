@@ -166,6 +166,9 @@ CallBuilder::execute()
    TR::IlValue *pc = Load("pc");
    TR::IlValue *interp = Load("interp");
 
+   //Get interp->methods[methodIndex]
+   TR::IlValue *methodToCall = getMethodAtIndex(this, interp, methodIndex);
+
    state->Commit(this);
 
    //Get interp->currentFrame
@@ -183,13 +186,8 @@ CallBuilder::execute()
    TR::IlValue *previousAddress = StructFieldInstanceAddress("Frame", "previous", newFrame);
    StoreAt(previousAddress, currentFrame);
 
-   //Get interp->methods[methodIndex]
-   TR::IlType *methodType = _types->LookupStruct("Method");
-   TR::IlType *pMethodType = _types->PointerTo(methodType);
-   TR::IlValue *methodsAddresses = StructFieldInstanceAddress("Interpreter", "methods", interp);
-   TR::IlValue *methodsAddress = LoadAt(pMethodType, methodsAddresses);
-   TR::IlValue *methodAddressAtIndex = IndexAt(pMethodType, methodsAddress, methodIndex);
-   TR::IlValue *methodBytecodeAddress = StructFieldInstanceAddress("Method", "bytecodes", methodAddressAtIndex);
+   // fetch methodToCall->bytecodes
+   TR::IlValue *methodBytecodeAddress = StructFieldInstanceAddress("Method", "bytecodes", methodToCall);
    TR::IlValue *methodBytecodes = LoadAt(_types->PointerTo(_types->PointerTo(Int8)), methodBytecodeAddress);
 
    //Pop the argCount values from currentFrame->sp into newFrame->sp
@@ -208,7 +206,7 @@ CallBuilder::execute()
    StoreAt(currentFrameAddress, newFrame);
 
    //Check to see if it is time to compile the method being called
-   TR::IlValue *callsUntilJitAddress = StructFieldInstanceAddress("Method", "callsUntilJit", methodAddressAtIndex);
+   TR::IlValue *callsUntilJitAddress = StructFieldInstanceAddress("Method", "callsUntilJit", methodToCall);
    TR::IlValue *callsUntilJit = LoadAt(_types->PointerTo(Int32), callsUntilJitAddress);
 
    TR::IlBuilder *decrementCounter = NULL;
@@ -229,7 +227,7 @@ CallBuilder::execute()
    compile->Call("compileMethod", 2, interp, methodIndex);
 
    //Check if there is a compiled version of the method be called
-   TR::IlValue *methodCompiledMethodAddress = StructFieldInstanceAddress("Method", "compiledMethod", methodAddressAtIndex);
+   TR::IlValue *methodCompiledMethodAddress = StructFieldInstanceAddress("Method", "compiledMethod", methodToCall);
    TR::IlValue *compiledMethod = LoadAt(_types->PointerTo(Address), methodCompiledMethodAddress);
 
    TR::IlValue *currentFrameFrameTypeAddress = StructFieldInstanceAddress("Frame", "frameType", currentFrame);
@@ -285,11 +283,24 @@ CallBuilder::execute()
    Store("pc",
       LoadAt(_types->PointerTo(Int32), pcAddress));
 
-   //Set frame->bytecodes = methodBytecodes
+   //Set bytecodes = frame->bytecodes
    bytecodesAddress = StructFieldInstanceAddress("Frame", "bytecodes", Load("frame"));
    TR::IlValue *postTransitionFrameBytecodes = LoadAt(_types->PointerTo(_types->PointerTo(Int8)), bytecodesAddress);
    Store("bytecodes", postTransitionFrameBytecodes);
 
    state->Reload(this);
+   }
+
+TR::IlValue *
+CallBuilder::getMethodAtIndex(TR::IlBuilder *builder, TR::IlValue *interp, TR::IlValue *methodIndex)
+   {
+   TR::IlType *methodType = _types->LookupStruct("Method");
+   TR::IlType *pMethodType = _types->PointerTo(methodType);
+
+   TR::IlValue *methodsAddresses = builder->StructFieldInstanceAddress("Interpreter", "methods", interp);
+   TR::IlValue *methodsAddress = builder->LoadAt(pMethodType, methodsAddresses);
+   TR::IlValue *method = builder->IndexAt(pMethodType, methodsAddress, methodIndex);
+
+   return method;
    }
 

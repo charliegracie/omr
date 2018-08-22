@@ -71,13 +71,16 @@ enum OPCODES
    virtual void registerBytecodeBuilders() = 0;
    virtual void handleInterpreterExit(TR::IlBuilder *builder) = 0;
    virtual TR::VirtualMachineState *createVMState() {return NULL;}
-   virtual void loadOpcodeArray() {}
+   virtual void loadBytecodes(TR::IlBuilder *builder) = 0;
+   virtual void loadPC(TR::IlBuilder *builder) = 0;
 
    void registerBytecodeBuilder(TR::BytecodeBuilder *handler);
 
 protected:
    void getNextOpcode(TR::IlBuilder *builder);
 
+   void setBytecodes(TR::IlBuilder *builder, TR::IlValue *value);
+   TR::IlValue *getBytecodes(TR::IlBuilder *builder);
    void setPC(TR::IlBuilder *builder, TR::IlValue *value);
    TR::IlValue *getPC(TR::IlBuilder *builder);
 

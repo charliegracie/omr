@@ -122,9 +122,9 @@ RetBuilder::execute()
    TR::IlValue *bytecodes = LoadAt(_types->PointerTo(_types->PointerTo(Int8)), bytecodesAddress);
    Store("bytecodes", bytecodes);
 
-   TR::IlValue *pcAddress = StructFieldInstanceAddress("Frame", "savedPC", previous);
-   TR::IlValue *pc = LoadAt(_types->PointerTo(Int32), pcAddress);
-   Store("pc", pc);
+//   TR::IlValue *pcAddress = StructFieldInstanceAddress("Frame", "savedPC", previous);
+//   TR::IlValue *pc = LoadAt(_types->PointerTo(Int32), pcAddress);
+//   Store("pc", pc);
 
    TR::IlValue *previousFrameFrameTypeAddress = StructFieldInstanceAddress("Frame", "frameType", previous);
    TR::IlValue *previousFrameFrameType = LoadAt(_types->PointerTo(Int32), previousFrameFrameTypeAddress);

@@ -152,10 +152,6 @@ JitMethod::buildIL()
 
    //Call("debug2", 2, Load("interp"), Load("frame"));
 
-   TR::IlValue *bytecodesAddress = StructFieldInstanceAddress("Frame", "bytecodes", Load("frame"));
-   TR::IlValue *bytecodes = LoadAt(_types->PointerTo(_types->PointerTo(Int8)), bytecodesAddress);
-   Store("bytecodes", bytecodes);
-
    AppendBuilder(_builders[0]);
 
    int32_t bytecodeIndex = GetNextBytecodeFromWorklist();

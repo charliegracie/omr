@@ -40,6 +40,8 @@ class CallBuilder : public TR::BytecodeBuilder
 
    protected:
 
+   TR::IlValue *getMethodAtIndex(TR::IlBuilder *builder, TR::IlValue *interp, TR::IlValue *methodIndex);
+
    private:
    TR::RuntimeBuilder *_runtimeBuilder;
    TR::IlType *_frameType;
