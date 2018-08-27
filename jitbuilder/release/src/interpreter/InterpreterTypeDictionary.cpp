@@ -26,12 +26,16 @@
 InterpreterTypeDictionary::InterpreterTypeDictionary()
    : TypeDictionary()
    {
-   TR::IlType *pInt8 = PointerTo(Int8);
+   _interpreterTypes.bytecodes = Int8;
+   _interpreterTypes.pBytecodes = PointerTo(_interpreterTypes.bytecodes);
+
+   _interpreterTypes.value = STACKVALUEILTYPE;
+   _interpreterTypes.pValue = PointerTo(STACKVALUEILTYPE);
 
    _interpreterTypes.method = DefineStruct("Method");
    _interpreterTypes.pMethod = PointerTo(_interpreterTypes.method);
    DefineField("Method", "callsUntilJit", Int32, offsetof(Method, callsUntilJit));
-   DefineField("Method", "bytecodes", pInt8, offsetof(Method, bytecodes));
+   DefineField("Method", "bytecodes", _interpreterTypes.pBytecodes, offsetof(Method, bytecodes));
    DefineField("Method", "compiledMethod", Address, offsetof(Method, compiledMethod));
    CloseStruct("Method");
 
@@ -39,10 +43,11 @@ InterpreterTypeDictionary::InterpreterTypeDictionary()
    _interpreterTypes.pFrame = PointerTo(_interpreterTypes.frame);
    DefineField("Frame", "previous", _interpreterTypes.pFrame, offsetof(Frame, previous));
    DefineField("Frame", "savedPC", Int32, offsetof(Frame, savedPC));
-   DefineField("Frame", "bytecodes", pInt8, offsetof(Frame, bytecodes));
+   DefineField("Frame", "bytecodes", _interpreterTypes.pBytecodes, offsetof(Frame, bytecodes));
    DefineField("Frame", "frameType", Int32, offsetof(Frame, frameType));
-   DefineField("Frame", "locals", PointerTo(STACKVALUEILTYPE), offsetof(Frame, locals));
-   DefineField("Frame", "sp", PointerTo(STACKVALUEILTYPE), offsetof(Frame, sp));
+   DefineField("Frame", "args", _interpreterTypes.pValue, offsetof(Frame, args));
+   DefineField("Frame", "locals", _interpreterTypes.pValue, offsetof(Frame, locals));
+   DefineField("Frame", "sp", _interpreterTypes.pValue, offsetof(Frame, sp));
    CloseStruct("Frame");
 
    _interpreterTypes.interpreter = DefineStruct("Interpreter");

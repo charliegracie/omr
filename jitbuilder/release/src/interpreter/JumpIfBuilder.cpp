@@ -48,7 +48,7 @@ JumpIfBuilder::execute()
    {
    InterpreterVMState *state = (InterpreterVMState*)vmState();
    TR::VirtualMachineStack *stack = state->_stack;
-   TR::IlValue *jumpIndex = _runtimeBuilder->GetImmediate(this, 1);
+   TR::IlValue *jumpIndex = _runtimeBuilder->GetImmediate(this);
 
    TR::IlValue *right = stack->Pop(this);
    TR::IlValue *left = stack->Pop(this);

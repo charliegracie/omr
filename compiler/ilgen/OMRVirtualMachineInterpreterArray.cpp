@@ -33,7 +33,7 @@
 #define TraceEnabled    (TR::comp()->getOption(TR_TraceILGen))
 #define TraceIL(m, ...) {if (TraceEnabled) {traceMsg(TR::comp(), m, ##__VA_ARGS__);}}
 
-OMR::VirtualMachineInterpreterArray::VirtualMachineInterpreterArray(TR::MethodBuilder *mb, int32_t numOfElements, TR::IlType *elementType, TR::VirtualMachineRegister *arrayBaseRegister)
+OMR::VirtualMachineInterpreterArray::VirtualMachineInterpreterArray(TR::MethodBuilder *mb, TR::IlType *elementType, TR::VirtualMachineRegister *arrayBaseRegister)
    : TR::VirtualMachineArray(),
    _mb(mb),
    _elementType(elementType),
@@ -63,7 +63,6 @@ OMR::VirtualMachineInterpreterArray::Commit(TR::IlBuilder *b)
 void
 OMR::VirtualMachineInterpreterArray::Reload(TR::IlBuilder* b)
    {
-   b->Store(_arrayBaseName, _arrayBaseRegister->Load(b));
    }
 
 void
@@ -76,7 +75,7 @@ OMR::VirtualMachineInterpreterArray::MergeInto(TR::VirtualMachineState *o, TR::I
 void
 OMR::VirtualMachineInterpreterArray::UpdateArray(TR::IlBuilder *b, TR::IlValue *array)
    {
-   // TODO implement?  Is this even useful for anything?
+   // TODO remove this API
    }
 
 // Allocate a new operand array and copy everything in this state
@@ -97,7 +96,7 @@ TR::IlValue *
 OMR::VirtualMachineInterpreterArray::Get(TR::IlBuilder *b, TR::IlValue *index)
    {
    TR::IlType *pElementType = _mb->typeDictionary()->PointerTo(_elementType);
-   TR::IlValue *arrayBase = b->Load(_arrayBaseName);
+   TR::IlValue *arrayBase = _arrayBaseRegister->Load(b);//b->Load(_arrayBaseName);
 
    TR::IlValue *arrayValue =
    b->LoadAt(pElementType,
@@ -118,7 +117,7 @@ void
 OMR::VirtualMachineInterpreterArray::Set(TR::IlBuilder *b, TR::IlValue *index, TR::IlValue *value)
    {
    TR::IlType *pElementType = _mb->typeDictionary()->PointerTo(_elementType);
-   TR::IlValue *arrayBase = b->Load(_arrayBaseName);
+   TR::IlValue *arrayBase = _arrayBaseRegister->Load(b);//b->Load(_arrayBaseName);
 
    b->StoreAt(
    b->   IndexAt(pElementType,
@@ -130,7 +129,16 @@ OMR::VirtualMachineInterpreterArray::Set(TR::IlBuilder *b, TR::IlValue *index, T
 void
 OMR::VirtualMachineInterpreterArray::Move(TR::IlBuilder *b, int32_t dstIndex, int32_t srcIndex)
    {
+   TR::IlValue *dst = b->ConstInt32(dstIndex);
+   TR::IlValue *src = b->ConstInt32(srcIndex);
+   Move(b, dst, src);
+   }
 
+void
+OMR::VirtualMachineInterpreterArray::Move(TR::IlBuilder *b, TR::IlValue *dstIndex, TR::IlValue *srcIndex)
+   {
+   TR::IlValue *value = Get(b, srcIndex);
+   Set(b, dstIndex, value);
    }
 
 void

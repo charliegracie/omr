@@ -150,6 +150,13 @@ class VirtualMachineOperandArray : public TR::VirtualMachineArray
     */ 
    virtual void Move(TR::IlBuilder *b, int32_t dstIndex, int32_t srcIndex);
 
+   /**
+    * @brief Move the expression from one index to another index in the simulated operand array
+    * @param dstIndex the location to store the expression
+    * @param srcIndex the location to copy the expression from
+    */
+   virtual void Move(TR::IlBuilder *b, TR::IlValue *dstIndex, TR::IlValue *srcIndex);
+
    protected:
    void init();
 

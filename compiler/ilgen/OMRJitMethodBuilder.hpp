@@ -19,12 +19,11 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#ifndef OMR_RUNTIMEBUILDER_INCL
-#define OMR_RUNTIMEBUILDER_INCL
+#ifndef OMR_JITMETHODBUILDER_INCL
+#define OMR_JITMETHODBUILDER_INCL
 
-#include "ilgen/MethodBuilder.hpp"
+#include "ilgen/RuntimeBuilder.hpp"
 
-namespace TR { class RuntimeBuilder; }
 namespace TR { class BytecodeBuilder;}
 namespace TR { class VirtualMachineRegister; }
 namespace TR { class VirtualMachineInterpreterStack; }
@@ -32,52 +31,35 @@ namespace TR { class VirtualMachineInterpreterStack; }
 namespace OMR
 {
 
-class RuntimeBuilder : public TR::MethodBuilder
+class JitMethodBuilder : public TR::RuntimeBuilder
    {
 public:
-   enum OPCODES
-      {
-      BC_00,
-      BC_01,
-      BC_02,
-      BC_03,
-      BC_04,
-      BC_05,
-      BC_06,
-      BC_07,
-      BC_08,
-      BC_09,
-      BC_10,
-      BC_11,
-      BC_12,
-      BC_13,
-      BC_14,
-      BC_15,
-      BC_COUNT = BC_15
-      };
-
    TR_ALLOC(TR_Memory::IlGenerator)
 
-   RuntimeBuilder(TR::TypeDictionary *d)
-   : TR::MethodBuilder(d)
-   {
-   }
+   JitMethodBuilder(TR::TypeDictionary *d);
 
-   virtual void Commit(TR::BytecodeBuilder *builder) = 0;
-   virtual void Reload(TR::BytecodeBuilder *builder) = 0;
+   virtual void DefineFunctions(TR::MethodBuilder *mb) {}
 
-   virtual TR::IlValue *GetImmediate(TR::BytecodeBuilder *builder) = 0;
+   virtual void Commit(TR::BytecodeBuilder *builder);
+   virtual void Reload(TR::BytecodeBuilder *builder);
+   virtual TR::IlValue *GetImmediate(TR::BytecodeBuilder *builder);
+   virtual void DefaultFallthroughTarget(TR::BytecodeBuilder *builder);
+   virtual void SetJumpIfTarget(TR::BytecodeBuilder *builder, TR::IlValue *condition, TR::IlValue *jumpTarget);
+   virtual void ReturnTarget(TR::BytecodeBuilder *builder);
 
-   virtual void DefaultFallthroughTarget(TR::BytecodeBuilder *builder) = 0;
-   virtual void SetJumpIfTarget(TR::BytecodeBuilder *builder, TR::IlValue *condition, TR::IlValue *jumpTarget) = 0;
-   virtual void ReturnTarget(TR::BytecodeBuilder *builder) = 0;
+   virtual bool buildIL();
+   virtual TR::BytecodeBuilder *createBuilder(OPCODES opcode, int32_t bytcodeIndex) = 0;
+   virtual TR::VirtualMachineState *createVMState() = 0;
+   virtual const int8_t *getBytecodes() = 0;
+   virtual int32_t getNumberBytecodes() = 0;
 
 protected:
 
-
 private:
+   TR::BytecodeBuilder **_builders;
+   int32_t _pc;
    };
 
 } // namespace OMR
 
-#endif // !defined(OMR_RUNTIMEBUILDER_INCL)
+#endif // !defined(OMR_JITMETHODBUILDER_INCL)

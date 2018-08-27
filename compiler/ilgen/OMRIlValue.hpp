@@ -66,8 +66,8 @@ public:
     */
    TR::DataType getDataType();
 
-   bool isConstant();
-   int64_t getConstValue();
+   int32_t get32bitConstValue();
+   int64_t get64bitConstValue();
 
    /**
     * @brief returns the TR::SymbolReference holding the value, or NULL if willBeUsedInAnotherBlock() has not yet been called

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2018 IBM Corp. and others
+ * Copyright (c) 2016, 2016 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -20,38 +20,30 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include <new>
 
-#include "ilgen/RuntimeBuilder.hpp"
-#include "ilgen/TypeDictionary.hpp"
-#include "ilgen/VirtualMachineInterpreterStack.hpp"
+#ifndef BYTECODEHELPERS_INCL
+#define BYTECODEHELPERS_INCL
 
-#include "InterpreterTypes.h"
-#include "PushConstantBuilder.hpp"
+namespace TR { class IlBuilder; }
 
-PushConstantBuilder::PushConstantBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex)
-   : BytecodeBuilder(runtimeBuilder, bcIndex, "PUSH_CONSTANT", 2),
-   _runtimeBuilder(runtimeBuilder)
+class BytecodeHelpers
    {
-   }
+   public:
+   static void DefineFunctions(TR::MethodBuilder *mb);
 
-PushConstantBuilder *
-PushConstantBuilder::OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex)
-   {
-   PushConstantBuilder *orphan = new PushConstantBuilder(runtimeBuilder, bcIndex);
-   runtimeBuilder->InitializeBytecodeBuilder(orphan);
-   return orphan;
-   }
+   static Frame *allocateFrame();
+   static void freeFrame(Frame *frame);
+   static void setupArgs(Frame *newFrame, Frame *frame, int8_t argCount);
+   static void pushReturn(Frame *frame, int64_t retVal);
+   static Frame *i2jTransition(Interpreter *interp, JitMethodFunction *func);
+   static Frame *j2jTransition(Interpreter *interp, JitMethodFunction *func);
+   static Frame *j2iTransition(Interpreter *interp);;
+   static Frame *i2iTransition(Interpreter *interp, int8_t argCount);
+   static void compileMethod(Interpreter *interp, int8_t methodIndex);
 
-void
-PushConstantBuilder::execute()
-   {
-   TR::VirtualMachineStack *state = ((InterpreterVMState*)vmState())->_stack;
-   TR::IlValue *value = _runtimeBuilder->GetImmediate(this);
-   value = ConvertTo(STACKVALUEILTYPE, value);
+   protected:
+   private:
+   static Frame *transitionToJIT(Interpreter *interp, JitMethodFunction *func);
+   };
 
-   state->Push(this, value);
-
-   _runtimeBuilder->DefaultFallthroughTarget(this);
-   }
-
+#endif // !defined(BYTECODEHELPERS_INCL)

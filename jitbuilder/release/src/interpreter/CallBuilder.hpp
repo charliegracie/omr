@@ -35,7 +35,6 @@ class CallBuilder : public TR::BytecodeBuilder
 
    virtual void execute();
 
-   static void DefineFunctions(TR::RuntimeBuilder *runtimeBuilder, TR::IlType *interpType, TR::IlType *frameType);
    static CallBuilder *OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex, TR::IlType *interpType, TR::IlType *frameType);
 
    protected:

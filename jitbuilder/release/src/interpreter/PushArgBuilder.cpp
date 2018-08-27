@@ -27,30 +27,31 @@
 #include "ilgen/VirtualMachineInterpreterStack.hpp"
 
 #include "InterpreterTypes.h"
-#include "PushConstantBuilder.hpp"
+#include "PushArgBuilder.hpp"
 
-PushConstantBuilder::PushConstantBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex)
-   : BytecodeBuilder(runtimeBuilder, bcIndex, "PUSH_CONSTANT", 2),
+PushArgBuilder::PushArgBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex)
+   : BytecodeBuilder(runtimeBuilder, bcIndex, "PUSH_ARG", 2),
    _runtimeBuilder(runtimeBuilder)
    {
    }
 
-PushConstantBuilder *
-PushConstantBuilder::OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex)
+PushArgBuilder *
+PushArgBuilder::OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex)
    {
-   PushConstantBuilder *orphan = new PushConstantBuilder(runtimeBuilder, bcIndex);
+   PushArgBuilder *orphan = new PushArgBuilder(runtimeBuilder, bcIndex);
    runtimeBuilder->InitializeBytecodeBuilder(orphan);
    return orphan;
    }
 
 void
-PushConstantBuilder::execute()
+PushArgBuilder::execute()
    {
-   TR::VirtualMachineStack *state = ((InterpreterVMState*)vmState())->_stack;
-   TR::IlValue *value = _runtimeBuilder->GetImmediate(this);
-   value = ConvertTo(STACKVALUEILTYPE, value);
+   TR::VirtualMachineStack *stack = ((InterpreterVMState*)vmState())->_stack;
+   TR::VirtualMachineArray *args = ((InterpreterVMState*)vmState())->_args;
+   TR::IlValue *argIndex = _runtimeBuilder->GetImmediate(this);
+   TR::IlValue *argValue = args->Get(this, argIndex);
 
-   state->Push(this, value);
+   stack->Push(this, argValue);
 
    _runtimeBuilder->DefaultFallthroughTarget(this);
    }

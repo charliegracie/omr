@@ -456,7 +456,7 @@ OperandStackTestMethod::OperandStackTestMethod(TR::TypeDictionary *d)
 #define TOP(b)             (STACK(b)->Top(b))
 #define DUP(b)             (STACK(b)->Dup(b))
 #define DROP(b,d)          (STACK(b)->Drop(b,d))
-#define PICK(b,d)          (STACK(b)->Pick(d))
+#define PICK(b,d)          (STACK(b)->Pick(b,d))
 
 bool
 OperandStackTestMethod::testStack(TR::BytecodeBuilder *b, bool useEqual)

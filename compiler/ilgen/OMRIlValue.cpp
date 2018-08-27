@@ -46,17 +46,16 @@ OMR::IlValue::getDataType()
    return _nodeThatComputesValue->getDataType();
    }
 
-bool
-OMR::IlValue::isConstant()
+int32_t
+OMR::IlValue::get32bitConstValue()
    {
-   return _nodeThatComputesValue->getOpCode().isLoadConst();
+   return _nodeThatComputesValue->get32bitIntegralValue();
    }
 
 int64_t
-OMR::IlValue::getConstValue()
+OMR::IlValue::get64bitConstValue()
    {
-
-   return _nodeThatComputesValue->getConstValue();
+   return _nodeThatComputesValue->get64bitIntegralValue();
    }
 
 void

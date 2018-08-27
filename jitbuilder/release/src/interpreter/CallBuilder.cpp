@@ -31,122 +31,11 @@
 #include "CallBuilder.hpp"
 #include "JitMethod.hpp"
 
-static Frame *allocateFrame()
-   {
-#define ALLOCATEFRAME_LINE LINETOSTR(__LINE__)
-
-   Frame *newFrame = (Frame *)malloc(sizeof(Frame));
-   if (NULL == newFrame)
-      {
-      int *x = 0;
-      fprintf(stderr, "Unable to allocate frame for call\n");
-      *x = 0;
-      }
-
-   newFrame->locals = newFrame->loc;
-   newFrame->sp = newFrame->stack;
-#if FRAME_ZERO
-   memset(newFrame, 0, sizeof(Frame));
-#endif
-
-   return newFrame;
-   }
-
-static void setupArgs(Frame *newFrame, Frame *frame, int8_t argCount)
-   {
-#define SETUPARGS_LINE LINETOSTR(__LINE__)
-
-   for (int8_t i = 0; i < argCount; i++)
-      {
-      frame->sp--;
-      newFrame->stack[argCount - 1 - i] = *frame->sp;
-      }
-   }
-
-static Frame *transitionToJIT(Interpreter *interp, JitMethodFunction *func)
-   {
-   (*func)(interp, interp->currentFrame);
-   return interp->currentFrame;
-   }
-
-static Frame *i2jTransition(Interpreter *interp, JitMethodFunction *func)
-   {
-#define I2JTRANSITION_LINE LINETOSTR(__LINE__)
-   return transitionToJIT(interp, func);
-   }
-
-static Frame *j2jTransition(Interpreter *interp, JitMethodFunction *func)
-   {
-#define J2JTRANSITION_LINE LINETOSTR(__LINE__)
-   return transitionToJIT(interp, func);
-   }
-
-static Frame *j2iTransition(Interpreter *interp)
-   {
-#define J2ITRANSITION_LINE LINETOSTR(__LINE__)
-   int *x = 0;
-   fprintf(stderr, "j2iTransition not handled\n");
-   *x = 0;
-   return NULL;
-   }
-
-static Frame *i2iTransition(Interpreter *interp, int8_t argCount)
-   {
-#define I2ITRANSITION_LINE LINETOSTR(__LINE__)
-   interp->currentFrame->sp+=argCount;
-   return interp->currentFrame;
-   }
-
-static void compileMethod(Interpreter *interp, int8_t methodIndex)
-   {
-#define COMPILEMETHOD_LINE LINETOSTR(__LINE__)
-   fprintf(stderr, "Compile of methodIndex %s requested\n", interp->methods[methodIndex].name);
-
-   InterpreterTypeDictionary types;
-   JitMethod jitMethod(&types, &interp->methods[methodIndex]);
-   uint8_t *entry = 0;
-   int32_t rc = compileMethodBuilder(&jitMethod, &entry);
-   if (0 == rc)
-      {
-      fprintf(stderr, "\tCompile succeeded\n");
-      interp->methods[methodIndex].compiledMethod = (JitMethodFunction *)entry;
-      }
-   else
-      {
-      fprintf(stderr, "\tCompile failed\n");
-      }
-   }
-
-static void debug(Interpreter *interp, Frame *frame, int8_t *bytecodes, int8_t methodIndex)
-   {
-#define DEBUG_LINE LINETOSTR(__LINE__)
-   fprintf(stderr, "debug interp %p frame %p bytecodesFromSender %p methodIndex %d bytecodesInFrame %p previousPC %d frame->stack[0] %lld method->name %s\n", interp, frame, bytecodes, methodIndex, frame->bytecodes, frame->previous->savedPC, frame->stack[0], interp->methods[methodIndex].name);
-   }
-
 CallBuilder::CallBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex, TR::IlType *frameType)
    : BytecodeBuilder(runtimeBuilder, bcIndex, "CALL", 3),
    _runtimeBuilder(runtimeBuilder),
    _frameType(frameType)
    {
-   }
-
-void
-CallBuilder::DefineFunctions(TR::RuntimeBuilder *runtimeBuilder, TR::IlType *interpType, TR::IlType *frameType)
-   {
-   TR::IlType *voidType = runtimeBuilder->typeDictionary()->toIlType<void>();
-   TR::IlType *pVoidType = runtimeBuilder->typeDictionary()->PointerTo(voidType);
-   TR::IlType *Int8 = runtimeBuilder->typeDictionary()->PrimitiveType(TR::Int8);
-   TR::IlType *pInt8 = runtimeBuilder->typeDictionary()->PointerTo(Int8);
-
-   runtimeBuilder->DefineFunction((char *)"allocateFrame", (char *)__FILE__, (char *)ALLOCATEFRAME_LINE, (void *)&allocateFrame, frameType, 0);
-   runtimeBuilder->DefineFunction((char *)"setupArgs", (char *)__FILE__, (char *)SETUPARGS_LINE, (void *)&setupArgs, voidType, 3, frameType, frameType, Int8);
-   runtimeBuilder->DefineFunction((char *)"j2iTransition", (char *)__FILE__, (char *)J2ITRANSITION_LINE, (void *)&j2iTransition, frameType, 1, interpType);
-   runtimeBuilder->DefineFunction((char *)"j2jTransition", (char *)__FILE__, (char *)J2JTRANSITION_LINE, (void *)&j2jTransition, frameType, 2, interpType, pVoidType);
-   runtimeBuilder->DefineFunction((char *)"i2jTransition", (char *)__FILE__, (char *)I2JTRANSITION_LINE, (void *)&i2jTransition, frameType, 2, interpType, pVoidType);
-   runtimeBuilder->DefineFunction((char *)"i2iTransition", (char *)__FILE__, (char *)I2ITRANSITION_LINE, (void *)&i2iTransition, frameType, 2, interpType, Int8);
-   runtimeBuilder->DefineFunction((char *)"compileMethod", (char *)__FILE__, (char *)COMPILEMETHOD_LINE, (void *)&compileMethod, voidType, 2, interpType, Int8);
-
-   runtimeBuilder->DefineFunction((char *)"debug", (char *)__FILE__, (char *)DEBUG_LINE, (void *)&debug, voidType, 4, interpType, frameType, pInt8, Int8);
    }
 
 CallBuilder *
@@ -161,27 +50,24 @@ void
 CallBuilder::execute()
    {
    InterpreterVMState *state = (InterpreterVMState*)vmState();
-   TR::IlValue *methodIndex = _runtimeBuilder->GetImmediate(this, 1);
-   TR::IlValue *argCount = _runtimeBuilder->GetImmediate(this, 2);
-   TR::IlValue *pc = Load("pc");
+   TR::IlValue *methodIndex = _runtimeBuilder->GetImmediate(this);
+   TR::IlValue *argCount = _runtimeBuilder->GetImmediate(this);
    TR::IlValue *interp = Load("interp");
 
    //Get interp->methods[methodIndex]
    TR::IlValue *methodToCall = getMethodAtIndex(this, interp, methodIndex);
 
    state->Commit(this);
+   _runtimeBuilder->Commit(this);
 
    //Get interp->currentFrame
    TR::IlValue *currentFrameAddress = StructFieldInstanceAddress("Interpreter", "currentFrame", interp);
    TR::IlValue *currentFrame = LoadAt(_types->PointerTo(_frameType), currentFrameAddress);
 
-   //Set currentFrame->savedPC = pc
-   TR::IlValue *pcAddress = StructFieldInstanceAddress("Frame", "savedPC", currentFrame);
-   StoreAt(pcAddress, pc);
-
    //Allocate newFrame
    TR::IlValue *newFrame = Call("allocateFrame", 0);
 
+   //Initialize new frame
    //Set newFrame->previous = currentFrame
    TR::IlValue *previousAddress = StructFieldInstanceAddress("Frame", "previous", newFrame);
    StoreAt(previousAddress, currentFrame);
@@ -197,10 +83,7 @@ CallBuilder::execute()
    TR::IlValue *bytecodesAddress = StructFieldInstanceAddress("Frame", "bytecodes", newFrame);
    StoreAt(bytecodesAddress, methodBytecodes);
    Store("bytecodes", methodBytecodes);
-
-   //Set frame->savedPC = 0
-   pcAddress = StructFieldInstanceAddress("Frame", "savedPC", newFrame);
-   StoreAt(pcAddress, ConstInt32(0));
+   //end of frame initialization
 
    //Set interp->currentFrame = newFrame;
    StoreAt(currentFrameAddress, newFrame);
@@ -234,6 +117,7 @@ CallBuilder::execute()
    TR::IlValue *currentFrameFrameType = LoadAt(_types->PointerTo(Int32), currentFrameFrameTypeAddress);
 
    TR::IlValue *newFrameFrameTypeAddress = StructFieldInstanceAddress("Frame", "frameType", newFrame);
+   TR::IlValue *newFrameFrameType = LoadAt(_types->PointerTo(Int32), newFrameFrameTypeAddress);
 
    TR::IlBuilder *methodCompiled = NULL;
    TR::IlBuilder *methodNotCompiled = NULL;
@@ -241,15 +125,16 @@ CallBuilder::execute()
       EqualTo(compiledMethod, NullAddress()));
 
    //method being called is not JIT'd so dispatch to the interpreter
-   //Set newFrame->frameType = INTERPRETER
-   methodCompiled->StoreAt(newFrameFrameTypeAddress,
-   methodCompiled->   ConstInt32(JIT));
+   //Set newFrame->frameType |= FRAME_TYPE_JIT
+   TR::IlValue *frameType = methodCompiled->ConstInt32(FRAME_TYPE_JIT);
+   TR::IlValue *newFrameType = methodCompiled->Or(newFrameFrameType, frameType);
+   methodCompiled->StoreAt(newFrameFrameTypeAddress, newFrameType);
 
    TR::IlBuilder *i2j = NULL;
    TR::IlBuilder *j2j = NULL;
    methodCompiled->IfThenElse(&i2j, &j2j,
-   methodCompiled->   EqualTo(currentFrameFrameType,
-   methodCompiled->      ConstInt32(INTERPRETER)));
+   methodCompiled->   And(currentFrameFrameType,
+   methodCompiled->      ConstInt32(FRAME_TYPE_INTERPRETER)));
 
    //interpreter frame is calling JIT'd frame. Call i2j transition and store the result frame
    i2j->Store("frame",
@@ -260,15 +145,16 @@ CallBuilder::execute()
    j2j->   Call("j2jTransition", 2, interp, compiledMethod));
 
    //method being called is not JIT'd so dispatch to the interpreter
-   //Set newFrame->frameType = INTERPRETER
-   methodNotCompiled->StoreAt(newFrameFrameTypeAddress,
-   methodNotCompiled->   ConstInt32(INTERPRETER));
+   //Set newFrame->frameType |= FRAME_TYPE_INTERPRETER
+   frameType = methodNotCompiled->ConstInt32(FRAME_TYPE_INTERPRETER);
+   newFrameType = methodNotCompiled->Or(newFrameFrameType, frameType);
+   methodNotCompiled->StoreAt(newFrameFrameTypeAddress, newFrameType);
 
    TR::IlBuilder *i2i = NULL;
    TR::IlBuilder *j2i = NULL;
    methodNotCompiled->IfThenElse(&i2i, &j2i,
-   methodNotCompiled->   EqualTo(currentFrameFrameType,
-   methodNotCompiled->      ConstInt32(INTERPRETER)));
+   methodNotCompiled->   And(currentFrameFrameType,
+   methodNotCompiled->      ConstInt32(FRAME_TYPE_INTERPRETER)));
 
    //interpreter frame is calling interpreter frame. No transition required so just store frame = newFrame
    i2i->Store("frame",
@@ -278,17 +164,10 @@ CallBuilder::execute()
    j2i->Store("frame",
    j2i->   Call("j2iTransition", 1, interp));
 
-   //Set pc to the frame->savedPC
-   pcAddress = StructFieldInstanceAddress("Frame", "savedPC", Load("frame"));
-   Store("pc",
-      LoadAt(_types->PointerTo(Int32), pcAddress));
-
-   //Set bytecodes = frame->bytecodes
-   bytecodesAddress = StructFieldInstanceAddress("Frame", "bytecodes", Load("frame"));
-   TR::IlValue *postTransitionFrameBytecodes = LoadAt(_types->PointerTo(_types->PointerTo(Int8)), bytecodesAddress);
-   Store("bytecodes", postTransitionFrameBytecodes);
-
+   _runtimeBuilder->Reload(this);
    state->Reload(this);
+
+   _runtimeBuilder->DefaultFallthroughTarget(this);
    }
 
 TR::IlValue *

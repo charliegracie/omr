@@ -35,11 +35,9 @@ class RetBuilder : public TR::BytecodeBuilder
 
    virtual void execute();
 
-   static void DefineFunctions(TR::RuntimeBuilder *runtimeBuilder, TR::IlType *interpType, TR::IlType *frameType);
    static RetBuilder *OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex, TR::IlType *frameType);
 
    protected:
-
    private:
    TR::RuntimeBuilder *_runtimeBuilder;
    TR::IlType *_frameType;

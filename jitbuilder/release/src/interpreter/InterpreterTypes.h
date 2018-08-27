@@ -51,12 +51,19 @@ enum FrameTypes
    JIT
    };
 
+#define FRAME_TYPE_INTERPRETER 0x1
+#define FRAME_TYPE_JIT 0x10
+#define FRAME_TYPE_ALLOCATED_MALLOC 0x100
+#define FRAME_TYPE_ALLOCATED_ONSTACK 0x1000
+
 typedef struct Frame
    {
    Frame *previous;
    int32_t savedPC;
    int8_t const *bytecodes;
    int32_t frameType;
+   STACKVALUETYPE *args;
+   STACKVALUETYPE a[10];
    STACKVALUETYPE *locals;
    STACKVALUETYPE loc[10];
    STACKVALUETYPE *sp;
@@ -87,8 +94,9 @@ enum interpreter_opcodes
    JMPG = OMR::InterpreterBuilder::OPCODES::BC_10,
    PUSH_LOCAL = OMR::InterpreterBuilder::OPCODES::BC_11,
    POP_LOCAL = OMR::InterpreterBuilder::OPCODES::BC_12,
-   FAIL = OMR::InterpreterBuilder::OPCODES::BC_13,
-   COUNT = OMR::InterpreterBuilder::OPCODES::BC_14
+   PUSH_ARG = OMR::InterpreterBuilder::OPCODES::BC_13,
+   FAIL = OMR::InterpreterBuilder::OPCODES::BC_14,
+   COUNT = OMR::InterpreterBuilder::OPCODES::BC_15
    };
 
 class InterpreterVMState : public TR::VirtualMachineState
@@ -98,16 +106,20 @@ class InterpreterVMState : public TR::VirtualMachineState
       : TR::VirtualMachineState(),
       _stack(NULL),
       _stackTop(NULL),
-      _array(NULL),
-      _arrayBase(NULL)
+      _locals(NULL),
+      _localsBase(NULL),
+      _args(NULL),
+      _argsBase(NULL)
       { }
 
-   InterpreterVMState(TR::VirtualMachineStack *stack, TR::VirtualMachineRegister *stackTop, TR::VirtualMachineArray *array, TR::VirtualMachineRegister *arrayBase)
+   InterpreterVMState(TR::VirtualMachineStack *stack, TR::VirtualMachineRegister *stackTop, TR::VirtualMachineArray *locals, TR::VirtualMachineRegister *localsBase, TR::VirtualMachineArray *args, TR::VirtualMachineRegister *argsBase)
       : TR::VirtualMachineState(),
       _stack(stack),
       _stackTop(stackTop),
-      _array(array),
-      _arrayBase(arrayBase)
+      _locals(locals),
+      _localsBase(localsBase),
+      _args(args),
+      _argsBase(argsBase)
       {
       }
 
@@ -116,8 +128,11 @@ class InterpreterVMState : public TR::VirtualMachineState
       _stack->Commit(b);
       _stackTop->Commit(b);
 
-      _array->Commit(b);
-      _arrayBase->Commit(b);
+      _locals->Commit(b);
+      _localsBase->Commit(b);
+
+      _args->Commit(b);
+      _argsBase->Commit(b);
       }
 
    virtual void Reload(TR::IlBuilder *b)
@@ -125,8 +140,11 @@ class InterpreterVMState : public TR::VirtualMachineState
       _stackTop->Reload(b);
       _stack->Reload(b);
 
-      _arrayBase->Reload(b);
-      _array->Reload(b);
+      _localsBase->Reload(b);
+      _locals->Reload(b);
+
+      _argsBase->Reload(b);
+      _args->Reload(b);
       }
 
    virtual VirtualMachineState *MakeCopy()
@@ -135,8 +153,11 @@ class InterpreterVMState : public TR::VirtualMachineState
       newState->_stack = (TR::VirtualMachineStack *)_stack->MakeCopy();
       newState->_stackTop = (TR::VirtualMachineRegister *) _stackTop->MakeCopy();
 
-      newState->_array = (TR::VirtualMachineArray *)_array->MakeCopy();
-      newState->_arrayBase = (TR::VirtualMachineRegister *) _arrayBase->MakeCopy();
+      newState->_locals = (TR::VirtualMachineArray *)_locals->MakeCopy();
+      newState->_localsBase = (TR::VirtualMachineRegister *) _localsBase->MakeCopy();
+
+      newState->_args = (TR::VirtualMachineArray *)_args->MakeCopy();
+      newState->_argsBase = (TR::VirtualMachineRegister *) _argsBase->MakeCopy();
       return newState;
       }
 
@@ -145,15 +166,20 @@ class InterpreterVMState : public TR::VirtualMachineState
       InterpreterVMState *otherState = (InterpreterVMState *)other;
       _stack->MergeInto(otherState->_stack, b);
       _stackTop->MergeInto(otherState->_stackTop, b);
-      _array->MergeInto(otherState->_array, b);
-      _arrayBase->MergeInto(otherState->_arrayBase, b);
+      _locals->MergeInto(otherState->_locals, b);
+      _localsBase->MergeInto(otherState->_localsBase, b);
+      _args->MergeInto(otherState->_args, b);
+      _argsBase->MergeInto(otherState->_argsBase, b);
       }
 
    TR::VirtualMachineStack * _stack;
    TR::VirtualMachineRegister * _stackTop;
 
-   TR::VirtualMachineArray * _array;
-   TR::VirtualMachineRegister * _arrayBase;
+   TR::VirtualMachineArray * _locals;
+   TR::VirtualMachineRegister * _localsBase;
+
+   TR::VirtualMachineArray * _args;
+   TR::VirtualMachineRegister * _argsBase;
    };
 
 #endif // !defined(INTERPRETERTYPES_INCL)

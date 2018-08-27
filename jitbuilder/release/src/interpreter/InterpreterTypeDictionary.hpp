@@ -41,6 +41,10 @@ public:
       TR::IlType* pFrame;
       TR::IlType* method;
       TR::IlType* pMethod;
+      TR::IlType* value;
+      TR::IlType* pValue;
+      TR::IlType* bytecodes;
+      TR::IlType* pBytecodes;
    };
 
    InterpreterTypeDictionary();

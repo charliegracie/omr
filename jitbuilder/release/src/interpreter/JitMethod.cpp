@@ -28,7 +28,7 @@
 
 #include "Jit.hpp"
 #include "ilgen/InterpreterBuilder.hpp"
-#include "ilgen/MethodBuilder.hpp"
+#include "ilgen/JitMethodBuilder.hpp"
 #include "ilgen/VirtualMachineOperandArray.hpp"
 #include "ilgen/VirtualMachineOperandStack.hpp"
 #include "ilgen/VirtualMachineState.hpp"
@@ -39,6 +39,7 @@
 
 #include "InterpreterTypeDictionary.hpp"
 #include "JitMethod.hpp"
+#include "BytecodeHelpers.hpp"
 #include "PushConstantBuilder.hpp"
 #include "DupBuilder.hpp"
 #include "MathBuilder.hpp"
@@ -48,13 +49,7 @@
 #include "JumpIfBuilder.hpp"
 #include "PopLocalBuilder.hpp"
 #include "PushLocalBuilder.hpp"
-
-using std::cout;
-using std::cerr;
-
-//#define PRINTSTRING(builder, value) ((builder)->Call("printString", 1, (builder)->ConstInt64((int64_t)value)))
-//#define PRINTINT64(builder, value) ((builder)->Call("printInt64", 1, (builder)->ConstInt64((int64_t)value))
-//#define PRINTINT64VALUE(builder, value) ((builder)->Call("printInt64", 1, value))
+#include "PushArgBuilder.hpp"
 
 static void debug(Interpreter *interp, Frame *frame)
    {
@@ -63,7 +58,7 @@ static void debug(Interpreter *interp, Frame *frame)
    }
 
 JitMethod::JitMethod(InterpreterTypeDictionary *d, Method *method)
-   : RuntimeBuilder(d),
+   : JitMethodBuilder(d),
    _interpTypes(d),
    _method(method)
    {
@@ -77,122 +72,84 @@ JitMethod::JitMethod(InterpreterTypeDictionary *d, Method *method)
    DefineParameter("interp", _interpTypes->getTypes().pInterpreter);
    DefineParameter("frame", _interpTypes->getTypes().pFrame);
 
-   DefineLocal("pc", Int32);
-   DefineLocal("opcode", Int32);
-
    TR::IlType *voidType = d->toIlType<void>();
    DefineFunction((char *)"debug2", (char *)__FILE__, (char *)DEBUG_LINE, (void *)&debug, voidType, 2, _interpTypes->getTypes().pInterpreter, _interpTypes->getTypes().pFrame);
 
    DefineReturnType(Int64);
    }
 
-TR::IlValue *
-JitMethod::GetImmediate(TR::BytecodeBuilder *builder, int32_t pcOffset)
-   {
-   int8_t immediate = _method->bytecodes[builder->bcIndex() + pcOffset];
-
-   return builder->ConstInt8(immediate);
-   }
-
 void
-JitMethod::DefaultFallthroughTarget(TR::BytecodeBuilder *builder)
+JitMethod::DefineFunctions(TR::MethodBuilder *mb)
    {
-   builder->AddFallThroughBuilder(_builders[builder->bcIndex() + builder->bcLength()]);
+   BytecodeHelpers::DefineFunctions(mb);
    }
 
-void
-JitMethod::SetJumpIfTarget(TR::BytecodeBuilder *builder, TR::IlValue *condition, TR::IlValue *jumpTarget)
+TR::VirtualMachineState *
+JitMethod::createVMState()
    {
-   TR::BytecodeBuilder *target = _builders[jumpTarget->getConstValue()];
-   builder->IfCmpNotEqualZero(target, condition);
-   builder->AddFallThroughBuilder(_builders[builder->bcIndex() + builder->bcLength()]);
-   }
-
-void
-JitMethod::ReturnTarget(TR::BytecodeBuilder *builder)
-   {
-   builder->Return(builder->ConstInt64(-1));
-   }
-
-bool
-JitMethod::buildIL()
-   {
-   int32_t bytecodeLength = _method->bytecodeLength;
-   //fprintf(stderr, "JitMethod::buildIL() %s %ld\n", _method->name, bytecodeLength);
-   _builders = (TR::BytecodeBuilder **)malloc(sizeof(TR::BytecodeBuilder *) * bytecodeLength);
-   if (NULL == _builders)
-      {
-      return false;
-      }
-
-   CallBuilder::DefineFunctions(this, _interpTypes->getTypes().pInterpreter, _interpTypes->getTypes().pFrame);
-   RetBuilder::DefineFunctions(this, _interpTypes->getTypes().pInterpreter, _interpTypes->getTypes().pFrame);
-
-   int32_t i = 0;
-   while (i < bytecodeLength)
-      {
-      interpreter_opcodes opcode = (interpreter_opcodes)_method->bytecodes[i];
-      _builders[i] = createBuilder(opcode, i);
-      i += _builders[i]->bcLength();
-      }
-
    TR::VirtualMachineRegisterInStruct *stackRegister = new TR::VirtualMachineRegisterInStruct(this, "Frame", "frame", "sp", "SP");
    TR::VirtualMachineOperandStack *stack = new TR::VirtualMachineOperandStack(this, 10, STACKVALUEILTYPE, stackRegister, true, 0);
 
    TR::VirtualMachineRegisterInStruct *localsRegister = new TR::VirtualMachineRegisterInStruct(this, "Frame", "frame", "locals", "LOCALS");
    TR::VirtualMachineOperandArray *localsArray = new TR::VirtualMachineOperandArray(this, 10, STACKVALUEILTYPE, localsRegister);
 
-   InterpreterVMState *vmState = new InterpreterVMState(stack, stackRegister, localsArray, localsRegister);
-   setVMState(vmState);
+   TR::VirtualMachineRegisterInStruct *argsRegister = new TR::VirtualMachineRegisterInStruct(this, "Frame", "frame", "args", "ARGS");
+   TR::VirtualMachineOperandArray *argsArray = new TR::VirtualMachineOperandArray(this, _method->argCount, STACKVALUEILTYPE, argsRegister);
 
-   //TODO fix this..... sp is too far along.... need to move sp back by param count then Drop(-paramCount) then Reload
-   //Also retopcode needs to be fixed to push the ret value properly on the returning frame
-   stack->Drop(this, -_method->argCount);
-   stack->Reload(this);
+   argsArray->Reload(this);
 
-   //Call("debug2", 2, Load("interp"), Load("frame"));
+   InterpreterVMState *vmState = new InterpreterVMState(stack, stackRegister, localsArray, localsRegister, argsArray, argsRegister);
 
-   AppendBuilder(_builders[0]);
+   return vmState;
+   }
 
-   int32_t bytecodeIndex = GetNextBytecodeFromWorklist();
-   bool canHandle = true;
-   while (canHandle && (-1 != bytecodeIndex))
+const int8_t *
+JitMethod::getBytecodes()
+   {
+   return _method->bytecodes;
+   }
+int32_t
+JitMethod::getNumberBytecodes()
+   {
+   return _method->bytecodeLength;
+   }
+
+TR::BytecodeBuilder*
+JitMethod::createBuilder(OPCODES opcode, int32_t bcIndex)
+   {
+   switch(opcode)
       {
-      interpreter_opcodes opcode = (interpreter_opcodes)_method->bytecodes[bytecodeIndex];
-      TR::BytecodeBuilder *builder = _builders[bytecodeIndex];
-      int32_t nextBCIndex = bytecodeIndex + builder->bcLength();
-
-      builder->Store("pc", builder->ConstInt32(bytecodeIndex));
-
-      switch(opcode)
+      case PUSH_CONSTANT:
+         return PushConstantBuilder::OrphanBytecodeBuilder(this, bcIndex);
+      case DUP:
+         return DupBuilder::OrphanBytecodeBuilder(this, bcIndex);
+      case ADD:
+         return MathBuilder::OrphanBytecodeBuilder(this, bcIndex, &MathBuilder::add);
+      case SUB:
+         return MathBuilder::OrphanBytecodeBuilder(this, bcIndex, &MathBuilder::sub);
+      case MUL:
+         return MathBuilder::OrphanBytecodeBuilder(this, bcIndex, &MathBuilder::mul);
+      case DIV:
+         return MathBuilder::OrphanBytecodeBuilder(this, bcIndex, &MathBuilder::div);
+      case RET:
+         return RetBuilder::OrphanBytecodeBuilder(this, bcIndex, _interpTypes->getTypes().pFrame);
+      case JMPL:
+         return JumpIfBuilder::OrphanBytecodeBuilder(this, bcIndex, &JumpIfBuilder::lessThan);
+      case JMPG:
+         return JumpIfBuilder::OrphanBytecodeBuilder(this, bcIndex, &JumpIfBuilder::greaterThan);
+      case PUSH_LOCAL:
+         return PushLocalBuilder::OrphanBytecodeBuilder(this, bcIndex);
+      case POP_LOCAL:
+         return PopLocalBuilder::OrphanBytecodeBuilder(this, bcIndex);
+      case PUSH_ARG:
+         return PushArgBuilder::OrphanBytecodeBuilder(this, bcIndex);
+      case CALL:
+         return CallBuilder::OrphanBytecodeBuilder(this, bcIndex, _interpTypes->getTypes().pInterpreter, _interpTypes->getTypes().pFrame);
+      case EXIT:
+      default:
          {
-         case CALL:
-            builder->execute();
-            if (nextBCIndex < bytecodeLength)
-               builder->AddFallThroughBuilder(_builders[nextBCIndex]);
-            break;
-         case PUSH_CONSTANT:
-         case DUP:
-         case ADD:
-         case SUB:
-         case MUL:
-         case DIV:
-         case PUSH_LOCAL:
-         case POP_LOCAL:
-         case JMPL:
-         case JMPG:
-         case RET:
-            builder->execute();
-            break;
-         case EXIT:
-         default:
-            canHandle = false;
+         return NULL;
          }
-
-      bytecodeIndex = GetNextBytecodeFromWorklist();
       }
-
-   free(_builders);
-   return canHandle;
    }
 

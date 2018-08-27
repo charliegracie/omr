@@ -45,7 +45,6 @@ using std::cerr;
 OMR::RuntimeBuilder::RuntimeBuilder(TR::TypeDictionary *d)
    : TR::MethodBuilder(d)
    {
-
    }
 
 

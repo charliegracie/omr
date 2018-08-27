@@ -70,11 +70,10 @@ class VirtualMachineInterpreterArray : public TR::VirtualMachineArray
    /**
     * @brief public constructor, must be instantiated inside a compilation because uses heap memory
     * @param mb TR::MethodBuilder object of the method currently being compiled
-    * @param numOfElements the number of elements in the array
     * @param elementType TR::IlType representing the underlying type of the virtual machine's operand array entries
     * @param arrayBase previously allocated and initialized VirtualMachineRegister representing the base of the array
     */
-   VirtualMachineInterpreterArray(TR::MethodBuilder *mb, int32_t numOfElements, TR::IlType *elementType, TR::VirtualMachineRegister *arrayBase);
+   VirtualMachineInterpreterArray(TR::MethodBuilder *mb, TR::IlType *elementType, TR::VirtualMachineRegister *arrayBase);
 
    /**
     * @brief constructor used to copy the array from another state
@@ -149,6 +148,13 @@ class VirtualMachineInterpreterArray : public TR::VirtualMachineArray
     * @param srcIndex the location to copy the expression from
     */ 
    virtual void Move(TR::IlBuilder *b, int32_t dstIndex, int32_t srcIndex);
+
+   /**
+    * @brief Move the expression from one index to another index in the simulated operand array
+    * @param dstIndex the location to store the expression
+    * @param srcIndex the location to copy the expression from
+    */
+   virtual void Move(TR::IlBuilder *b, TR::IlValue *dstIndex, TR::IlValue *srcIndex);
 
    protected:
    void init();

@@ -47,8 +47,8 @@ void
 PushLocalBuilder::execute()
    {
    TR::VirtualMachineStack *stack = ((InterpreterVMState*)vmState())->_stack;
-   TR::VirtualMachineArray *locals = ((InterpreterVMState*)vmState())->_array;
-   TR::IlValue *localIndex = _runtimeBuilder->GetImmediate(this, 1);
+   TR::VirtualMachineArray *locals = ((InterpreterVMState*)vmState())->_locals;
+   TR::IlValue *localIndex = _runtimeBuilder->GetImmediate(this);
    TR::IlValue *localValue = locals->Get(this, localIndex);
 
    stack->Push(this, localValue);

@@ -227,6 +227,7 @@ JIT_PRODUCT_BACKEND_SOURCES+=\
     $(JIT_OMR_DIRTY_DIR)/ilgen/OMRIlType.cpp \
     $(JIT_OMR_DIRTY_DIR)/ilgen/OMRIlValue.cpp \
     $(JIT_OMR_DIRTY_DIR)/ilgen/OMRMethodBuilder.cpp \
+    $(JIT_OMR_DIRTY_DIR)/ilgen/OMRJitMethodBuilder.cpp \
     $(JIT_OMR_DIRTY_DIR)/ilgen/OMRThunkBuilder.cpp \
     $(JIT_OMR_DIRTY_DIR)/ilgen/OMRTypeDictionary.cpp \
     $(JIT_OMR_DIRTY_DIR)/ilgen/OMRVirtualMachineState.cpp \

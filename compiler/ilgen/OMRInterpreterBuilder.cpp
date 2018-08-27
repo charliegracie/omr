@@ -55,6 +55,7 @@ static void handleBadOpcode(int32_t opcode, int32_t pc)
 
 OMR::InterpreterBuilder::InterpreterBuilder(TR::TypeDictionary *d, const char *bytecodePtrName, TR::IlType *bytecodeElementType, const char *pcName, const char *opcodeName)
    : TR::RuntimeBuilder(d),
+   _isRecursiveCall(false),
    _bytecodePtrName(bytecodePtrName),
    _bytecodeElementType(bytecodeElementType),
    _bytecodePtrType(NULL),
@@ -75,16 +76,34 @@ OMR::InterpreterBuilder::InterpreterBuilder(TR::TypeDictionary *d, const char *b
    DefineLocal(_opcodeName, Int32);
    }
 
-TR::IlValue *
-OMR::InterpreterBuilder::GetImmediate(TR::BytecodeBuilder *builder, int32_t pcOffset)
+void
+OMR::InterpreterBuilder::Commit(TR::BytecodeBuilder *builder)
    {
+   TR::IlValue *pc = builder->Load(_pcName);
+   savePC(builder, pc);
+   }
+
+void
+OMR::InterpreterBuilder::Reload(TR::BytecodeBuilder *builder)
+   {
+   loadBytecodes(builder);
+   loadPC(builder);
+   }
+
+TR::IlValue *
+OMR::InterpreterBuilder::GetImmediate(TR::BytecodeBuilder *builder)
+   {
+   TR::IlValue *pc = builder->Load(_pcName);
+   TR::IlValue *increment = builder->ConstInt32(_bytecodeElementType->getSize());
+   TR::IlValue *newPC = builder->Add(pc, increment);
+
    TR::IlValue *immediate =
    builder->LoadAt(_bytecodePtrType,
    builder->   IndexAt(_bytecodePtrType,
    builder->      Load(_bytecodePtrName),
-   builder->      Add(
-   builder->         Load(_pcName),
-   builder->         ConstInt32(pcOffset))));
+                  pc));
+
+   builder->Store(_pcName, newPC);
 
    return immediate;
    }
@@ -92,28 +111,30 @@ OMR::InterpreterBuilder::GetImmediate(TR::BytecodeBuilder *builder, int32_t pcOf
 void
 OMR::InterpreterBuilder::DefaultFallthroughTarget(TR::BytecodeBuilder *builder)
    {
-   builder->Store(_pcName, builder->Add(builder->Load(_pcName), builder->ConstInt32(builder->bcLength())));
    }
 
 void
 OMR::InterpreterBuilder::SetJumpIfTarget(TR::BytecodeBuilder *builder, TR::IlValue *condition, TR::IlValue *jumpTarget)
    {
    TR::IlBuilder *doJump = NULL;
-   TR::IlBuilder *noJump = NULL;
-   builder->IfThenElse(&doJump, &noJump, condition);
+   builder->IfThen(&doJump, condition);
 
    doJump->Store(_pcName, doJump->ConvertTo(Int32, jumpTarget));
-
-   noJump->Store(_pcName, noJump->Add(noJump->Load(_pcName), noJump->ConstInt32(builder->bcLength())));
    }
 
 void
 OMR::InterpreterBuilder::ReturnTarget(TR::BytecodeBuilder *builder)
    {
-   TR::IlValue *pcAddress = builder->StructFieldInstanceAddress("Frame", "savedPC", builder->Load("frame"));
-   TR::IlValue *pc = builder->LoadAt(_types->PointerTo(Int32), pcAddress);
-   pc = builder->Add(pc, builder->ConstInt32(3));
-   builder->Store(_pcName, pc);
+   if (_isRecursiveCall)
+      {
+      builder->Return(
+      builder->   ConstInt64(-1));
+      }
+   else
+      {
+      Reload(builder);
+      builder->vmState()->Reload(builder);
+      }
    }
 
 void
@@ -136,17 +157,15 @@ OMR::InterpreterBuilder::buildIL()
    {
    cout << "InterpreterBuilder::buildIL() running!\n";
 
+   DefineFunctions(this);
+
    setVMState(createVMState());
 
    _defaultHandler = OrphanBytecodeBuilder(OPCODES::BC_COUNT + 1, "default handler");
 
+   //TODO can this be replaced with Reload();
    loadBytecodes(this);
    loadPC(this);
-
-   Store("exitLoop",
-      EqualTo(
-         ConstInt32(1),
-         ConstInt32(1)));
 
    TR::BytecodeBuilder *doWhileBody = NULL;
    TR::BytecodeBuilder *breakBody = NULL;
@@ -156,6 +175,11 @@ OMR::InterpreterBuilder::buildIL()
 
    registerBytecodeBuilders();
    completeBytecodeBuilderRegistration();
+
+   TR::IlValue *pc = getPC(doWhileBody);
+   TR::IlValue *increment = doWhileBody->ConstInt32(_bytecodeElementType->getSize());
+   TR::IlValue *newPC = doWhileBody->Add(pc, increment);
+   setPC(doWhileBody, newPC);
 
    Switch("opcode", doWhileBody, _defaultHandler, OPCODES::BC_COUNT,
                    OPCODES::BC_00, &_opcodeBuilders[OPCODES::BC_00], false,

@@ -47,9 +47,9 @@ void
 PopLocalBuilder::execute()
    {
    TR::VirtualMachineStack *stack = ((InterpreterVMState*)vmState())->_stack;
-   TR::VirtualMachineArray *locals = ((InterpreterVMState*)vmState())->_array;
+   TR::VirtualMachineArray *locals = ((InterpreterVMState*)vmState())->_locals;
 
-   TR::IlValue *localIndex = _runtimeBuilder->GetImmediate(this, 1);
+   TR::IlValue *localIndex = _runtimeBuilder->GetImmediate(this);
    TR::IlValue *poppedValue = stack->Pop(this);
 
    locals->Set(this, localIndex, poppedValue);

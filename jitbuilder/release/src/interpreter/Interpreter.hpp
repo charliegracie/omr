@@ -32,11 +32,17 @@ class InterpreterMethod : public TR::InterpreterBuilder
    {
    public:
    InterpreterMethod(InterpreterTypeDictionary *d);
+
+   //TR::RuntimeBuilder overrides
+   virtual void DefineFunctions(TR::MethodBuilder *mb);
+
+   //TR::InterpreterBuilder overrides
    virtual void registerBytecodeBuilders();
    virtual void handleInterpreterExit(TR::IlBuilder *builder);
    virtual TR::VirtualMachineState *createVMState();
    virtual void loadBytecodes(TR::IlBuilder *builder);
    virtual void loadPC(TR::IlBuilder *builder);
+   virtual void savePC(TR::IlBuilder *builder, TR::IlValue *pc);
 
    protected:
 
@@ -131,9 +137,11 @@ class InterpreterMethod : public TR::InterpreterBuilder
       interpreter_opcodes::CALL,7,1, // call _testJMPGMethod with arg 1 store 3
       interpreter_opcodes::CALL,7,1, // call _testJMPGMethod with arg 1 store 3
       interpreter_opcodes::CALL,7,1, // call _testJMPGMethod with arg 1 store 3
+#if 0
       interpreter_opcodes::PUSH_CONSTANT,5, // push 5
       interpreter_opcodes::ADD,             // add 3 + 5 store 8
       interpreter_opcodes::CALL,7,1, // call _testJMPGMethod with arg 8 store 1
+#endif
 #endif
 
       interpreter_opcodes::EXIT,-1, // return 1 (call result)
@@ -147,51 +155,58 @@ class InterpreterMethod : public TR::InterpreterBuilder
       interpreter_opcodes::RET,1,           // ret 8
       };
 
-   const int8_t _testDivMethod[3] =
+   const int8_t _testDivMethod[7] =
       {
       //Expecting 2 args to be pushed!
+      interpreter_opcodes::PUSH_ARG,0,      // push arg[0]
+      interpreter_opcodes::PUSH_ARG,1,      // push arg[1]
       interpreter_opcodes::DIV,             // arg 1 (14) / arg2 (2) store 7
       interpreter_opcodes::RET,1,           // ret 7
       };
 
-   const int8_t _testAddMethod[3] =
+   const int8_t _testAddMethod[7] =
       {
       //Expecting 2 args to be pushed!
+      interpreter_opcodes::PUSH_ARG,0,      // push arg[0]
+      interpreter_opcodes::PUSH_ARG,1,      // push arg[1]
       interpreter_opcodes::ADD,             // arg 1 (1) + arg2 (7) store 8
       interpreter_opcodes::RET,1,           // ret 8
       };
 
-   const int8_t _testJMPLMethod[12] =
+   const int8_t _testJMPLMethod[14] =
       {
       //Expecting 1 arg
+      interpreter_opcodes::PUSH_ARG,0,      //push arg[0]
       interpreter_opcodes::PUSH_CONSTANT,5, // push 5
-      interpreter_opcodes::JMPL,8,          // if arg < 5
+      interpreter_opcodes::JMPL,10,         // if arg < 5
       interpreter_opcodes::PUSH_CONSTANT,3, // push 3
       interpreter_opcodes::RET,1,           // ret 3
       interpreter_opcodes::PUSH_CONSTANT,1, // push 1
       interpreter_opcodes::RET,1,           // ret 1
       };
 
-   const int8_t _testJMPGMethod[12] =
+   const int8_t _testJMPGMethod[14] =
       {
       //Expecting 1 arg
+      interpreter_opcodes::PUSH_ARG,0,      //push arg[0]
       interpreter_opcodes::PUSH_CONSTANT,5, // push 5
-      interpreter_opcodes::JMPG,8,          // if arg > 5
+      interpreter_opcodes::JMPG,10,         // if arg > 5
       interpreter_opcodes::PUSH_CONSTANT,3, // push 3
       interpreter_opcodes::RET,1,           // ret 3
       interpreter_opcodes::PUSH_CONSTANT,1, // push 1
       interpreter_opcodes::RET,1,           // ret 1
       };
 
-   const int8_t _fib[38] =
+   const int8_t _fib[40] =
       {
       // Expecting 1 arg
+      interpreter_opcodes::PUSH_ARG,0,      //push arg[0]
       // save arg in locals[0]
       interpreter_opcodes::DUP,             // dup arg store arg..........stack is arg,arg
       interpreter_opcodes::POP_LOCAL,0,     // pop arg into local 0.......stack is arg
       // if arg < 2 goto push n/ret
       interpreter_opcodes::PUSH_CONSTANT,2, // push 2
-      interpreter_opcodes::JMPL,34,         // if arg < 2
+      interpreter_opcodes::JMPL,36,         // if arg < 2
       // call f(n-1)
       interpreter_opcodes::PUSH_LOCAL,0,    // push local 0...............stack is arg
       interpreter_opcodes::PUSH_CONSTANT,1, // push 1.....................stack is arg,1
@@ -214,15 +229,16 @@ class InterpreterMethod : public TR::InterpreterBuilder
       interpreter_opcodes::RET,1,           // ret arg
       };
 
-    const int8_t _iterFib[50]
+    const int8_t _iterFib[52]
       {
       // Expecting 1 arg
+      interpreter_opcodes::PUSH_ARG,0,      //push arg[0]
       // save arg in locals[0]
       interpreter_opcodes::DUP,             // dup arg store arg..........stack is arg,arg
       interpreter_opcodes::POP_LOCAL,0,     // pop arg into local 0.......stack is arg
       // if arg < 1 goto push n/ret
       interpreter_opcodes::PUSH_CONSTANT,1, // push 1
-      interpreter_opcodes::JMPL,46,          // if arg < 1
+      interpreter_opcodes::JMPL,48,          // if arg < 1
 
       // set up for loop
       interpreter_opcodes::PUSH_CONSTANT,1, // push 1
@@ -245,7 +261,7 @@ class InterpreterMethod : public TR::InterpreterBuilder
       interpreter_opcodes::DUP,             // dup result store result.........stack is result,result
       interpreter_opcodes::POP_LOCAL,3,     // pop result into local counter...stack is result
       interpreter_opcodes::PUSH_LOCAL,0,    // push local 0 (arg)..............stack is result,arg
-      interpreter_opcodes::JMPL,19,          // if result < arg
+      interpreter_opcodes::JMPL,21,          // if result < arg
       //end of loop
 
       interpreter_opcodes::PUSH_LOCAL,1,    // push local 1 (fib)..............stack is fib

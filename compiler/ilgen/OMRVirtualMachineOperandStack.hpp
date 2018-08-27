@@ -169,7 +169,14 @@ class VirtualMachineOperandStack : public TR::VirtualMachineStack
     * @param depth number of values below top (Pick(0) is same as Top())
     * @returns the requested expression from the operand stack
     */
-   virtual TR::IlValue *Pick(int32_t depth);
+   virtual TR::IlValue *Pick(TR::IlBuilder *b, int32_t depth);
+
+   /**
+    * @brief Returns an expression below the top of the simulated operand stack
+    * @param depth number of values below top (Pick(0) is same as Top())
+    * @returns the requested expression from the operand stack
+    */
+   virtual TR::IlValue *Pick(TR::IlBuilder *b, TR::IlValue *depth);
 
    /**
     * @brief Removes some number of expressions from the operand stack
@@ -177,6 +184,13 @@ class VirtualMachineOperandStack : public TR::VirtualMachineStack
     * @param depth how many values to drop from the stack
     */
    virtual void Drop(TR::IlBuilder *b, int32_t depth);
+
+   /**
+    * @brief Removes some number of expressions from the operand stack
+    * @param b builder object to use for any operations used to implement the drop (e.g. to update the top of stack)
+    * @param depth how many values to drop from the stack
+    */
+   virtual void Drop(TR::IlBuilder *b, TR::IlValue *depth);
 
    /**
     * @brief Duplicates the expression on top of the simulated operand stack

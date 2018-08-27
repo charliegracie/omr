@@ -62,7 +62,7 @@ OMR::VirtualMachineInterpreterStack::MergeInto(TR::VirtualMachineInterpreterStac
 void
 OMR::VirtualMachineInterpreterStack::UpdateStack(TR::IlBuilder *b, TR::IlValue *stack)
    {
-   // TODO implement?  Is this even useful for anything?
+   // TODO remove this API
    }
 
 // Allocate a new operand stack and copy everything in this state
@@ -127,15 +127,49 @@ OMR::VirtualMachineInterpreterStack::Pop(TR::IlBuilder *builder)
    }
 
 TR::IlValue *
-OMR::VirtualMachineInterpreterStack::Pick(int32_t depth)
+OMR::VirtualMachineInterpreterStack::Pick(TR::IlBuilder *builder, int32_t depth)
    {
-   return NULL;
+   return Pick(builder, builder->ConstInt32(depth));
+   }
+
+TR::IlValue *
+OMR::VirtualMachineInterpreterStack::Pick(TR::IlBuilder *builder, TR::IlValue *depth)
+   {
+   if (!_preIncrement)
+      {
+      //depth += 1;
+      TR::IlValue *one = builder->ConstInt32(1);
+      depth = builder->Add(depth, one);
+      }
+
+   TR::IlValue *zero = builder->ConstInt32(0);
+   TR::IlValue *negatedDepth = builder->Sub(zero, depth);
+
+   //_stackTopRegister->Adjust(builder, -depth);
+   _stackTopRegister->Adjust(builder, negatedDepth);
+   TR::IlValue *stackAddress = _stackTopRegister->Load(builder);
+
+   TR::IlType *pElementType = _mb->typeDictionary()->PointerTo(_elementType);
+   TR::IlValue *result = builder->LoadAt(pElementType, stackAddress);
+
+   _stackTopRegister->Adjust(builder, depth);
+
+   return result;
    }
 
 void
-OMR::VirtualMachineInterpreterStack::Drop(TR::IlBuilder *b, int32_t depth)
+OMR::VirtualMachineInterpreterStack::Drop(TR::IlBuilder *builder, int32_t depth)
    {
+   Drop(builder, builder->ConstInt32(depth));
+   }
 
+void
+OMR::VirtualMachineInterpreterStack::Drop(TR::IlBuilder *builder, TR::IlValue *depth)
+   {
+   //TODO replace with an IlBuilder::Negate();
+   TR::IlValue *zero = builder->ConstInt32(0);
+   TR::IlValue *negatedDepth = builder->Sub(zero, depth);
+   _stackTopRegister->Adjust(builder, negatedDepth);
    }
 
 void

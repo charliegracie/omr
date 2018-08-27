@@ -29,8 +29,6 @@ namespace TR { class BytecodeBuilder;}
 namespace TR { class VirtualMachineRegister; }
 namespace TR { class VirtualMachineInterpreterStack; }
 
-#define LOOP 1
-
 namespace OMR
 {
 
@@ -39,30 +37,13 @@ class InterpreterBuilder : public TR::RuntimeBuilder
 public:
    TR_ALLOC(TR_Memory::IlGenerator)
 
-enum OPCODES
-   {
-   BC_00,
-   BC_01,
-   BC_02,
-   BC_03,
-   BC_04,
-   BC_05,
-   BC_06,
-   BC_07,
-   BC_08,
-   BC_09,
-   BC_10,
-   BC_11,
-   BC_12,
-   BC_13,
-   BC_14,
-   BC_15,
-   BC_COUNT = BC_15
-   };
-
    InterpreterBuilder(TR::TypeDictionary *d, const char *bytecodePtrName, TR::IlType *bytecodeElementType, const char *pcName, const char *opcodeName);
 
-   virtual TR::IlValue *GetImmediate(TR::BytecodeBuilder *builder, int32_t pcOffset);
+   virtual void DefineFunctions(TR::MethodBuilder *mb) {}
+
+   virtual void Commit(TR::BytecodeBuilder *builder);
+   virtual void Reload(TR::BytecodeBuilder *builder);
+   virtual TR::IlValue *GetImmediate(TR::BytecodeBuilder *builder);
    virtual void DefaultFallthroughTarget(TR::BytecodeBuilder *builder);
    virtual void SetJumpIfTarget(TR::BytecodeBuilder *builder, TR::IlValue *condition, TR::IlValue *jumpTarget);
    virtual void ReturnTarget(TR::BytecodeBuilder *builder);
@@ -73,6 +54,7 @@ enum OPCODES
    virtual TR::VirtualMachineState *createVMState() {return NULL;}
    virtual void loadBytecodes(TR::IlBuilder *builder) = 0;
    virtual void loadPC(TR::IlBuilder *builder) = 0;
+   virtual void savePC(TR::IlBuilder *builder, TR::IlValue *pc) = 0;
 
    void registerBytecodeBuilder(TR::BytecodeBuilder *handler);
 
@@ -104,6 +86,7 @@ protected:
                ...);
 
 private:
+   bool _isRecursiveCall;
    const char *_bytecodePtrName;
    TR::IlType *_bytecodeElementType;
    TR::IlType *_bytecodePtrType;

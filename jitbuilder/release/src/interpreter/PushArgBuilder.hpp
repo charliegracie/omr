@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2018 IBM Corp. and others
+ * Copyright (c) 2016, 2016 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -20,38 +20,27 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include <new>
 
-#include "ilgen/RuntimeBuilder.hpp"
-#include "ilgen/TypeDictionary.hpp"
-#include "ilgen/VirtualMachineInterpreterStack.hpp"
+#ifndef PUSHARGBUILDER_INCL
+#define PUSHARGBUILDER_INCL
 
-#include "InterpreterTypes.h"
-#include "PushConstantBuilder.hpp"
+#include "ilgen/BytecodeBuilder.hpp"
 
-PushConstantBuilder::PushConstantBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex)
-   : BytecodeBuilder(runtimeBuilder, bcIndex, "PUSH_CONSTANT", 2),
-   _runtimeBuilder(runtimeBuilder)
+namespace TR { class RuntimeBuilder; }
+
+class PushArgBuilder : public TR::BytecodeBuilder
    {
-   }
+   public:
+   PushArgBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex);
 
-PushConstantBuilder *
-PushConstantBuilder::OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex)
-   {
-   PushConstantBuilder *orphan = new PushConstantBuilder(runtimeBuilder, bcIndex);
-   runtimeBuilder->InitializeBytecodeBuilder(orphan);
-   return orphan;
-   }
+   virtual void execute();
 
-void
-PushConstantBuilder::execute()
-   {
-   TR::VirtualMachineStack *state = ((InterpreterVMState*)vmState())->_stack;
-   TR::IlValue *value = _runtimeBuilder->GetImmediate(this);
-   value = ConvertTo(STACKVALUEILTYPE, value);
+   static PushArgBuilder *OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex);
 
-   state->Push(this, value);
+   protected:
 
-   _runtimeBuilder->DefaultFallthroughTarget(this);
-   }
+   private:
+   TR::RuntimeBuilder *_runtimeBuilder;
+   };
 
+#endif // !defined(PUSHARGBUILDER_INCL)

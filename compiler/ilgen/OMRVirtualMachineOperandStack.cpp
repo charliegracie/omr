@@ -86,7 +86,7 @@ OMR::VirtualMachineOperandStack::Commit(TR::IlBuilder *b)
       b->   IndexAt(pElement,
                stack,
       b->      ConstInt32(i - _stackOffset)),
-            Pick(_stackTop-i)); // should generalize, maybe delegate element storage ?
+            Pick(b, _stackTop-i)); // should generalize, maybe delegate element storage ?
       }
    }
 
@@ -169,10 +169,16 @@ OMR::VirtualMachineOperandStack::Pop(TR::IlBuilder *b)
    }
 
 TR::IlValue *
-OMR::VirtualMachineOperandStack::Pick(int32_t depth)
+OMR::VirtualMachineOperandStack::Pick(TR::IlBuilder *b, int32_t depth)
    {
    TR_ASSERT(_stackTop >= depth, "pick request exceeds stack depth");
    return _stack[_stackTop - depth];
+   }
+
+TR::IlValue *
+OMR::VirtualMachineOperandStack::Pick(TR::IlBuilder *b, TR::IlValue *depth)
+   {
+   return Pick(b, depth->get32bitConstValue());
    }
 
 void
@@ -180,6 +186,12 @@ OMR::VirtualMachineOperandStack::Drop(TR::IlBuilder *b, int32_t depth)
    {
    TR_ASSERT(_stackTop >= depth-1, "stack underflow");
    _stackTop-=depth; 
+   }
+
+void
+OMR::VirtualMachineOperandStack::Drop(TR::IlBuilder *b, TR::IlValue *depth)
+   {
+   Drop(b, depth->get32bitConstValue());
    }
 
 void

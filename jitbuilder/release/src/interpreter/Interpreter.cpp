@@ -39,6 +39,7 @@
 
 #include "InterpreterTypeDictionary.hpp"
 #include "Interpreter.hpp"
+#include "BytecodeHelpers.hpp"
 #include "PushConstantBuilder.hpp"
 #include "DupBuilder.hpp"
 #include "MathBuilder.hpp"
@@ -48,13 +49,10 @@
 #include "JumpIfBuilder.hpp"
 #include "PopLocalBuilder.hpp"
 #include "PushLocalBuilder.hpp"
+#include "PushArgBuilder.hpp"
 
 using std::cout;
 using std::cerr;
-
-//#define PRINTSTRING(builder, value) ((builder)->Call("printString", 1, (builder)->ConstInt64((int64_t)value)))
-//#define PRINTINT64(builder, value) ((builder)->Call("printInt64", 1, (builder)->ConstInt64((int64_t)value))
-//#define PRINTINT64VALUE(builder, value) ((builder)->Call("printInt64", 1, value))
 
 int
 main(int argc, char *argv[])
@@ -88,12 +86,13 @@ main(int argc, char *argv[])
    interp.methods = interpreterMethod._methods;
 
    Frame frame;
+   frame.args = frame.a;
    frame.locals = frame.loc;
    frame.sp = frame.stack;
    frame.bytecodes = interp.methods[0].bytecodes;
    frame.previous = NULL;
    frame.savedPC = 0;
-   frame.frameType = INTERPRETER;
+   frame.frameType = FRAME_TYPE_INTERPRETER | FRAME_TYPE_ALLOCATED_ONSTACK;
 
    memset(frame.stack, 0, sizeof(frame.stack));
    memset(frame.loc, 0, sizeof(frame.loc));
@@ -164,6 +163,12 @@ InterpreterMethod::InterpreterMethod(InterpreterTypeDictionary *d)
    _methods[7].argCount = 1;
    }
 
+void
+InterpreterMethod::DefineFunctions(TR::MethodBuilder *mb)
+   {
+   BytecodeHelpers::DefineFunctions(mb);
+   }
+
 TR::VirtualMachineState *
 InterpreterMethod::createVMState()
    {
@@ -171,9 +176,12 @@ InterpreterMethod::createVMState()
    TR::VirtualMachineInterpreterStack *stack = new TR::VirtualMachineInterpreterStack(this, stackRegister, STACKVALUEILTYPE);
 
    TR::VirtualMachineRegisterInStruct *localsRegister = new TR::VirtualMachineRegisterInStruct(this, "Frame", "frame", "locals", "LOCALS");
-   TR::VirtualMachineInterpreterArray *localsArray = new TR::VirtualMachineInterpreterArray(this, 10, STACKVALUEILTYPE, localsRegister);
+   TR::VirtualMachineInterpreterArray *localsArray = new TR::VirtualMachineInterpreterArray(this, STACKVALUEILTYPE, localsRegister);
 
-   InterpreterVMState *vmState = new InterpreterVMState(stack, stackRegister, localsArray, localsRegister);
+   TR::VirtualMachineRegisterInStruct *argsRegister = new TR::VirtualMachineRegisterInStruct(this, "Frame", "frame", "args", "ARGS");
+   TR::VirtualMachineInterpreterArray *argsArray = new TR::VirtualMachineInterpreterArray(this, STACKVALUEILTYPE, argsRegister);
+
+   InterpreterVMState *vmState = new InterpreterVMState(stack, stackRegister, localsArray, localsRegister, argsArray, argsRegister);
    return vmState;
    }
 
@@ -200,11 +208,16 @@ InterpreterMethod::loadPC(TR::IlBuilder *builder)
    }
 
 void
+InterpreterMethod::savePC(TR::IlBuilder *builder, TR::IlValue *pc)
+   {
+   TR::IlValue *frame = builder->Load("frame");
+   TR::IlValue *pcAddress = builder->StructFieldInstanceAddress("Frame", "savedPC", frame);
+   builder->StoreAt(pcAddress, pc);
+   }
+
+void
 InterpreterMethod::registerBytecodeBuilders()
    {
-   CallBuilder::DefineFunctions(this, _interpTypes->getTypes().pInterpreter, _interpTypes->getTypes().pFrame);
-   RetBuilder::DefineFunctions(this, _interpTypes->getTypes().pInterpreter, _interpTypes->getTypes().pFrame);
-
    registerBytecodeBuilder(PushConstantBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::PUSH_CONSTANT));
    registerBytecodeBuilder(DupBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::DUP));
    registerBytecodeBuilder(MathBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::ADD, &MathBuilder::add));
@@ -217,6 +230,7 @@ InterpreterMethod::registerBytecodeBuilders()
    registerBytecodeBuilder(JumpIfBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::JMPG, &JumpIfBuilder::greaterThan));
    registerBytecodeBuilder(PopLocalBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::POP_LOCAL));
    registerBytecodeBuilder(PushLocalBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::PUSH_LOCAL));
+   registerBytecodeBuilder(PushArgBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::PUSH_ARG));
    registerBytecodeBuilder(ExitBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::EXIT));
    }
 
@@ -226,4 +240,3 @@ InterpreterMethod::handleInterpreterExit(TR::IlBuilder *builder)
    builder->Return(
    builder->   ConstInt64(-1));
    }
-
