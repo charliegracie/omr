@@ -81,22 +81,23 @@ typedef TR::IlValue * (*BooleanFuncType)(TR::IlBuilder *builder, TR::IlValue *le
 
 enum interpreter_opcodes
    {
-   PUSH_CONSTANT = OMR::InterpreterBuilder::OPCODES::BC_00,
-   DUP = OMR::InterpreterBuilder::OPCODES::BC_01,
-   ADD = OMR::InterpreterBuilder::OPCODES::BC_02,
-   SUB = OMR::InterpreterBuilder::OPCODES::BC_03,
-   MUL = OMR::InterpreterBuilder::OPCODES::BC_04,
-   DIV = OMR::InterpreterBuilder::OPCODES::BC_05,
-   RET = OMR::InterpreterBuilder::OPCODES::BC_06,
-   CALL = OMR::InterpreterBuilder::OPCODES::BC_07,
-   EXIT = OMR::InterpreterBuilder::OPCODES::BC_08,
-   JMPL = OMR::InterpreterBuilder::OPCODES::BC_09,
-   JMPG = OMR::InterpreterBuilder::OPCODES::BC_10,
-   PUSH_LOCAL = OMR::InterpreterBuilder::OPCODES::BC_11,
-   POP_LOCAL = OMR::InterpreterBuilder::OPCODES::BC_12,
-   PUSH_ARG = OMR::InterpreterBuilder::OPCODES::BC_13,
-   FAIL = OMR::InterpreterBuilder::OPCODES::BC_14,
-   COUNT = OMR::InterpreterBuilder::OPCODES::BC_15
+   PUSH_CONSTANT = 0,
+   DUP,
+   ADD,
+   SUB,
+   MUL,
+   DIV,
+   RET,
+   CALL,
+   EXIT,
+   JMPL,
+   JMPG,
+   PUSH_LOCAL,
+   POP_LOCAL,
+   PUSH_ARG,
+   FAIL,
+   TEST,
+   COUNT = TEST
    };
 
 class InterpreterVMState : public TR::VirtualMachineState

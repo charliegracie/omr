@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2018 IBM Corp. and others
+ * Copyright (c) 2018, 2018 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -20,33 +20,23 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include <new>
-
 #include "ilgen/RuntimeBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
-#include "ilgen/VirtualMachineInterpreterStack.hpp"
+#include "ilgen/VirtualMachineStack.hpp"
 #include "InterpreterTypes.h"
 #include "DupBuilder.hpp"
 
-DupBuilder::DupBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex)
-   : BytecodeBuilder(runtimeBuilder, bcIndex, "DUP", 1),
-   _runtimeBuilder(runtimeBuilder)
+DupBuilder::DupBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, char *name)
+   : BytecodeBuilder(methodBuilder, bcIndex, name, 1),
+   _runtimeBuilder((TR::RuntimeBuilder *)methodBuilder)
    {
-   }
-
-DupBuilder *
-DupBuilder::OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex)
-   {
-   DupBuilder *orphan = new DupBuilder(runtimeBuilder, bcIndex);
-   runtimeBuilder->InitializeBytecodeBuilder(orphan);
-   return orphan;
    }
 
 void
 DupBuilder::execute()
    {
-   TR::VirtualMachineStack *state = ((InterpreterVMState*)vmState())->_stack;
-   state->Dup(this);
+   TR::VirtualMachineStack *stack = ((InterpreterVMState*)vmState())->_stack;
+   stack->Dup(this);
 
    _runtimeBuilder->DefaultFallthroughTarget(this);
    }

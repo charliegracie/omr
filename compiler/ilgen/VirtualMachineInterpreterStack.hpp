@@ -32,8 +32,10 @@ class VirtualMachineInterpreterStack : public OMR::VirtualMachineInterpreterStac
    public:
    VirtualMachineInterpreterStack(TR::MethodBuilder *mb,
                               TR::VirtualMachineRegister *stackTop,
-                              TR::IlType *elementType) :
-      OMR::VirtualMachineInterpreterStack(mb, stackTop, elementType)
+                              TR::IlType *elementType,
+                              bool growsUp = true,
+                              bool preAdjust = true) :
+      OMR::VirtualMachineInterpreterStack(mb, stackTop, elementType, growsUp, preAdjust)
       { }
 
    };

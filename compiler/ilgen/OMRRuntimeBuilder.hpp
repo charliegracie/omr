@@ -26,8 +26,6 @@
 
 namespace TR { class RuntimeBuilder; }
 namespace TR { class BytecodeBuilder;}
-namespace TR { class VirtualMachineRegister; }
-namespace TR { class VirtualMachineInterpreterStack; }
 
 namespace OMR
 {
@@ -35,27 +33,6 @@ namespace OMR
 class RuntimeBuilder : public TR::MethodBuilder
    {
 public:
-   enum OPCODES
-      {
-      BC_00,
-      BC_01,
-      BC_02,
-      BC_03,
-      BC_04,
-      BC_05,
-      BC_06,
-      BC_07,
-      BC_08,
-      BC_09,
-      BC_10,
-      BC_11,
-      BC_12,
-      BC_13,
-      BC_14,
-      BC_15,
-      BC_COUNT = BC_15
-      };
-
    TR_ALLOC(TR_Memory::IlGenerator)
 
    RuntimeBuilder(TR::TypeDictionary *d)

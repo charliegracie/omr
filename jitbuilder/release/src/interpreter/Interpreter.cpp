@@ -173,7 +173,7 @@ TR::VirtualMachineState *
 InterpreterMethod::createVMState()
    {
    TR::VirtualMachineRegisterInStruct *stackRegister = new TR::VirtualMachineRegisterInStruct(this, "Frame", "frame", "sp", "SP");
-   TR::VirtualMachineInterpreterStack *stack = new TR::VirtualMachineInterpreterStack(this, stackRegister, STACKVALUEILTYPE);
+   TR::VirtualMachineInterpreterStack *stack = new TR::VirtualMachineInterpreterStack(this, stackRegister, STACKVALUEILTYPE, true, false);
 
    TR::VirtualMachineRegisterInStruct *localsRegister = new TR::VirtualMachineRegisterInStruct(this, "Frame", "frame", "locals", "LOCALS");
    TR::VirtualMachineInterpreterArray *localsArray = new TR::VirtualMachineInterpreterArray(this, STACKVALUEILTYPE, localsRegister);
@@ -218,20 +218,39 @@ InterpreterMethod::savePC(TR::IlBuilder *builder, TR::IlValue *pc)
 void
 InterpreterMethod::registerBytecodeBuilders()
    {
-   registerBytecodeBuilder(PushConstantBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::PUSH_CONSTANT));
-   registerBytecodeBuilder(DupBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::DUP));
-   registerBytecodeBuilder(MathBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::ADD, &MathBuilder::add));
-   registerBytecodeBuilder(MathBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::SUB, &MathBuilder::sub));
-   registerBytecodeBuilder(MathBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::MUL, &MathBuilder::mul));
-   registerBytecodeBuilder(MathBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::DIV, &MathBuilder::div));
-   registerBytecodeBuilder(RetBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::RET, _interpTypes->getTypes().pFrame));
-   registerBytecodeBuilder(CallBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::CALL, _interpTypes->getTypes().pInterpreter, _interpTypes->getTypes().pFrame));
-   registerBytecodeBuilder(JumpIfBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::JMPL, &JumpIfBuilder::lessThan));
-   registerBytecodeBuilder(JumpIfBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::JMPG, &JumpIfBuilder::greaterThan));
-   registerBytecodeBuilder(PopLocalBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::POP_LOCAL));
-   registerBytecodeBuilder(PushLocalBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::PUSH_LOCAL));
-   registerBytecodeBuilder(PushArgBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::PUSH_ARG));
-   registerBytecodeBuilder(ExitBuilder::OrphanBytecodeBuilder(this, interpreter_opcodes::EXIT));
+   registerBytecodeBuilder(OrphanBytecodeBuilder<PushConstantBuilder>(interpreter_opcodes::PUSH_CONSTANT, "PUSH_CONSTNT"));
+   registerBytecodeBuilder(OrphanBytecodeBuilder<PushArgBuilder>(interpreter_opcodes::PUSH_ARG, "PUSH_ARG"));
+   registerBytecodeBuilder(OrphanBytecodeBuilder<PushLocalBuilder>(interpreter_opcodes::PUSH_LOCAL, "PUSH_LOCAL"));
+   registerBytecodeBuilder(OrphanBytecodeBuilder<PopLocalBuilder>(interpreter_opcodes::POP_LOCAL, "POP_LOCAL"));
+   registerBytecodeBuilder(OrphanBytecodeBuilder<DupBuilder>(interpreter_opcodes::DUP, "DUP"));
+
+   MathBuilder *math = OrphanBytecodeBuilder<MathBuilder>(interpreter_opcodes::ADD, "ADD");
+   math->setFunction(&MathBuilder::add);
+   registerBytecodeBuilder(math);
+
+   math = OrphanBytecodeBuilder<MathBuilder>(interpreter_opcodes::SUB, "SUB");
+   math->setFunction(&MathBuilder::sub);
+   registerBytecodeBuilder(math);
+
+   math = OrphanBytecodeBuilder<MathBuilder>(interpreter_opcodes::MUL, "MUL");
+   math->setFunction(&MathBuilder::mul);
+   registerBytecodeBuilder(math);
+
+   math = OrphanBytecodeBuilder<MathBuilder>(interpreter_opcodes::DIV, "DIV");
+   math->setFunction(&MathBuilder::div);
+   registerBytecodeBuilder(math);
+
+   JumpIfBuilder *jump = OrphanBytecodeBuilder<JumpIfBuilder>(interpreter_opcodes::JMPL, "JMPL");
+   jump->setFunction(&JumpIfBuilder::lessThan);
+   registerBytecodeBuilder(jump);
+
+   jump = OrphanBytecodeBuilder<JumpIfBuilder>(interpreter_opcodes::JMPG, "JMPG");
+   jump->setFunction(&JumpIfBuilder::greaterThan);
+   registerBytecodeBuilder(jump);
+
+   registerBytecodeBuilder(OrphanBytecodeBuilder<CallBuilder>(interpreter_opcodes::CALL, "CALL"));
+   registerBytecodeBuilder(OrphanBytecodeBuilder<RetBuilder>(interpreter_opcodes::RET, "RET"));
+   registerBytecodeBuilder(OrphanBytecodeBuilder<ExitBuilder>(interpreter_opcodes::EXIT, "EXIT"));
    }
 
 void

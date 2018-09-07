@@ -28,20 +28,18 @@
 #include "ilgen/MethodBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 
-OMR::VirtualMachineInterpreterStack::VirtualMachineInterpreterStack(TR::MethodBuilder *mb, TR::VirtualMachineRegister *stackTopRegister, TR::IlType *elementType)
+OMR::VirtualMachineInterpreterStack::VirtualMachineInterpreterStack(TR::MethodBuilder *mb, TR::VirtualMachineRegister *stackTopRegister, TR::IlType *elementType, bool growsUp, bool preAdjust)
    : TR::VirtualMachineStack(),
    _mb(mb),
    _stackTopRegister(stackTopRegister),
    _elementType(elementType),
-   _stackBaseName(NULL)
+   _stackBaseName(NULL),
+   _growsUp(growsUp),
+   _preAdjust(preAdjust)
    {
    init();
    }
 
-// commits the simulated operand stack of values to the virtual machine state
-// the given builder object is where the operations to commit the state will be inserted
-// the top of the stack is assumed to be managed independently, most likely
-//    as a VirtualMachineRegister or a VirtualMachineRegisterInStruct
 void
 OMR::VirtualMachineInterpreterStack::Commit(TR::IlBuilder *b)
    {
@@ -53,7 +51,7 @@ OMR::VirtualMachineInterpreterStack::Reload(TR::IlBuilder* b)
    }
 
 void
-OMR::VirtualMachineInterpreterStack::MergeInto(TR::VirtualMachineInterpreterStack* other, TR::IlBuilder* b)
+OMR::VirtualMachineInterpreterStack::MergeInto(TR::VirtualMachineState* other, TR::IlBuilder* b)
    {
    }
 
@@ -62,11 +60,20 @@ OMR::VirtualMachineInterpreterStack::MergeInto(TR::VirtualMachineInterpreterStac
 void
 OMR::VirtualMachineInterpreterStack::UpdateStack(TR::IlBuilder *b, TR::IlValue *stack)
    {
-   // TODO remove this API
+   TR::IlValue *initialBase = b->Load(_stackBaseName);
+   initialBase = b->ConvertTo(_mb->typeDictionary()->toIlType<int64_t>(), initialBase);
+   TR::IlValue *currentBase = _stackTopRegister->Load(b);
+   currentBase = b->ConvertTo(_mb->typeDictionary()->toIlType<int64_t>(), currentBase);
+   TR::IlValue *delta = b->Sub(currentBase, initialBase);
+
+   b->Store(_stackBaseName, stack);
+   TR::IlValue *newStackTop = b->Add(stack, delta);
+
+   _stackTopRegister->Store(b, newStackTop);
    }
 
 // Allocate a new operand stack and copy everything in this state
-// If VirtualMachineOperandStack is subclassed, this function *must* also be implemented in the subclass!
+// If VirtualMachineInterpreterStack is subclassed, this function *must* also be implemented in the subclass!
 TR::VirtualMachineState *
 OMR::VirtualMachineInterpreterStack::MakeCopy()
    {
@@ -77,9 +84,16 @@ void
 OMR::VirtualMachineInterpreterStack::Push(TR::IlBuilder *builder, TR::IlValue *value)
    {
    TR::IlValue *stackAddress = _stackTopRegister->Load(builder);
-   _stackTopRegister->Adjust(builder, 1);
+   if (_growsUp)
+      {
+      _stackTopRegister->Adjust(builder, 1);
+      }
+   else
+      {
+      _stackTopRegister->Adjust(builder, -1);
+      }
 
-   if (_preIncrement)
+   if (_preAdjust)
       {
       stackAddress = _stackTopRegister->Load(builder);
       }
@@ -87,7 +101,6 @@ OMR::VirtualMachineInterpreterStack::Push(TR::IlBuilder *builder, TR::IlValue *v
    builder->StoreAt(
                stackAddress,
    builder->   ConvertTo(_elementType, value));
-
    }
 
 TR::IlValue *
@@ -97,9 +110,16 @@ OMR::VirtualMachineInterpreterStack::Top(TR::IlBuilder *builder)
    TR::IlType *pElementType = _mb->typeDictionary()->PointerTo(_elementType);
 
    int32_t offset = 0;
-   if (!_preIncrement)
+   if (!_preAdjust)
       {
-      offset = -1;
+      if (_growsUp)
+         {
+         offset = -1;
+         }
+      else
+         {
+         offset = 1;
+         }
       }
 
    TR::IlValue *value =
@@ -114,15 +134,21 @@ TR::IlValue *
 OMR::VirtualMachineInterpreterStack::Pop(TR::IlBuilder *builder)
    {
    TR::IlValue *stackAddress = _stackTopRegister->Load(builder);
-   _stackTopRegister->Adjust(builder, -1);
+   if (_growsUp)
+      {
+      _stackTopRegister->Adjust(builder, -1);
+      }
+   else
+      {
+      _stackTopRegister->Adjust(builder, 1);
+      }
 
-   if (!_preIncrement)
+   if (!_preAdjust)
       {
       stackAddress = _stackTopRegister->Load(builder);
       }
 
    TR::IlType *pElementType = _mb->typeDictionary()->PointerTo(_elementType);
-
    return builder->LoadAt(pElementType, stackAddress);
    }
 
@@ -135,24 +161,35 @@ OMR::VirtualMachineInterpreterStack::Pick(TR::IlBuilder *builder, int32_t depth)
 TR::IlValue *
 OMR::VirtualMachineInterpreterStack::Pick(TR::IlBuilder *builder, TR::IlValue *depth)
    {
-   if (!_preIncrement)
+   if (!_preAdjust)
       {
-      //depth += 1;
       TR::IlValue *one = builder->ConstInt32(1);
       depth = builder->Add(depth, one);
       }
 
-   TR::IlValue *zero = builder->ConstInt32(0);
-   TR::IlValue *negatedDepth = builder->Sub(zero, depth);
+   TR::IlValue *negatedDepth = builder->Negate(depth);
 
-   //_stackTopRegister->Adjust(builder, -depth);
-   _stackTopRegister->Adjust(builder, negatedDepth);
+   if (_growsUp)
+      {
+      _stackTopRegister->Adjust(builder, negatedDepth);
+      }
+   else
+      {
+      _stackTopRegister->Adjust(builder, depth);
+      }
+
    TR::IlValue *stackAddress = _stackTopRegister->Load(builder);
-
    TR::IlType *pElementType = _mb->typeDictionary()->PointerTo(_elementType);
    TR::IlValue *result = builder->LoadAt(pElementType, stackAddress);
 
-   _stackTopRegister->Adjust(builder, depth);
+   if (_growsUp)
+      {
+      _stackTopRegister->Adjust(builder, depth);
+      }
+   else
+      {
+      _stackTopRegister->Adjust(builder, negatedDepth);
+      }
 
    return result;
    }
@@ -166,9 +203,8 @@ OMR::VirtualMachineInterpreterStack::Drop(TR::IlBuilder *builder, int32_t depth)
 void
 OMR::VirtualMachineInterpreterStack::Drop(TR::IlBuilder *builder, TR::IlValue *depth)
    {
-   //TODO replace with an IlBuilder::Negate();
-   TR::IlValue *zero = builder->ConstInt32(0);
-   TR::IlValue *negatedDepth = builder->Sub(zero, depth);
+   TR::IlValue *negatedDepth = builder->Negate(depth);
+
    _stackTopRegister->Adjust(builder, negatedDepth);
    }
 
@@ -192,9 +228,6 @@ OMR::VirtualMachineInterpreterStack::init()
 
    _stackBaseName = symRef->getSymbol()->getAutoSymbol()->getName();
 
-   _preIncrement = false;
-
-   // store current operand stack pointer base address so we can use it whenever we need
-   // to recreate the stack as the interpreter would have
+   // store current stack value so that we can use this when MoveStack is called
    _mb->Store(_stackBaseName, _stackTopRegister->Load(_mb));
    }

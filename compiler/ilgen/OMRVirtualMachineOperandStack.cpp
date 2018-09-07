@@ -109,8 +109,9 @@ OMR::VirtualMachineOperandStack::Reload(TR::IlBuilder* b)
    }
 
 void
-OMR::VirtualMachineOperandStack::MergeInto(TR::VirtualMachineOperandStack* other, TR::IlBuilder* b)
+OMR::VirtualMachineOperandStack::MergeInto(TR::VirtualMachineState* o, TR::IlBuilder* b)
    {
+   TR::VirtualMachineOperandStack* other = (TR::VirtualMachineOperandStack*)o;
    TR_ASSERT(_stackTop == other->_stackTop, "stacks are not same size");
    for (int32_t i=_stackTop;i >= 0;i--)
       {

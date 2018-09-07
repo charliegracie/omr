@@ -20,12 +20,6 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-
-#include <iostream>
-#include <stdlib.h>
-#include <stdint.h>
-#include <errno.h>
-
 #include "Jit.hpp"
 #include "ilgen/InterpreterBuilder.hpp"
 #include "ilgen/JitMethodBuilder.hpp"
@@ -103,48 +97,74 @@ JitMethod::createVMState()
    return vmState;
    }
 
-const int8_t *
-JitMethod::getBytecodes()
+bool
+JitMethod::hasMoreBytecodes(int32_t currentBytecodeIndex)
    {
-   return _method->bytecodes;
+   return (currentBytecodeIndex < _method->bytecodeLength);
    }
-int32_t
-JitMethod::getNumberBytecodes()
+
+TR::IlValue *
+JitMethod::getBytecodeAtIndex(TR::IlBuilder *builder, int32_t index)
    {
-   return _method->bytecodeLength;
+   return builder->ConstInt8(_method->bytecodes[index]);
    }
 
 TR::BytecodeBuilder*
-JitMethod::createBuilder(OPCODES opcode, int32_t bcIndex)
+JitMethod::createBuilder(int32_t bcIndex)
    {
+   interpreter_opcodes opcode = (interpreter_opcodes)_method->bytecodes[bcIndex];
    switch(opcode)
       {
       case PUSH_CONSTANT:
-         return PushConstantBuilder::OrphanBytecodeBuilder(this, bcIndex);
-      case DUP:
-         return DupBuilder::OrphanBytecodeBuilder(this, bcIndex);
-      case ADD:
-         return MathBuilder::OrphanBytecodeBuilder(this, bcIndex, &MathBuilder::add);
-      case SUB:
-         return MathBuilder::OrphanBytecodeBuilder(this, bcIndex, &MathBuilder::sub);
-      case MUL:
-         return MathBuilder::OrphanBytecodeBuilder(this, bcIndex, &MathBuilder::mul);
-      case DIV:
-         return MathBuilder::OrphanBytecodeBuilder(this, bcIndex, &MathBuilder::div);
-      case RET:
-         return RetBuilder::OrphanBytecodeBuilder(this, bcIndex, _interpTypes->getTypes().pFrame);
-      case JMPL:
-         return JumpIfBuilder::OrphanBytecodeBuilder(this, bcIndex, &JumpIfBuilder::lessThan);
-      case JMPG:
-         return JumpIfBuilder::OrphanBytecodeBuilder(this, bcIndex, &JumpIfBuilder::greaterThan);
-      case PUSH_LOCAL:
-         return PushLocalBuilder::OrphanBytecodeBuilder(this, bcIndex);
-      case POP_LOCAL:
-         return PopLocalBuilder::OrphanBytecodeBuilder(this, bcIndex);
+         return OrphanBytecodeBuilder<PushConstantBuilder>(bcIndex, "PUSH_CONSTNT");
       case PUSH_ARG:
-         return PushArgBuilder::OrphanBytecodeBuilder(this, bcIndex);
+         return OrphanBytecodeBuilder<PushArgBuilder>(bcIndex, "PUSH_ARG");
+      case PUSH_LOCAL:
+         return OrphanBytecodeBuilder<PushLocalBuilder>(bcIndex, "PUSH_LOCAL");
+      case POP_LOCAL:
+         return OrphanBytecodeBuilder<PopLocalBuilder>(bcIndex, "POP_LOCAL");
+      case DUP:
+         return OrphanBytecodeBuilder<DupBuilder>(bcIndex, "DUP");
+      case ADD:
+         {
+         MathBuilder *math = OrphanBytecodeBuilder<MathBuilder>(bcIndex, "ADD");
+         math->setFunction(&MathBuilder::add);
+         return math;
+         }
+      case SUB:
+         {
+         MathBuilder *math = OrphanBytecodeBuilder<MathBuilder>(bcIndex, "SUB");
+         math->setFunction(&MathBuilder::sub);
+         return math;
+         }
+      case MUL:
+         {
+         MathBuilder *math = OrphanBytecodeBuilder<MathBuilder>(bcIndex, "MUL");
+         math->setFunction(&MathBuilder::mul);
+         return math;
+         }
+      case DIV:
+         {
+         MathBuilder *math = OrphanBytecodeBuilder<MathBuilder>(bcIndex, "DIV");
+         math->setFunction(&MathBuilder::div);
+         return math;
+         }
+      case JMPL:
+         {
+         JumpIfBuilder *jump = OrphanBytecodeBuilder<JumpIfBuilder>(bcIndex, "JMPL");
+         jump->setFunction(&JumpIfBuilder::lessThan);
+         return jump;
+         }
+      case JMPG:
+         {
+         JumpIfBuilder *jump = OrphanBytecodeBuilder<JumpIfBuilder>(bcIndex, "JMPL");
+         jump->setFunction(&JumpIfBuilder::lessThan);
+         return jump;
+         }
       case CALL:
-         return CallBuilder::OrphanBytecodeBuilder(this, bcIndex, _interpTypes->getTypes().pInterpreter, _interpTypes->getTypes().pFrame);
+         return OrphanBytecodeBuilder<CallBuilder>(bcIndex, "CALL");
+      case RET:
+         return OrphanBytecodeBuilder<RetBuilder>(bcIndex, "RET");
       case EXIT:
       default:
          {

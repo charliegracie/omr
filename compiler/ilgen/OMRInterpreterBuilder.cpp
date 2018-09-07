@@ -32,12 +32,12 @@
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/VirtualMachineState.hpp"
 #include "ilgen/VirtualMachineRegister.hpp"
-#include "ilgen/VirtualMachineInterpreterStack.hpp"
 
 #include <iostream>
 #include <stdlib.h>
 #include <stdint.h>
 #include <errno.h>
+#include <algorithm>
 
 using std::cout;
 using std::cerr;
@@ -61,16 +61,12 @@ OMR::InterpreterBuilder::InterpreterBuilder(TR::TypeDictionary *d, const char *b
    _bytecodePtrType(NULL),
    _pcName(pcName),
    _opcodeName(opcodeName),
-   _defaultHandler(NULL)
+   _defaultHandler(NULL),
+   _registeredBytecodes()
    {
    _bytecodePtrType = d->PointerTo(_bytecodeElementType);
 
    DefineFunction((char *)"handleBadOpcode", (char *)__FILE__, (char *)HANDLEBADEOPCODE_LINE, (void *)&handleBadOpcode, NoType, 2, Int32, Int32);
-
-   for (int i = 0; i < OPCODES::BC_COUNT; i ++)
-      {
-      _opcodeBuilders[i] = NULL;
-      }
 
    DefineLocal(_pcName, Int32);
    DefineLocal(_opcodeName, Int32);
@@ -94,7 +90,7 @@ TR::IlValue *
 OMR::InterpreterBuilder::GetImmediate(TR::BytecodeBuilder *builder)
    {
    TR::IlValue *pc = builder->Load(_pcName);
-   TR::IlValue *increment = builder->ConstInt32(_bytecodeElementType->getSize());
+   TR::IlValue *increment = builder->ConstInt32(1);
    TR::IlValue *newPC = builder->Add(pc, increment);
 
    TR::IlValue *immediate =
@@ -116,6 +112,7 @@ OMR::InterpreterBuilder::DefaultFallthroughTarget(TR::BytecodeBuilder *builder)
 void
 OMR::InterpreterBuilder::SetJumpIfTarget(TR::BytecodeBuilder *builder, TR::IlValue *condition, TR::IlValue *jumpTarget)
    {
+   DefaultFallthroughTarget(builder);
    TR::IlBuilder *doJump = NULL;
    builder->IfThen(&doJump, condition);
 
@@ -143,14 +140,16 @@ OMR::InterpreterBuilder::registerBytecodeBuilder(TR::BytecodeBuilder *handler)
    TR_ASSERT(handler != NULL, "Can not register a NULL bytecodeBuilder");
 
    int32_t index = handler->bcIndex();
-   TR_ASSERT(index < OPCODES::BC_COUNT, "Can not register an index (%d) larger than %d", index, OPCODES::BC_COUNT);
+   TR_ASSERT(index <= 128, "Can not register an index (%d) larger than %d", index, 128);
 
-   _opcodeBuilders[index] = handler;
+   _registeredBytecodes.push_back(handler);
 
    handler->propagateVMState(vmState());
 
    handler->execute();
    }
+
+bool bytecodeBuilderSort (TR::BytecodeBuilder *i,TR::BytecodeBuilder *j) { return (i->bcIndex()<j->bcIndex()); }
 
 bool
 OMR::InterpreterBuilder::buildIL()
@@ -161,7 +160,7 @@ OMR::InterpreterBuilder::buildIL()
 
    setVMState(createVMState());
 
-   _defaultHandler = OrphanBytecodeBuilder(OPCODES::BC_COUNT + 1, "default handler");
+   _defaultHandler = OrphanBytecodeBuilder(129, "default handler");
 
    //TODO can this be replaced with Reload();
    loadBytecodes(this);
@@ -174,31 +173,33 @@ OMR::InterpreterBuilder::buildIL()
    getNextOpcode(doWhileBody);
 
    registerBytecodeBuilders();
-   completeBytecodeBuilderRegistration();
 
    TR::IlValue *pc = getPC(doWhileBody);
-   TR::IlValue *increment = doWhileBody->ConstInt32(_bytecodeElementType->getSize());
+   TR::IlValue *increment = doWhileBody->ConstInt32(1);
    TR::IlValue *newPC = doWhileBody->Add(pc, increment);
    setPC(doWhileBody, newPC);
 
-   Switch("opcode", doWhileBody, _defaultHandler, OPCODES::BC_COUNT,
-                   OPCODES::BC_00, &_opcodeBuilders[OPCODES::BC_00], false,
-                   OPCODES::BC_01, &_opcodeBuilders[OPCODES::BC_01], false,
-                   OPCODES::BC_02, &_opcodeBuilders[OPCODES::BC_02], false,
-                   OPCODES::BC_03, &_opcodeBuilders[OPCODES::BC_03], false,
-                   OPCODES::BC_04, &_opcodeBuilders[OPCODES::BC_04], false,
-                   OPCODES::BC_05, &_opcodeBuilders[OPCODES::BC_05], false,
-                   OPCODES::BC_06, &_opcodeBuilders[OPCODES::BC_06], false,
-                   OPCODES::BC_07, &_opcodeBuilders[OPCODES::BC_07], false,
-                   OPCODES::BC_08, &_opcodeBuilders[OPCODES::BC_08], false,
-                   OPCODES::BC_09, &_opcodeBuilders[OPCODES::BC_09], false,
-                   OPCODES::BC_10, &_opcodeBuilders[OPCODES::BC_10], false,
-                   OPCODES::BC_11, &_opcodeBuilders[OPCODES::BC_11], false,
-                   OPCODES::BC_12, &_opcodeBuilders[OPCODES::BC_12], false,
-                   OPCODES::BC_13, &_opcodeBuilders[OPCODES::BC_13], false,
-                   OPCODES::BC_14, &_opcodeBuilders[OPCODES::BC_14], false,
-                   OPCODES::BC_15, &_opcodeBuilders[OPCODES::BC_15], false
-                   );
+   size_t numberOfRegisteredBytecodes = _registeredBytecodes.size();
+   int32_t *caseValues = (int32_t *) _comp->trMemory()->allocateHeapMemory(numberOfRegisteredBytecodes * sizeof(int32_t));
+   TR_ASSERT(0 != caseValues, "out of memory");
+
+   TR::BytecodeBuilder **caseBuilders = (TR::BytecodeBuilder **) _comp->trMemory()->allocateHeapMemory(numberOfRegisteredBytecodes * sizeof(TR::BytecodeBuilder *));
+   TR_ASSERT(0 != caseBuilders, "out of memory");
+
+   bool *caseFallsThrough = (bool *) _comp->trMemory()->allocateHeapMemory(numberOfRegisteredBytecodes * sizeof(bool));
+   TR_ASSERT(0 != caseFallsThrough, "out of memory");
+
+   std::sort(_registeredBytecodes.begin(), _registeredBytecodes.end(), bytecodeBuilderSort);
+
+   for (int i = 0; i < numberOfRegisteredBytecodes; i++)
+      {
+      TR::BytecodeBuilder *builder = _registeredBytecodes.at(i);
+      caseBuilders[i] = builder;
+      caseValues[i] = builder->bcIndex();
+      caseFallsThrough[i] = false;
+      }
+
+   Switch("opcode", doWhileBody, _defaultHandler, numberOfRegisteredBytecodes, caseValues, caseBuilders, caseFallsThrough);
 
    _defaultHandler->Call("handleBadOpcode", 2, _defaultHandler->Load(_opcodeName), _defaultHandler->Load(_pcName));
    _defaultHandler->Goto(&breakBody);
@@ -225,12 +226,6 @@ OMR::InterpreterBuilder::setBytecodes(TR::IlBuilder *builder, TR::IlValue *value
    builder->Store(_bytecodePtrName, value);
    }
 
-TR::IlValue *
-OMR::InterpreterBuilder::getBytecodes(TR::IlBuilder *builder)
-   {
-   return builder->Load(_bytecodePtrName);
-   }
-
 void
 OMR::InterpreterBuilder::setPC(TR::IlBuilder *builder, TR::IlValue *value)
    {
@@ -241,20 +236,6 @@ TR::IlValue *
 OMR::InterpreterBuilder::getPC(TR::IlBuilder *builder)
    {
    return builder->Load(_pcName);
-   }
-
-void
-OMR::InterpreterBuilder::completeBytecodeBuilderRegistration()
-   {
-   for (int i = 0; i < OPCODES::BC_COUNT; i ++)
-      {
-      if (NULL == _opcodeBuilders[i])
-         {
-         _opcodeBuilders[i] = OrphanBytecodeBuilder(i, "Unknown opcode");
-         _opcodeBuilders[i]->propagateVMState(vmState());
-         _opcodeBuilders[i]->Goto(_defaultHandler);
-         }
-      }
    }
 
 void
@@ -308,46 +289,6 @@ OMR::InterpreterBuilder::Switch(const char *selectionVar,
                   TR::BytecodeBuilder *currentBuilder,
                   TR::BytecodeBuilder *defaultBuilder,
                   uint32_t numCases,
-                  ...)
-   {
-   int32_t *caseValues = (int32_t *) _comp->trMemory()->allocateHeapMemory(numCases * sizeof(int32_t));
-   TR_ASSERT(0 != caseValues, "out of memory");
-
-   TR::BytecodeBuilder **caseBuilders = (TR::BytecodeBuilder **) _comp->trMemory()->allocateHeapMemory(numCases * sizeof(TR::BytecodeBuilder *));
-   TR_ASSERT(0 != caseBuilders, "out of memory");
-
-   bool *caseFallsThrough = (bool *) _comp->trMemory()->allocateHeapMemory(numCases * sizeof(bool));
-   TR_ASSERT(0 != caseFallsThrough, "out of memory");
-
-   va_list cases;
-   va_start(cases, numCases);
-   for (int32_t c=0;c < numCases;c++)
-      {
-      caseValues[c] = (int32_t) va_arg(cases, int);
-      caseBuilders[c] = *(TR::BytecodeBuilder **) va_arg(cases, TR::BytecodeBuilder **);
-      caseFallsThrough[c] = (bool) va_arg(cases, int);
-      }
-   va_end(cases);
-
-   Switch(selectionVar, currentBuilder, defaultBuilder, numCases, caseValues, caseBuilders, caseFallsThrough);
-
-   // if Switch created any new builders, we need to put those back into the arguments passed into this Switch call
-   va_start(cases, numCases);
-   for (int32_t c=0;c < numCases;c++)
-      {
-      int throwawayValue = va_arg(cases, int);
-      TR::BytecodeBuilder **caseBuilder = va_arg(cases, TR::BytecodeBuilder **);
-      (*caseBuilder) = caseBuilders[c];
-      int throwAwayFallsThrough = va_arg(cases, int);
-      }
-   va_end(cases);
-   }
-
-void
-OMR::InterpreterBuilder::Switch(const char *selectionVar,
-                  TR::BytecodeBuilder *currentBuilder,
-                  TR::BytecodeBuilder *defaultBuilder,
-                  uint32_t numCases,
                   int32_t *caseValues,
                   TR::BytecodeBuilder **caseBuilders,
                   bool *caseFallsThrough)
@@ -368,7 +309,7 @@ OMR::InterpreterBuilder::Switch(const char *selectionVar,
    TR::BytecodeBuilder *breakBuilder = OrphanBytecodeBuilder(-1, "SwitchBreakBuilder");
 
    // each case handler is a sequence of two builder objects: first the one passed in via caseBuilder (or will be passed
-   //   back via caseBuilders, and second a builder that branches to the breakBuilder (unless this case falls through)
+   // back via caseBuilders, and second a builder that branches to the breakBuilder (unless this case falls through)
    for (int32_t c=0;c < numCases;c++)
       {
       int32_t value = caseValues[c];

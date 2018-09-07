@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2016 IBM Corp. and others
+ * Copyright (c) 2018, 2018 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -20,7 +20,6 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-
 #ifndef MATHBUILDER_INCL
 #define MATHBUILDER_INCL
 
@@ -33,11 +32,11 @@ namespace TR { class InterpreterBuilder; }
 class MathBuilder : public TR::BytecodeBuilder
    {
    public:
-   MathBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex, MathFuncType mathFunction);
+   MathBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, char *name);
 
    virtual void execute();
 
-   static MathBuilder *OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex, MathFuncType mathFunction);
+   void setFunction(MathFuncType mathFunction) { _mathFunction = mathFunction; }
 
    static TR::IlValue *add(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
    static TR::IlValue *sub(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);

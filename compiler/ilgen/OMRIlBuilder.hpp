@@ -31,7 +31,7 @@
 #include "ilgen/IlValue.hpp" // must go after IlInjector.hpp or TR_ALLOC isn't cleaned up
 
 namespace OMR { class MethodBuilder; }
-namespace OMR { class BytecodeBuilder; }
+namespace OMR { class InterpreterBuilder; }
 
 namespace TR { class Block; }
 namespace TR { class IlGeneratorMethodDetails; }
@@ -144,7 +144,7 @@ public:
       };
 
    friend class OMR::MethodBuilder;
-   friend class OMR::BytecodeBuilder;
+   friend class OMR::InterpreterBuilder;
 
    IlBuilder(TR::MethodBuilder *methodBuilder, TR::TypeDictionary *types)
       : TR::IlInjector(types),
@@ -192,12 +192,6 @@ public:
    bool comesBack()          { return _comesBack; }
 
    bool blocksHaveBeenCounted() { return _count > -1; }
-
-   TR::Node *loadValue(TR::IlValue *v);
-   void appendNoFallThroughBlock(TR::Block *block = 0)
-      {
-      appendBlock(block, false);
-      }
 
    TR::IlBuilder *createBuilderIfNeeded(TR::IlBuilder *builder);
    TR::IlBuilder *OrphanBuilder();
@@ -591,6 +585,7 @@ protected:
    TR::IlValue *newValue(TR::DataType dt, TR::Node *n=NULL);
    void defineValue(const char *name, TR::IlType *dt);
 
+   TR::Node *loadValue(TR::IlValue *v);
    void storeNode(TR::SymbolReference *symRef, TR::Node *v);
    void indirectStoreNode(TR::Node *addr, TR::Node *v);
    TR::IlValue *indirectLoadNode(TR::IlType *dt, TR::Node *addr, bool isVectorLoad=false);
@@ -622,6 +617,10 @@ protected:
    void appendGoto(TR::Block *destBlock);
 
    virtual void appendBlock(TR::Block *block = 0, bool addEdge=true);
+   void appendNoFallThroughBlock(TR::Block *block = 0)
+      {
+      appendBlock(block, false);
+      }
 
    TR::Block *emptyBlock();
    

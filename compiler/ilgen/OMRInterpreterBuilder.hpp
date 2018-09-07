@@ -22,12 +22,13 @@
 #ifndef OMR_INTERPRETERBUILDER_INCL
 #define OMR_INTERPRETERBUILDER_INCL
 
+#include <vector>
+
 #include "ilgen/RuntimeBuilder.hpp"
 
 namespace TR { class InterpreterBuilder; }
 namespace TR { class BytecodeBuilder;}
-namespace TR { class VirtualMachineRegister; }
-namespace TR { class VirtualMachineInterpreterStack; }
+namespace TR { class VirtualMachineState; }
 
 namespace OMR
 {
@@ -51,7 +52,7 @@ public:
    virtual bool buildIL();
    virtual void registerBytecodeBuilders() = 0;
    virtual void handleInterpreterExit(TR::IlBuilder *builder) = 0;
-   virtual TR::VirtualMachineState *createVMState() {return NULL;}
+   virtual TR::VirtualMachineState *createVMState() = 0;
    virtual void loadBytecodes(TR::IlBuilder *builder) = 0;
    virtual void loadPC(TR::IlBuilder *builder) = 0;
    virtual void savePC(TR::IlBuilder *builder, TR::IlValue *pc) = 0;
@@ -62,11 +63,8 @@ protected:
    void getNextOpcode(TR::IlBuilder *builder);
 
    void setBytecodes(TR::IlBuilder *builder, TR::IlValue *value);
-   TR::IlValue *getBytecodes(TR::IlBuilder *builder);
    void setPC(TR::IlBuilder *builder, TR::IlValue *value);
    TR::IlValue *getPC(TR::IlBuilder *builder);
-
-   void completeBytecodeBuilderRegistration();
 
    void DoWhileLoop(const char *whileCondition,
                TR::BytecodeBuilder **body,
@@ -79,11 +77,6 @@ protected:
                int32_t *caseValues,
                TR::BytecodeBuilder **caseBuilders,
                bool *caseFallsThrough);
-   void Switch(const char *selectionVar,
-               TR::BytecodeBuilder *currentBuilder,
-               TR::BytecodeBuilder *defaultBuilder,
-               uint32_t numCases,
-               ...);
 
 private:
    bool _isRecursiveCall;
@@ -93,7 +86,7 @@ private:
    const char *_pcName;
    const char *_opcodeName;
    TR::BytecodeBuilder *_defaultHandler;
-   TR::BytecodeBuilder *_opcodeBuilders[OPCODES::BC_COUNT];
+   std::vector<TR::BytecodeBuilder *> _registeredBytecodes;
    };
 
 } // namespace OMR

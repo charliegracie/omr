@@ -33,11 +33,6 @@ class VirtualMachineInterpreterArray : public OMR::VirtualMachineInterpreterArra
    VirtualMachineInterpreterArray(TR::MethodBuilder *mb, TR::IlType *elementType, TR::VirtualMachineRegister *arrayBase) :
       OMR::VirtualMachineInterpreterArray(mb, elementType, arrayBase)
       { }
-
-   VirtualMachineInterpreterArray(TR::VirtualMachineInterpreterArray *other) :
-      OMR::VirtualMachineInterpreterArray(other)
-      { }
-
    };
 }
 

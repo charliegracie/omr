@@ -33,7 +33,6 @@
 
 class TR_BitVector;
 namespace TR { class BytecodeBuilder; }
-namespace TR { class BytecodeBuilder; }
 namespace TR { class ResolvedMethod; }
 namespace TR { class SymbolReference; }
 namespace TR { class VirtualMachineState; }
@@ -107,7 +106,18 @@ class MethodBuilder : public TR::IlBuilder
    TR::ResolvedMethod *lookupFunction(const char *name);
 
    TR::BytecodeBuilder *OrphanBytecodeBuilder(int32_t bcIndex=0, char *name=NULL);
-   void InitializeBytecodeBuilder(TR::BytecodeBuilder *b);
+
+   void *allocateData(size_t size);
+   template<typename T>
+   T *
+   OrphanBytecodeBuilder(int32_t bcIndex, char *name)
+      {
+      T *orphan = ::new (allocateData(sizeof(T))) T(_methodBuilder, bcIndex, name);
+      initializeBytecodeBuilder(orphan);
+      return orphan;
+      }
+
+   void initializeBytecodeBuilder(TR::BytecodeBuilder * orphan);
 
    void AppendBuilder(TR::BytecodeBuilder *bb);
    void AppendBuilder(TR::IlBuilder *b)    { this->OMR::IlBuilder::AppendBuilder(b); }

@@ -47,7 +47,6 @@
 #include "ilgen/IlBuilder.hpp"
 #include "ilgen/MethodBuilder.hpp"
 #include "ilgen/BytecodeBuilder.hpp"
-#include "ilgen/BytecodeBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/VirtualMachineState.hpp"
 
@@ -486,16 +485,20 @@ OMR::MethodBuilder::isSymbolAnArray(const char *name)
 TR::BytecodeBuilder *
 OMR::MethodBuilder::OrphanBytecodeBuilder(int32_t bcIndex, char *name)
    {
-   TR::BytecodeBuilder *orphan = new (comp()->trHeapMemory()) TR::BytecodeBuilder(_methodBuilder, bcIndex, name);
-   InitializeBytecodeBuilder(orphan);
-   return orphan;
+   return OrphanBytecodeBuilder<TR::BytecodeBuilder>(bcIndex, name);
+   }
+
+void *
+OMR::MethodBuilder::allocateData(size_t size)
+   {
+   return  comp()->trMemory()->allocateHeapMemory(size, TR_Memory::IlGenerator);
    }
 
 void
-OMR::MethodBuilder::InitializeBytecodeBuilder(TR::BytecodeBuilder *b)
+OMR::MethodBuilder::initializeBytecodeBuilder(TR::BytecodeBuilder *orphan)
    {
-   b->initialize(_details, _methodSymbol, _fe, _symRefTab);
-   b->setupForBuildIL();
+   orphan->initialize(_details, _methodSymbol, _fe, _symRefTab);
+   orphan->setupForBuildIL();
    }
 
 void

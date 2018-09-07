@@ -26,61 +26,44 @@
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/VirtualMachineState.hpp"
 #include "ilgen/VirtualMachineRegister.hpp"
-#include "ilgen/VirtualMachineInterpreterStack.hpp"
-
-#include <iostream>
-#include <stdlib.h>
-#include <stdint.h>
-#include <errno.h>
-
-using std::cout;
-using std::cerr;
 
 OMR::JitMethodBuilder::JitMethodBuilder(TR::TypeDictionary *d)
-   : TR::RuntimeBuilder(d)
+   : TR::RuntimeBuilder(d),
+   _builders()
    {
    }
 
 void
 OMR::JitMethodBuilder::Commit(TR::BytecodeBuilder *builder)
    {
-
    }
 
 void
 OMR::JitMethodBuilder::Reload(TR::BytecodeBuilder *builder)
    {
-
    }
 
 TR::IlValue *
 OMR::JitMethodBuilder::GetImmediate(TR::BytecodeBuilder *builder)
    {
-   int8_t immediate = getBytecodes()[_pc];
+   TR::IlValue *immediate = getBytecodeAtIndex(builder, _pc);
    _pc += 1;
-   //TODO store _pc as _pcName if there JitMethod should be implementing Commit/Reload
-
-   return builder->ConstInt8(immediate);
+   return immediate;
    }
 
 void
 OMR::JitMethodBuilder::DefaultFallthroughTarget(TR::BytecodeBuilder *builder)
    {
-   if (_pc != (builder->bcIndex() + builder->bcLength()))
-      {
-      int *x = 0;
-      fprintf(stderr, "DefaultFallthroughTarget _pc %d != calculated pc %d\n", _pc, (builder->bcIndex() + builder->bcLength()));
-      *x = 0;
-      }
-   builder->AddFallThroughBuilder(_builders[builder->bcIndex() + builder->bcLength()]);
+   TR_ASSERT(_pc == (builder->bcIndex() + builder->bcLength()), "DefaultFallthroughTarget _pc %d != calculated pc %d\n", _pc, (builder->bcIndex() + builder->bcLength()));
+   builder->AddFallThroughBuilder(getBuilder(_pc));
    }
 
 void
 OMR::JitMethodBuilder::SetJumpIfTarget(TR::BytecodeBuilder *builder, TR::IlValue *condition, TR::IlValue *jumpTarget)
    {
-   TR::BytecodeBuilder *target = _builders[jumpTarget->get32bitConstValue()];
+   TR::BytecodeBuilder *target = getBuilder(jumpTarget->get32bitConstValue());
    builder->IfCmpNotEqualZero(target, condition);
-   builder->AddFallThroughBuilder(_builders[builder->bcIndex() + builder->bcLength()]);
+   DefaultFallthroughTarget(builder);
    }
 
 void
@@ -92,58 +75,66 @@ OMR::JitMethodBuilder::ReturnTarget(TR::BytecodeBuilder *builder)
 bool
 OMR::JitMethodBuilder::buildIL()
    {
-   cout << "JitMethodBuilder::buildIL() running!\n";
-
    DefineFunctions(this);
-
-   int32_t bytecodeLength = getNumberBytecodes();
-   _builders = (TR::BytecodeBuilder **)malloc(sizeof(TR::BytecodeBuilder *) * bytecodeLength);
-   if (NULL == _builders)
-      {
-      return false;
-      }
 
    int32_t i = 0;
    bool canGenerate = true;
-   auto bytecodes = getBytecodes();
-   while (canGenerate && (i < bytecodeLength))
+   while (hasMoreBytecodes(i))
       {
-      OPCODES opcode = (OPCODES)bytecodes[i];
-      _builders[i] = createBuilder(opcode, i);
-      if (NULL == _builders[i])
+      TR::BytecodeBuilder *builder = createBuilder(i);
+      if (NULL == builder)
          {
          canGenerate = false;
          break;
          }
-      i += _builders[i]->bcLength();
+      setBuilder(i, builder);
+      i += builder->bcLength();
       }
 
    if (!canGenerate)
       {
-      free(_builders);
       return false;
       }
 
    TR::VirtualMachineState *state = createVMState();
    setVMState(state);
 
-   AppendBuilder(_builders[0]);
+   AppendBuilder(getBuilder(0));
 
    int32_t bytecodeIndex = GetNextBytecodeFromWorklist();
    while (-1 != bytecodeIndex)
       {
-      TR::BytecodeBuilder *builder = _builders[bytecodeIndex];
-
-      TR_ASSERT(NULL != builder, "Builder at bytecodeIndex %d can not be NULL", bytecodeIndex);
+      TR::BytecodeBuilder *builder = getBuilder(bytecodeIndex);
       TR_ASSERT(bytecodeIndex == builder->bcIndex(), "bytecodeIndex %d must == builder->bcIndex() %d", bytecodeIndex, builder->bcIndex());
+
       _pc = bytecodeIndex + 1;
-      //TODO see above about _pcName
 
       builder->execute();
 
       bytecodeIndex = GetNextBytecodeFromWorklist();
       }
 
-   free(_builders);
    return true;
+   }
+
+TR::BytecodeBuilder *
+OMR::JitMethodBuilder::getBuilder(int32_t bcIndex)
+   {
+   TR::BytecodeBuilder *builder = NULL;
+   auto search = _builders.find(bcIndex);
+   if (search != _builders.end())
+      {
+      builder = search->second;
+      }
+   TR_ASSERT(NULL != builder, "Attempt to get a BytecodeBuilder for index %ld but it does not exist", bcIndex);
+   return builder;
+   }
+
+void
+OMR::JitMethodBuilder::setBuilder(int32_t bcIndex, TR::BytecodeBuilder *builder)
+   {
+   auto search = _builders.find(bcIndex);
+   TR_ASSERT(search == _builders.end(), "Attempt to add a BytecodeBuilder at index %ld but one already exists", bcIndex);
+
+   _builders.insert(std::make_pair(bcIndex, builder));
    }

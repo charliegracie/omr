@@ -19,28 +19,8 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include "compile/Compilation.hpp"
-#include "compile/Method.hpp"
-#include "env/FrontEnd.hpp"
-#include "infra/List.hpp"
-#include "il/Block.hpp"
-#include "ilgen/BytecodeBuilder.hpp"
-#include "ilgen/IlInjector.hpp"
-#include "ilgen/IlBuilder.hpp"
 #include "ilgen/RuntimeBuilder.hpp"
 #include "ilgen/MethodBuilder.hpp"
-#include "ilgen/TypeDictionary.hpp"
-#include "ilgen/VirtualMachineState.hpp"
-#include "ilgen/VirtualMachineRegister.hpp"
-#include "ilgen/VirtualMachineInterpreterStack.hpp"
-
-#include <iostream>
-#include <stdlib.h>
-#include <stdint.h>
-#include <errno.h>
-
-using std::cout;
-using std::cerr;
 
 OMR::RuntimeBuilder::RuntimeBuilder(TR::TypeDictionary *d)
    : TR::MethodBuilder(d)

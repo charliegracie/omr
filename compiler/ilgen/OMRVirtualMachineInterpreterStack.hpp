@@ -50,13 +50,13 @@ namespace OMR
  * unlike VirtualMachineRegister, the simulated operand stack is *not* maintained
  * by the method code as part of the method's stack frame. This approach requires
  * modelling the state of the operand stack at all program points, which means
- * there cannot only be one VirtualMachineOperandStack object.
+ * there cannot only be one VirtualMachineInterpreterStack object.
  *
  * The current implementation does not share anything among different
- * VirtualMachineOperandStack objects. Possibly, some of the state could be
+ * VirtualMachineInterpreterStack objects. Possibly, some of the state could be
  * shared to save some memory. For now, simplicity is the goal.
  *
- * VirtualMachineOperandStack implements VirtualMachineState:
+ * VirtualMachineInterpreterStack implements VirtualMachineState:
  * Commit() simply iterates over the simulated operand stack and stores each
  *   value onto the virtual machine's operand stack (more details at definition).
  * Reload() is left empty; assumption is that each BytecodeBuilder handler will
@@ -69,7 +69,7 @@ namespace OMR
  *   *to*. So the purpose of MergeInto() is to store the values of the current
  *   state into the same variables as in the "other" state.
  * 
- * VirtualMachineOperandStack provides several stack-y operations:
+ * VirtualMachineInterpreterStack provides several stack-y operations:
  *   Push() pushes a TR::IlValue onto the stack
  *   Pop() pops and returns a TR::IlValue from the stack
  *   Top() returns the TR::IlValue at the top of the stack
@@ -93,15 +93,10 @@ class VirtualMachineInterpreterStack : public TR::VirtualMachineStack
     * @param stackInitialOffset to configure virtual machine stack stack offset 
     * set to the difference in elements between initial stack pointer and actual bottom of stack
     * Some stacks Push by incrementing stack pointer then storing, some by storing and then
-    * incrementing stack pointer. In the first case, stackInitialOffset should be -1
-    * because the stack pointer initially points one element below the bottom of the stack.
-    * In the second case, stackInitialOffset should be 0, because the stack pointer
-    * initially points at the bottom of the stack. Other values are possible but would be
-    * considered highly unusual. 
-    * Default behaviour for compatibility constructor will be optional arguments, growsUp is true, and stackInitialOffset is -1.
+    * incrementing stack pointer.
     */
 
-   VirtualMachineInterpreterStack(TR::MethodBuilder *mb, TR::VirtualMachineRegister *stackTopRegister, TR::IlType *elementType/*, int32_t stackInitialOffset = -1*/);
+   VirtualMachineInterpreterStack(TR::MethodBuilder *mb, TR::VirtualMachineRegister *stackTopRegister, TR::IlType *elementType, bool growsUp = true, bool preAdjust = true);
 
    /**
     * @brief write the simulated operand stack to the virtual machine
@@ -128,7 +123,7 @@ class VirtualMachineInterpreterStack : public TR::VirtualMachineStack
     * @param other operand stack for the builder object control is merging into
     * @param b builder object where the operations will be added to make the current operand stack the same as the other
     */
-   virtual void MergeInto(TR::VirtualMachineInterpreterStack *other, TR::IlBuilder *b);
+   virtual void MergeInto(TR::VirtualMachineState *other, TR::IlBuilder *b);
 
    /**
     * @brief update the values used to read and write the virtual machine stack
@@ -192,8 +187,6 @@ class VirtualMachineInterpreterStack : public TR::VirtualMachineStack
     */
    virtual void Dup(TR::IlBuilder *b);
 
- 
-
    protected:
    void init();
 
@@ -201,8 +194,9 @@ class VirtualMachineInterpreterStack : public TR::VirtualMachineStack
    TR::MethodBuilder *_mb;
    TR::VirtualMachineRegister *_stackTopRegister;
    TR::IlType *_elementType;
-   bool _preIncrement;
    const char *_stackBaseName;
+   bool _growsUp;
+   bool _preAdjust;
    };
 }
 

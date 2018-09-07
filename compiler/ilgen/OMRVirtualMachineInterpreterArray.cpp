@@ -30,27 +30,13 @@
 #include "ilgen/VirtualMachineRegister.hpp"
 #include "ilgen/VirtualMachineState.hpp"
 
-#define TraceEnabled    (TR::comp()->getOption(TR_TraceILGen))
-#define TraceIL(m, ...) {if (TraceEnabled) {traceMsg(TR::comp(), m, ##__VA_ARGS__);}}
-
 OMR::VirtualMachineInterpreterArray::VirtualMachineInterpreterArray(TR::MethodBuilder *mb, TR::IlType *elementType, TR::VirtualMachineRegister *arrayBaseRegister)
    : TR::VirtualMachineArray(),
    _mb(mb),
    _elementType(elementType),
    _arrayBaseRegister(arrayBaseRegister)
    {
-   init();
    }
-
-OMR::VirtualMachineInterpreterArray::VirtualMachineInterpreterArray(TR::VirtualMachineInterpreterArray *other)
-   : TR::VirtualMachineArray(),
-   _mb(other->_mb),
-   _elementType(other->_elementType),
-   _arrayBaseRegister(other->_arrayBaseRegister),
-   _arrayBaseName(other->_arrayBaseName)
-   {
-   }
-
 
 // commits the simulated operand array of values to the virtual machine state
 // the given builder object is where the operations to commit the state will be inserted
@@ -75,7 +61,7 @@ OMR::VirtualMachineInterpreterArray::MergeInto(TR::VirtualMachineState *o, TR::I
 void
 OMR::VirtualMachineInterpreterArray::UpdateArray(TR::IlBuilder *b, TR::IlValue *array)
    {
-   // TODO remove this API
+   _arrayBaseRegister->Store(b, array);
    }
 
 // Allocate a new operand array and copy everything in this state
@@ -96,7 +82,7 @@ TR::IlValue *
 OMR::VirtualMachineInterpreterArray::Get(TR::IlBuilder *b, TR::IlValue *index)
    {
    TR::IlType *pElementType = _mb->typeDictionary()->PointerTo(_elementType);
-   TR::IlValue *arrayBase = _arrayBaseRegister->Load(b);//b->Load(_arrayBaseName);
+   TR::IlValue *arrayBase = _arrayBaseRegister->Load(b);
 
    TR::IlValue *arrayValue =
    b->LoadAt(pElementType,
@@ -117,7 +103,7 @@ void
 OMR::VirtualMachineInterpreterArray::Set(TR::IlBuilder *b, TR::IlValue *index, TR::IlValue *value)
    {
    TR::IlType *pElementType = _mb->typeDictionary()->PointerTo(_elementType);
-   TR::IlValue *arrayBase = _arrayBaseRegister->Load(b);//b->Load(_arrayBaseName);
+   TR::IlValue *arrayBase = _arrayBaseRegister->Load(b);
 
    b->StoreAt(
    b->   IndexAt(pElementType,
@@ -139,23 +125,4 @@ OMR::VirtualMachineInterpreterArray::Move(TR::IlBuilder *b, TR::IlValue *dstInde
    {
    TR::IlValue *value = Get(b, srcIndex);
    Set(b, dstIndex, value);
-   }
-
-void
-OMR::VirtualMachineInterpreterArray::init()
-   {
-   TR::Compilation *comp = TR::comp();
-   // Create a temp for the OperandArray base
-   TR::SymbolReference *symRef = comp->getSymRefTab()->createTemporary(_mb->methodSymbol(), _mb->typeDictionary()->PointerTo(_elementType)->getPrimitiveType());
-   symRef->getSymbol()->setNotCollected();
-   char *name = (char *) comp->trMemory()->allocateHeapMemory((11+10+1) * sizeof(char)); // 11 ("_ArrayBase_") + max 10 digits + trailing zero
-   sprintf(name, "_ArrayBase_%u", symRef->getCPIndex());
-   symRef->getSymbol()->getAutoSymbol()->setName(name);
-   _mb->defineSymbol(name, symRef);
-
-   _arrayBaseName = symRef->getSymbol()->getAutoSymbol()->getName();
-
-   // store current operand stack pointer base address so we can use it whenever we need
-   // to recreate the stack as the interpreter would have
-   _mb->Store(_arrayBaseName, _arrayBaseRegister->Load(_mb));
    }

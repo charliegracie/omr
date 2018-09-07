@@ -47,10 +47,10 @@ class JitMethod : public TR::JitMethodBuilder
 
    virtual void DefineFunctions(TR::MethodBuilder *mb);
 
-   virtual TR::BytecodeBuilder *createBuilder(OPCODES opcode, int32_t bytcodeIndex);
+   virtual TR::BytecodeBuilder *createBuilder(int32_t bytcodeIndex);
    virtual TR::VirtualMachineState *createVMState();
-   virtual const int8_t *getBytecodes();
-   virtual int32_t getNumberBytecodes();
+   virtual bool hasMoreBytecodes(int32_t currentBytecodeIndex);
+   virtual TR::IlValue *getBytecodeAtIndex(TR::IlBuilder *builder, int32_t index);
 
    protected:
 

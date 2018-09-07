@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2018 IBM Corp. and others
+ * Copyright (c) 2018, 2018 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -20,27 +20,17 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include <new>
-
 #include "ilgen/RuntimeBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
-#include "ilgen/VirtualMachineInterpreterStack.hpp"
+#include "ilgen/VirtualMachineStack.hpp"
 
 #include "InterpreterTypes.h"
 #include "PushArgBuilder.hpp"
 
-PushArgBuilder::PushArgBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex)
-   : BytecodeBuilder(runtimeBuilder, bcIndex, "PUSH_ARG", 2),
-   _runtimeBuilder(runtimeBuilder)
+PushArgBuilder::PushArgBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, char *name)
+   : BytecodeBuilder(methodBuilder, bcIndex, name, 2),
+   _runtimeBuilder((TR::RuntimeBuilder *)methodBuilder)
    {
-   }
-
-PushArgBuilder *
-PushArgBuilder::OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex)
-   {
-   PushArgBuilder *orphan = new PushArgBuilder(runtimeBuilder, bcIndex);
-   runtimeBuilder->InitializeBytecodeBuilder(orphan);
-   return orphan;
    }
 
 void

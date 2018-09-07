@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2016 IBM Corp. and others
+ * Copyright (c) 2018, 2018 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -31,11 +31,9 @@ namespace TR { class RuntimeBuilder; }
 class DupBuilder : public TR::BytecodeBuilder
    {
    public:
-   DupBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex);
+   DupBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, char *name);
 
    virtual void execute();
-
-   static DupBuilder *OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex);
 
    protected:
 

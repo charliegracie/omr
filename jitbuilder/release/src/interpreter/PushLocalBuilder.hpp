@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2016 IBM Corp. and others
+ * Copyright (c) 2018, 2018 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -20,7 +20,6 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-
 #ifndef PUSHLOCALBUILDER_INCL
 #define PUSHLOCALBUILDER_INCL
 
@@ -31,14 +30,11 @@ namespace TR { class RuntimeBuilder; }
 class PushLocalBuilder : public TR::BytecodeBuilder
    {
    public:
-   PushLocalBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex);
+   PushLocalBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, char *name);
 
    virtual void execute();
 
-   static PushLocalBuilder *OrphanBytecodeBuilder(TR::RuntimeBuilder *runtimeBuilder, int32_t bcIndex);
-
    protected:
-
    private:
    TR::RuntimeBuilder *_runtimeBuilder;
    };

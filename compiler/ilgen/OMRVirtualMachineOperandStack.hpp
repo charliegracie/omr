@@ -135,7 +135,7 @@ class VirtualMachineOperandStack : public TR::VirtualMachineStack
     * @param other operand stack for the builder object control is merging into
     * @param b builder object where the operations will be added to make the current operand stack the same as the other
     */
-   virtual void MergeInto(TR::VirtualMachineOperandStack *other, TR::IlBuilder *b);
+   virtual void MergeInto(TR::VirtualMachineState *other, TR::IlBuilder *b);
 
    /**
     * @brief update the values used to read and write the virtual machine stack

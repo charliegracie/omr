@@ -30,7 +30,7 @@ namespace TR { class IlBuilder; }
 namespace TR { class IlValue; }
 namespace TR { class IlType; }
 namespace TR { class MethodBuilder; }
-namespace TR { class VirtualMachineInterpreterStack; }
+namespace TR { class VirtualMachineStack; }
 namespace TR { class VirtualMachineRegister; }
 
 namespace OMR

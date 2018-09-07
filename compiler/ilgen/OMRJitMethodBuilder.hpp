@@ -24,9 +24,10 @@
 
 #include "ilgen/RuntimeBuilder.hpp"
 
+#include <map>
+
 namespace TR { class BytecodeBuilder;}
-namespace TR { class VirtualMachineRegister; }
-namespace TR { class VirtualMachineInterpreterStack; }
+namespace TR { class VirtualMachineState; }
 
 namespace OMR
 {
@@ -48,16 +49,19 @@ public:
    virtual void ReturnTarget(TR::BytecodeBuilder *builder);
 
    virtual bool buildIL();
-   virtual TR::BytecodeBuilder *createBuilder(OPCODES opcode, int32_t bytcodeIndex) = 0;
+   virtual TR::BytecodeBuilder *createBuilder(int32_t bytcodeIndex) = 0;
    virtual TR::VirtualMachineState *createVMState() = 0;
-   virtual const int8_t *getBytecodes() = 0;
-   virtual int32_t getNumberBytecodes() = 0;
+   virtual bool hasMoreBytecodes(int32_t currentBytecodeIndex) = 0;
+   virtual TR::IlValue *getBytecodeAtIndex(TR::IlBuilder *builder, int32_t index) = 0;
 
 protected:
 
 private:
-   TR::BytecodeBuilder **_builders;
+   TR::BytecodeBuilder *getBuilder(int32_t bcIndex);
+   void setBuilder(int32_t bcIndex, TR::BytecodeBuilder *builder);
+
    int32_t _pc;
+   std::map<int32_t, TR::BytecodeBuilder *> _builders;
    };
 
 } // namespace OMR

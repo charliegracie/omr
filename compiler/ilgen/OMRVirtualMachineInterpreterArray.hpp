@@ -76,12 +76,6 @@ class VirtualMachineInterpreterArray : public TR::VirtualMachineArray
    VirtualMachineInterpreterArray(TR::MethodBuilder *mb, TR::IlType *elementType, TR::VirtualMachineRegister *arrayBase);
 
    /**
-    * @brief constructor used to copy the array from another state
-    * @param other the operand array whose values should be used to initialize this object
-    */
-   VirtualMachineInterpreterArray(TR::VirtualMachineInterpreterArray *other);
-
-   /**
     * @brief write the simulated operand array to the virtual machine
     * @param b the builder where the operations will be placed to recreate the virtual machine operand array
     */
@@ -163,7 +157,6 @@ class VirtualMachineInterpreterArray : public TR::VirtualMachineArray
    TR::MethodBuilder *_mb;
    TR::VirtualMachineRegister *_arrayBaseRegister;
    TR::IlType *_elementType;
-   const char *_arrayBaseName;
    };
 }
 
