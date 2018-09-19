@@ -40,6 +40,8 @@ class BytecodeHelpers
    static Frame *j2iTransition(Interpreter *interp);;
    static Frame *i2iTransition(Interpreter *interp, int8_t argCount);
    static void compileMethod(Interpreter *interp, int8_t methodIndex);
+   static int64_t currentTime();
+   static void printTime(int64_t time);
 
    protected:
    private:

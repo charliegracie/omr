@@ -21,6 +21,8 @@
  *******************************************************************************/
 
 #include <new>
+#include <time.h>
+#include <sys/time.h>
 
 #include "Jit.hpp"
 #include "InterpreterTypes.h"
@@ -158,6 +160,21 @@ BytecodeHelpers::DefineFunctions(TR::MethodBuilder *mb)
    mb->DefineFunction((char *)"i2iTransition", (char *)__FILE__, (char *)I2ITRANSITION_LINE, (void *)&BytecodeHelpers::i2iTransition, frameType, 2, interpType, bytecodesType);
    mb->DefineFunction((char *)"compileMethod", (char *)__FILE__, (char *)COMPILEMETHOD_LINE, (void *)&BytecodeHelpers::compileMethod, voidType, 2, interpType, bytecodesType);
    }
+
+int64_t
+BytecodeHelpers::currentTime()
+{
+   struct timeval tp;
+
+   gettimeofday(&tp, NULL);
+   return ((int64_t)tp.tv_sec) * 1000 + tp.tv_usec / 1000;
+}
+
+void
+BytecodeHelpers::printTime(int64_t)
+{
+   fprintf(stderr, "time taken")
+}
 
 Frame *
 BytecodeHelpers::transitionToJIT(Interpreter *interp, JitMethodFunction *func)
