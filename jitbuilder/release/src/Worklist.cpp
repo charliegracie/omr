@@ -36,7 +36,7 @@
 using std::cout;
 using std::cerr;
 
-#define REPORT_BCI(bci,e_bci)   { if ((bci) != (e_bci)) { cerr << "Error: bytecode " << (bci) << " not found in worklist ( expected" << (e_bci) << ")\n"; return false; } }
+#define REPORT_BCI(bci,e_bci)   { if ((bci) != (e_bci)) { cerr << "Error: bytecode " << (bci) << " not found in worklist ( expected " << (e_bci) << ")\n"; return false; } }
 
 #define REPORT_VMSTATE(b,s)
 
