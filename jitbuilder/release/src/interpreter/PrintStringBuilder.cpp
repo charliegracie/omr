@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2016 IBM Corp. and others
+ * Copyright (c) 2018, 2018 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -20,34 +20,26 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
+#include "ilgen/RuntimeBuilder.hpp"
+#include "ilgen/TypeDictionary.hpp"
+#include "ilgen/VirtualMachineStack.hpp"
+#include "InterpreterTypes.h"
+#include "PrintStringBuilder.hpp"
 
-#ifndef BYTECODEHELPERS_INCL
-#define BYTECODEHELPERS_INCL
-
-namespace TR { class IlBuilder; }
-
-class BytecodeHelpers
+PrintStringBuilder::PrintStringBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, char *name)
+   : BytecodeBuilder(methodBuilder, bcIndex, name, 2),
+     _runtimeBuilder((TR::RuntimeBuilder *)methodBuilder)
    {
-   public:
-   static void DefineFunctions(TR::MethodBuilder *mb);
+   }
 
-   static Frame *allocateFrame();
-   static void initializeFrame(Frame *frame);
-   static void freeFrame(Frame *frame);
-   static void setupArgs(Frame *newFrame, Frame *frame, int8_t argCount);
-   static void pushReturn(Frame *frame, int64_t retVal);
-   static Frame *i2jTransition(Interpreter *interp, JitMethodFunction *func);
-   static Frame *j2jTransition(Interpreter *interp, JitMethodFunction *func);
-   static Frame *j2iTransition(Interpreter *interp);;
-   static Frame *i2iTransition(Interpreter *interp, int8_t argCount);
-   static void compileMethod(Interpreter *interp, int8_t methodIndex);
-   static int64_t currentTime();
-   static void printString(Interpreter *interp, int8_t index);
-   static void printInt64(int64_t value);
+void
+PrintStringBuilder::execute()
+   {
+   TR::IlValue *interp = Load("interp");
+   TR::IlValue *index = _runtimeBuilder->GetImmediate(this);
 
-   protected:
-   private:
-   static Frame *transitionToJIT(Interpreter *interp, JitMethodFunction *func);
-   };
+   Call("printString", 2, interp, index);
 
-#endif // !defined(BYTECODEHELPERS_INCL)
+   _runtimeBuilder->DefaultFallthroughTarget(this);
+   }
+

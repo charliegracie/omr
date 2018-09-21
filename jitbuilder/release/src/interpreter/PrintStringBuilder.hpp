@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2016 IBM Corp. and others
+ * Copyright (c) 2018, 2018 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -21,33 +21,22 @@
  *******************************************************************************/
 
 
-#ifndef BYTECODEHELPERS_INCL
-#define BYTECODEHELPERS_INCL
+#ifndef PRINTSTRINGBUILDER_INCL
+#define PRINTSTRINGBUILDER_INCL
 
-namespace TR { class IlBuilder; }
+#include "ilgen/BytecodeBuilder.hpp"
 
-class BytecodeHelpers
+namespace TR { class RuntimeBuilder; }
+
+class PrintStringBuilder : public TR::BytecodeBuilder
    {
    public:
-   static void DefineFunctions(TR::MethodBuilder *mb);
-
-   static Frame *allocateFrame();
-   static void initializeFrame(Frame *frame);
-   static void freeFrame(Frame *frame);
-   static void setupArgs(Frame *newFrame, Frame *frame, int8_t argCount);
-   static void pushReturn(Frame *frame, int64_t retVal);
-   static Frame *i2jTransition(Interpreter *interp, JitMethodFunction *func);
-   static Frame *j2jTransition(Interpreter *interp, JitMethodFunction *func);
-   static Frame *j2iTransition(Interpreter *interp);;
-   static Frame *i2iTransition(Interpreter *interp, int8_t argCount);
-   static void compileMethod(Interpreter *interp, int8_t methodIndex);
-   static int64_t currentTime();
-   static void printString(Interpreter *interp, int8_t index);
-   static void printInt64(int64_t value);
+   PrintStringBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, char *name);
+   virtual void execute();
 
    protected:
    private:
-   static Frame *transitionToJIT(Interpreter *interp, JitMethodFunction *func);
+   TR::RuntimeBuilder *_runtimeBuilder;
    };
 
-#endif // !defined(BYTECODEHELPERS_INCL)
+#endif // !defined(PRINTSTRINGBUILDER_INCL)

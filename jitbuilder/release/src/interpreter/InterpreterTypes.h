@@ -74,6 +74,7 @@ typedef struct Interpreter
    {
    Frame *currentFrame;
    Method *methods;
+   const char**strings;
    } Interpreter;
 
 typedef TR::IlValue * (*MathFuncType)(TR::IlBuilder *builder, TR::IlValue *left, TR::IlValue *right);
@@ -95,6 +96,9 @@ enum interpreter_opcodes
    PUSH_LOCAL,
    POP_LOCAL,
    PUSH_ARG,
+   PRINT_STRING,
+   PRINT_INT64,
+   CURRENT_TIME,
    FAIL,
    TEST,
    COUNT = TEST

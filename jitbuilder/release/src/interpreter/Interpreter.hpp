@@ -55,6 +55,7 @@ class InterpreterMethod : public TR::InterpreterBuilder
    //const int8_t _mainMethod[102] =
    const int8_t _mainMethod[170] =
       {
+      interpreter_opcodes::PRINT_STRING,0,  // print "HelloWorld!"
       interpreter_opcodes::PUSH_CONSTANT,3, // push 3
       interpreter_opcodes::PUSH_CONSTANT,5, // push 5
       interpreter_opcodes::ADD,             // add 3 + 5 store 8
@@ -124,6 +125,20 @@ class InterpreterMethod : public TR::InterpreterBuilder
       interpreter_opcodes::CALL,6,1,        // call method 6 (call iterFib(9)) store 34
 #endif
 #endif
+#endif
+#if 1
+      interpreter_opcodes::PUSH_CONSTANT,2, // push 2
+      interpreter_opcodes::ADD,             // add 34 + 2 store 36
+      interpreter_opcodes::CURRENT_TIME,    // push current time in ms
+      interpreter_opcodes::POP_LOCAL,0,     // pop time into local 0
+      interpreter_opcodes::CALL,5,1,        // call method 5 (call result fib(36)) store 14930352
+      interpreter_opcodes::CURRENT_TIME,    // push current time in ms
+      interpreter_opcodes::PUSH_LOCAL,0,    // push local 0
+      interpreter_opcodes::SUB,             // sub timeEnd - timeStart = timeTaken
+      interpreter_opcodes::PRINT_STRING,3,  // print "Time taken for Fib "
+      interpreter_opcodes::PRINT_INT64,     // printInt64 timeTaken
+      interpreter_opcodes::PRINT_STRING,4,  // print "ms"
+      interpreter_opcodes::PRINT_STRING,1,  // print "\n"
 #endif
       //interpreter_opcodes::FAIL,-1,
 #if 0
@@ -272,10 +287,16 @@ class InterpreterMethod : public TR::InterpreterBuilder
       interpreter_opcodes::RET,1,           // ret arg
       };
 
+    const char *_newLine = "\n";
+    const char *_space = " ";
+    const char *_helloWorld = "HelloWorld!\n";
+    const char *_timeTaken = "Time taken for Fib ";
+    const char *_ms = "ms";
 
     static const int32_t _methodCount = 8;
     Method _methods[_methodCount];
-
+    static const int32_t _stringCount = 5;
+    const char *_strings[_stringCount];
    };
 
 #endif // !defined(INTERPRETER_INCL)

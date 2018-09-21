@@ -54,8 +54,25 @@ CallBuilder::execute()
    TR::IlValue *currentFrameAddress = StructFieldInstanceAddress("Interpreter", "currentFrame", interp);
    TR::IlValue *currentFrame = LoadAt(_types->PointerTo(_frameType), currentFrameAddress);
 
+   TR::IlValue *currentFrameFrameTypeAddress = StructFieldInstanceAddress("Frame", "frameType", currentFrame);
+   TR::IlValue *currentFrameFrameType = LoadAt(_types->PointerTo(Int32), currentFrameFrameTypeAddress);
+
+   TR::IlBuilder *isInterpreter = NULL;
+   TR::IlBuilder *isJit = NULL;
+   IfThenElse(&isInterpreter, &isJit,
+      And(currentFrameFrameType,
+         ConstInt32(FRAME_TYPE_INTERPRETER)));
+
+   isInterpreter->Store("newFrame",
+   isInterpreter->   Call("allocateFrame", 0));
+
+   isJit->Store("newFrame",
+   isJit->   CreateLocalArray(sizeof(Frame), Int8));
+   isJit->Call("initializeFrame", 1,
+   isJit->   Load("newFrame"));
+
    //Allocate newFrame
-   TR::IlValue *newFrame = Call("allocateFrame", 0);
+   TR::IlValue *newFrame = Load("newFrame");
 
    //Initialize new frame
    //Set newFrame->previous = currentFrame
@@ -103,8 +120,8 @@ CallBuilder::execute()
    TR::IlValue *methodCompiledMethodAddress = StructFieldInstanceAddress("Method", "compiledMethod", methodToCall);
    TR::IlValue *compiledMethod = LoadAt(_types->PointerTo(Address), methodCompiledMethodAddress);
 
-   TR::IlValue *currentFrameFrameTypeAddress = StructFieldInstanceAddress("Frame", "frameType", currentFrame);
-   TR::IlValue *currentFrameFrameType = LoadAt(_types->PointerTo(Int32), currentFrameFrameTypeAddress);
+//   TR::IlValue *currentFrameFrameTypeAddress = StructFieldInstanceAddress("Frame", "frameType", currentFrame);
+//   TR::IlValue *currentFrameFrameType = LoadAt(_types->PointerTo(Int32), currentFrameFrameTypeAddress);
 
    TR::IlValue *newFrameFrameTypeAddress = StructFieldInstanceAddress("Frame", "frameType", newFrame);
    TR::IlValue *newFrameFrameType = LoadAt(_types->PointerTo(Int32), newFrameFrameTypeAddress);

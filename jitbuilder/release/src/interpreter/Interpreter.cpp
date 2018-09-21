@@ -50,6 +50,9 @@
 #include "PopLocalBuilder.hpp"
 #include "PushLocalBuilder.hpp"
 #include "PushArgBuilder.hpp"
+#include "PrintStringBuilder.hpp"
+#include "PrintInt64Builder.hpp"
+#include "CurrentTimeBuilder.hpp"
 
 using std::cout;
 using std::cerr;
@@ -84,6 +87,7 @@ main(int argc, char *argv[])
 
    Interpreter interp;
    interp.methods = interpreterMethod._methods;
+   interp.strings = interpreterMethod._strings;;
 
    Frame frame;
    frame.args = frame.a;
@@ -161,6 +165,12 @@ InterpreterMethod::InterpreterMethod(InterpreterTypeDictionary *d)
    _methods[7].name = "TestJMPGMethod";
    _methods[7].bytecodeLength = sizeof(_testJMPGMethod);
    _methods[7].argCount = 1;
+
+   _strings[0] = _helloWorld;
+   _strings[1] = _newLine;
+   _strings[2] = _space;
+   _strings[3] = _timeTaken;
+   _strings[4] = _ms;
    }
 
 void
@@ -247,6 +257,10 @@ InterpreterMethod::registerBytecodeBuilders()
    jump = OrphanBytecodeBuilder<JumpIfBuilder>(interpreter_opcodes::JMPG, "JMPG");
    jump->setFunction(&JumpIfBuilder::greaterThan);
    registerBytecodeBuilder(jump);
+
+   registerBytecodeBuilder(OrphanBytecodeBuilder<PrintStringBuilder>(interpreter_opcodes::PRINT_STRING, "PRINT_STRING"));
+   registerBytecodeBuilder(OrphanBytecodeBuilder<PrintInt64Builder>(interpreter_opcodes::PRINT_INT64, "PRINT_INT64"));
+   registerBytecodeBuilder(OrphanBytecodeBuilder<CurrentTimeBuilder>(interpreter_opcodes::CURRENT_TIME, "CURRENT_TIME"));
 
    registerBytecodeBuilder(OrphanBytecodeBuilder<CallBuilder>(interpreter_opcodes::CALL, "CALL"));
    registerBytecodeBuilder(OrphanBytecodeBuilder<RetBuilder>(interpreter_opcodes::RET, "RET"));

@@ -23,6 +23,7 @@
 #include <new>
 #include <time.h>
 #include <sys/time.h>
+#include <inttypes.h>
 
 #include "Jit.hpp"
 #include "InterpreterTypes.h"
@@ -54,6 +55,22 @@ BytecodeHelpers::allocateFrame()
    newFrame->frameType = FRAME_TYPE_ALLOCATED_MALLOC;
 
    return newFrame;
+   }
+
+void
+BytecodeHelpers::initializeFrame(Frame *frame)
+   {
+#define INITIALIZEFRAME_LINE LINETOSTR(__LINE__)
+
+#if FRAME_ZERO
+   memset(newFrame, 0, sizeof(Frame));
+#endif
+
+   frame->args = frame->a;
+   frame->locals = frame->loc;
+   frame->sp = frame->stack;
+   frame->savedPC = 0;
+   frame->frameType = FRAME_TYPE_ALLOCATED_ONSTACK;
    }
 
 void
@@ -138,6 +155,30 @@ BytecodeHelpers::compileMethod(Interpreter *interp, int8_t methodIndex)
       }
    }
 
+int64_t
+BytecodeHelpers::currentTime()
+{
+#define CURRENTTIME_LINE LINETOSTR(__LINE__)
+   struct timeval tp;
+
+   gettimeofday(&tp, NULL);
+   return ((int64_t)tp.tv_sec) * 1000 + tp.tv_usec / 1000;
+}
+
+void
+BytecodeHelpers::printString(Interpreter *interp, int8_t methodIndex)
+{
+#define PRINTSTRING_LINE LINETOSTR(__LINE__)
+   fprintf(stderr, "%s", interp->strings[methodIndex]);
+}
+
+void
+BytecodeHelpers::printInt64(int64_t value)
+{
+#define PRINTINT64_LINE LINETOSTR(__LINE__)
+   fprintf(stderr, "%" PRId64, value);
+}
+
 void
 BytecodeHelpers::DefineFunctions(TR::MethodBuilder *mb)
    {
@@ -149,8 +190,10 @@ BytecodeHelpers::DefineFunctions(TR::MethodBuilder *mb)
    TR::IlType *interpType = types->getTypes().interpreter;
    TR::IlType *frameType = types->getTypes().frame;
    TR::IlType *bytecodesType = types->getTypes().bytecodes;
+   TR::IlType *Int64 = types->toIlType<int64_t>();
 
    mb->DefineFunction((char *)"allocateFrame", (char *)__FILE__, (char *)ALLOCATEFRAME_LINE, (void *)&BytecodeHelpers::allocateFrame, frameType, 0);
+   mb->DefineFunction((char *)"initializeFrame", (char *)__FILE__, (char *)INITIALIZEFRAME_LINE, (void *)&BytecodeHelpers::initializeFrame, voidType, 1, frameType);
    mb->DefineFunction((char *)"freeFrame", (char *)__FILE__, (char *)FREEFRAME_LINE, (void *)&BytecodeHelpers::freeFrame, voidType, 1, frameType);
    mb->DefineFunction((char *)"setupArgs", (char *)__FILE__, (char *)SETUPARGS_LINE, (void *)&BytecodeHelpers::setupArgs, voidType, 3, frameType, frameType, bytecodesType);
    mb->DefineFunction((char *)"pushReturn", (char *)__FILE__, (char *)PUSHRETURN_LINE, (void *)&BytecodeHelpers::pushReturn, voidType, 2, frameType, valueType);
@@ -159,22 +202,10 @@ BytecodeHelpers::DefineFunctions(TR::MethodBuilder *mb)
    mb->DefineFunction((char *)"i2jTransition", (char *)__FILE__, (char *)I2JTRANSITION_LINE, (void *)&BytecodeHelpers::i2jTransition, frameType, 2, interpType, pVoidType);
    mb->DefineFunction((char *)"i2iTransition", (char *)__FILE__, (char *)I2ITRANSITION_LINE, (void *)&BytecodeHelpers::i2iTransition, frameType, 2, interpType, bytecodesType);
    mb->DefineFunction((char *)"compileMethod", (char *)__FILE__, (char *)COMPILEMETHOD_LINE, (void *)&BytecodeHelpers::compileMethod, voidType, 2, interpType, bytecodesType);
+   mb->DefineFunction((char *)"printString", (char *)__FILE__, (char *)PRINTSTRING_LINE, (void *)&BytecodeHelpers::printString, voidType, 2, interpType, bytecodesType);
+   mb->DefineFunction((char *)"printInt64", (char *)__FILE__, (char *)PRINTINT64_LINE, (void *)&BytecodeHelpers::printInt64, voidType, 1, Int64);
+   mb->DefineFunction((char *)"currentTime", (char *)__FILE__, (char *)CURRENTTIME_LINE, (void *)&BytecodeHelpers::currentTime, Int64, 0);
    }
-
-int64_t
-BytecodeHelpers::currentTime()
-{
-   struct timeval tp;
-
-   gettimeofday(&tp, NULL);
-   return ((int64_t)tp.tv_sec) * 1000 + tp.tv_usec / 1000;
-}
-
-void
-BytecodeHelpers::printTime(int64_t)
-{
-   fprintf(stderr, "time taken")
-}
 
 Frame *
 BytecodeHelpers::transitionToJIT(Interpreter *interp, JitMethodFunction *func)
