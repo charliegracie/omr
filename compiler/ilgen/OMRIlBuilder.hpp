@@ -230,6 +230,8 @@ public:
 
    TR::IlValue *Copy(TR::IlValue *value);
 
+   TR::IlConst *ToIlConst(TR::IlValue *value);
+
    // constants
    TR::IlValue *NullAddress();
    TR::IlValue *ConstInt8(int8_t value);
@@ -535,6 +537,64 @@ public:
     * @param ... the list of pointers to JBCase instances corresponding to each case.
     */
    void Switch(const char *selectionVar,
+               TR::IlBuilder **defaultBuilder,
+               uint32_t numCases,
+               ...);
+
+   /**
+    * @brief Generates a switch-case control flow structure.
+    *
+    * @param selectionVar the variable to switch on.
+    * @param defaultBuilder the builder for the default case.
+    * @param numCases the number of cases.
+    * @param cases array of pointers to JBCase instances corresponding to each case.
+    */
+   void TableSwitch(const char *selectionVar,
+               TR::IlBuilder **defaultBuilder,
+               uint32_t numCases,
+               JBCase** cases);
+
+   /**
+    * @brief Generates a switch-case control flow structure (vararg overload).
+    *
+    * Instead of taking an array of pointers to JBCase instances, this overload
+    * takes a pointer to each instance as a separate varargs argument.
+    *
+    * @param selectionVar the variable to switch on.
+    * @param defaultBuilder the builder for the default case.
+    * @param numCases the number of cases.
+    * @param ... the list of pointers to JBCase instances corresponding to each case.
+    */
+   void TableSwitch(const char *selectionVar,
+               TR::IlBuilder **defaultBuilder,
+               uint32_t numCases,
+               ...);
+
+   /**
+    * @brief Generates a switch-case control flow structure.
+    *
+    * @param selectionVar the variable to switch on.
+    * @param defaultBuilder the builder for the default case.
+    * @param numCases the number of cases.
+    * @param cases array of pointers to JBCase instances corresponding to each case.
+    */
+   void ComputedGoto(const char *selectionVar,
+               TR::IlBuilder **defaultBuilder,
+               uint32_t numCases,
+               JBCase** cases);
+
+   /**
+    * @brief Generates a switch-case control flow structure (vararg overload).
+    *
+    * Instead of taking an array of pointers to JBCase instances, this overload
+    * takes a pointer to each instance as a separate varargs argument.
+    *
+    * @param selectionVar the variable to switch on.
+    * @param defaultBuilder the builder for the default case.
+    * @param numCases the number of cases.
+    * @param ... the list of pointers to JBCase instances corresponding to each case.
+    */
+   void ComputedGoto(const char *selectionVar,
                TR::IlBuilder **defaultBuilder,
                uint32_t numCases,
                ...);

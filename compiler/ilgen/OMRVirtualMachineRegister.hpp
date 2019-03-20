@@ -161,7 +161,7 @@ class VirtualMachineRegister : public TR::VirtualMachineState
    virtual void Adjust(TR::IlBuilder *b, TR::IlValue *amount)
       {
       TR::IlValue *off=b->Mul(amount,
-                       b->    ConstInteger(_integerTypeForAdjustments, _adjustByStep));
+                       b->    ConstInt64(_adjustByStep));
       adjust(b, off);
       }
 
@@ -174,7 +174,7 @@ class VirtualMachineRegister : public TR::VirtualMachineState
     */
    virtual void Adjust(TR::IlBuilder *b, int64_t amount)
       {
-      adjust(b, b->ConstInteger(_integerTypeForAdjustments, amount * _adjustByStep));
+      adjust(b, b->ConstInt64(amount * _adjustByStep));
       }
 
    /**

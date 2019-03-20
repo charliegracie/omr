@@ -47,6 +47,7 @@
 #include "optimizer/LocalAnalysis.hpp"
 #include "optimizer/Optimization.hpp"
 #include "optimizer/Optimization_inlines.hpp"
+#include "optimizer/InductionVariable.hpp"
 #include "optimizer/Structure.hpp"
 #include "optimizer/TransformUtil.hpp"
 #include "optimizer/VPConstraint.hpp"
@@ -279,10 +280,11 @@ void TR_ExpressionsSimplification::setSummationReductionCandidates(TR::Node *nod
    // Must be a store node
    //
    if (node->getOpCodeValue() != TR::istore
+    && node->getOpCodeValue() != TR::lstore
    /* || node->getOpCodeValue() != TR::astore */)
       {
       if (trace())
-         traceMsg(comp(), "Node %p: The opcode is not istore so not a summation reduction candidate\n",node);
+         traceMsg(comp(), "Node %p: The opcode is not istore/lstore so not a summation reduction candidate %s\n",node, node->getOpCode().getName());
       return;
       }
 
@@ -290,6 +292,48 @@ void TR_ExpressionsSimplification::setSummationReductionCandidates(TR::Node *nod
 
    if (opNode->getOpCodeValue() == TR::iadd ||
        opNode->getOpCodeValue() == TR::isub)
+      {
+      TR::Node *firstNode = opNode->getFirstChild();
+      TR::Node *secondNode = opNode->getSecondChild();
+
+      if (firstNode->getOpCode().hasSymbolReference() &&
+            node->getSymbolReference() == firstNode->getSymbolReference() &&
+            opNode->getReferenceCount() == 1 && firstNode->getReferenceCount() == 1)
+         {
+         // The second node must be loop invariant
+         //
+         if (!_currentRegion->isExprInvariant(secondNode))
+            {
+            if (trace())
+               {
+               traceMsg(comp(), "The node %p is not loop invariant\n",secondNode);
+
+               // This can be the arithmetic series case
+               // only when the node is an induction variable
+               if (secondNode->getNumChildren() == 1 && secondNode->getOpCode().hasSymbolReference())
+                  {
+                  TR_InductionVariable *indVar = _currentRegion->findMatchingIV(secondNode->getSymbolReference());
+                  if (indVar)
+                     {
+                     //printf("Found Candidate of arithmetic series\n" );
+                     }
+                  }
+               }
+            return;
+            }
+
+         _candidateTTs->add(tt);
+         }
+      else if (secondNode->getOpCode().hasSymbolReference() &&
+            node->getSymbolReference() == secondNode->getSymbolReference() &&
+            opNode->getReferenceCount() == 1 && secondNode->getReferenceCount() == 1 &&
+            _currentRegion->isExprInvariant(firstNode))
+         {
+         _candidateTTs->add(tt);
+         }
+      }
+   else if (opNode->getOpCodeValue() == TR::ladd ||
+            opNode->getOpCodeValue() == TR::lsub)
       {
       TR::Node *firstNode = opNode->getFirstChild();
       TR::Node *secondNode = opNode->getSecondChild();
@@ -404,6 +448,26 @@ bool TR_ExpressionsSimplification::tranformSummationReductionCandidate(TR::TreeT
    else if (opNode->getOpCodeValue() == TR::ixor || opNode->getOpCodeValue() == TR::ineg)
       {
       expNode = ixorinegSimplifier(opNode, loopInfo, &removeOnly);
+      }
+   else if (opNode->getOpCodeValue() == TR::ladd || opNode->getOpCodeValue() == TR::lsub)
+      {
+      if (opNode->getSecondChild()->getOpCode().hasSymbolReference() &&
+            node->getSymbolReference() == opNode->getSecondChild()->getSymbolReference())
+         {
+         expChildNumber = 0;
+         expNode = opNode->getFirstChild();
+         }
+      else
+         {
+         expChildNumber = 1;
+         expNode = opNode->getSecondChild();
+         }
+      expNode = laddlsubSimplifier(expNode, loopInfo);
+      replaceWithNewNode = true;
+      }
+   else if (opNode->getOpCodeValue() == TR::lxor || opNode->getOpCodeValue() == TR::lneg)
+      {
+      expNode = lxorlnegSimplifier(opNode, loopInfo, &removeOnly);
       }
 
    if (expNode)
@@ -739,28 +803,29 @@ TR_ExpressionsSimplification::findLoopInfo(TR_RegionStructure* region)
    if (!firstChildOfLastTree->getOpCode().hasSymbolReference())
       {
       if (trace())
-         traceMsg(comp(), "The branch node's first child node %p - its opcode does not have a symbol reference\n", firstChildOfLastTree);
+         traceMsg(comp(), "The branch node's first child node %p - its opcode does not have a symbol reference %s\n", firstChildOfLastTree, firstChildOfLastTree->getOpCode().getName());
       return 0;
       }
 
    TR::SymbolReference *firstChildSymRef = firstChildOfLastTree->getSymbolReference();
 
    if (trace())
-      traceMsg(comp(), "Symbol Reference: %p Symbol: %p\n", firstChildSymRef, firstChildSymRef->getSymbol());
+      traceMsg(comp(), "Symbol Reference: %p Symbol: %p in region %p\n", firstChildSymRef, firstChildSymRef->getSymbol(), region);
 
    // Locate the induction variable that matches with the exit node symbol
    //
    TR_InductionVariable *indVar = region->findMatchingIV(firstChildSymRef);
    if (!indVar) return 0;
 
+#if 0
+   //TODO remove #if and check for LongConst as well
    if (!indVar->getIncr()->asIntConst())
       {
       if (trace())
          traceMsg(comp(), "Increment is not a constant\n");
       return 0;
       }
-
-   int32_t increment = indVar->getIncr()->getLowInt();
+#endif
 
    _visitCount = comp()->incVisitCount();
    bool indVarWrittenAndUsedUnexpectedly = false;
@@ -802,6 +867,8 @@ TR_ExpressionsSimplification::findLoopInfo(TR_RegionStructure* region)
 
    int32_t lowerBound;
    int32_t upperBound = 0;
+   int64_t lowerBound64 = 0;
+   int64_t upperBound64 = 0;
    TR::Node *bound = 0;
    bool equals = false;
 
@@ -834,12 +901,40 @@ TR_ExpressionsSimplification::findLoopInfo(TR_RegionStructure* region)
                traceMsg(comp(), "Second child is not a const or a load\n");
             return 0;
             }
-         return new (trStackMemory()) LoopInfo(bound, lowerBound, upperBound, increment, equals);
+         return new (trStackMemory()) LoopInfo(bound, lowerBound, upperBound, indVar->getIncr()->getLowInt(), equals);
+      case TR::iflcmplt:
+      case TR::iflcmpgt:
+         equals = true;
+      case TR::iflcmple:
+      case TR::iflcmpge:
+         if (!(indVar->getEntry() && indVar->getEntry()->asLongConst()))
+            {
+            if (trace())
+               traceMsg(comp(), "Entry value is not a constant\n");
+            return 0;
+            }
+         lowerBound64 = indVar->getEntry()->getLowLong();
+
+         if (secondChildOfLastTree->getOpCode().isLoadConst())
+            {
+            upperBound64 = secondChildOfLastTree->getLongInt();
+            }
+         else if (secondChildOfLastTree->getOpCode().isLoadVar())
+            {
+            bound = secondChildOfLastTree;
+            }
+         else
+            {
+            if (trace())
+               traceMsg(comp(), "Second child is not a const or a load\n");
+            return 0;
+            }
+         return new (trStackMemory()) LoopInfo(bound, lowerBound64, upperBound64, indVar->getIncr()->getLowLong(), equals);
 
 
       default:
          if (trace())
-            traceMsg(comp(), "The condition has not been implemeted\n");
+            traceMsg(comp(), "The condition has not been implemeted %s\n", lastTreeInExitBlock->getOpCode().getName());
          return 0;
       }
 
@@ -891,7 +986,54 @@ TR_ExpressionsSimplification::iaddisubSimplifier(TR::Node *invariantNode, LoopIn
 
 
 TR::Node *
+TR_ExpressionsSimplification::laddlsubSimplifier(TR::Node *invariantNode, LoopInfo* loopInfo)
+   {
+   TR::Node *newNode = 0;
+
+   if (loopInfo->getBoundaryNode())
+      {
+      return newNode;
+      }
+   else
+      {
+      if (loopInfo->getNumIterations() > 0)
+         {
+         newNode = TR::Node::create(TR::lmul, 2,
+                                   invariantNode->duplicateTree(),
+                                   TR::Node::create(invariantNode, TR::lconst, 0, loopInfo->getNumIterations()));
+         }
+      return newNode;
+      }
+   }
+
+
+TR::Node *
 TR_ExpressionsSimplification::ixorinegSimplifier(TR::Node *node, LoopInfo* loopInfo, bool *removeOnly)
+   {
+   TR::Node *newNode = 0;
+   *removeOnly = false;
+
+   if (loopInfo->getBoundaryNode())
+      {
+      if (trace())
+         traceMsg(comp(), "Loop has a non constant boundary, but this case is not taken care of\n");
+      }
+   else
+      {
+      if (loopInfo->getNumIterations() > 0)
+         {
+         newNode = node;
+         if (loopInfo->getNumIterations() % 2 == 0)
+            {
+            *removeOnly = true;
+            }
+         }
+      }
+
+   return newNode;
+   }
+TR::Node *
+TR_ExpressionsSimplification::lxorlnegSimplifier(TR::Node *node, LoopInfo* loopInfo, bool *removeOnly)
    {
    TR::Node *newNode = 0;
    *removeOnly = false;
